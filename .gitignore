@@ -1,24 +1,38 @@
+# IDE directories
+/.fleet/
+/.idea/
+/.nova/
+/.vscode/
+/.zed/
+
+# PHP / Composer / Laravel specific
 /.phpunit.cache
-/bootstrap/ssr
-/node_modules
-/public/build
-/public/hot
-/public/storage
+/.phpunit.result.cache
+.phpactor.json
+/bootstrap/ssr/
+/vendor/
 /storage/*.key
-/storage/pail
-/vendor
+/storage/pail/
+/public/build/
+/public/hot/
+/public/storage/
+/auth.json
+bootstrap/compiled.php # Laravel 4
+app/storage/           # Laravel 4
+
+# Alternative Laravel public paths
+public_html/storage
+public_html/hot
+
+# Node / JS specific
+/node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment / Config / Secrets
 .env
 .env.backup
 .env.production
-.phpactor.json
-.phpunit.result.cache
 Homestead.json
 Homestead.yaml
-npm-debug.log
-yarn-error.log
-/auth.json
-/.fleet
-/.idea
-/.nova
-/.vscode
-/.zed
+/.vagrant
