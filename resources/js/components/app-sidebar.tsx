@@ -1,30 +1,92 @@
 import { NavFooter } from '@/components/nav-footer';
-import { NavMain } from '@/components/nav-main';
+import { NavMain, type NavGroup } from '@/components/nav-main'; // Assuming NavMain is updated and NavGroup type is defined there
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem } from '@/types';
+import { type NavItem } from '@/types'; // Assuming NavItem is defined here
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import { Bike, Edit3, ExternalLink, LayoutGrid, ReceiptCentIcon, Settings, User2 } from 'lucide-react'; // Added Settings icon
 import AppLogo from './app-logo';
 
-const mainNavItems: NavItem[] = [
+// --- Updated Navigation Items with Groups ---
+const mainNavGroups: NavGroup[] = [
     {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
+        // Group 1: Core
+        items: [
+            {
+                title: 'Dashboard',
+                href: '/dashboard',
+                icon: LayoutGrid,
+                prefetch: true, // Example: Keep prefetch if needed
+            },
+        ],
+    },
+    {
+        // Group 2: Management
+        title: 'Management', // Title for the second group
+        items: [
+            {
+                title: 'Rental Management', // Renamed for clarity in this group
+                href: '/rental-management',
+                icon: ReceiptCentIcon,
+            },
+            {
+                title: 'Scooter Management', // Renamed for clarity in this group
+                href: '/rental-management',
+                icon: Bike,
+            },
+            {
+                title: 'Customer Management', // Renamed for clarity in this group
+                href: '/rental-management',
+                icon: User2,
+            },
+            {
+                title: 'Settings', // Added a new item
+                href: '/settings',
+                icon: Settings,
+            },
+        ],
+    },
+    {
+        // Group 3: Report
+        title: 'Report', // Title for the second group
+        items: [
+            {
+                title: 'Rental Transaction', // Renamed for clarity in this group
+                href: '/rental-management',
+                icon: ReceiptCentIcon,
+            },
+            {
+                title: 'Rental Chart', // Renamed for clarity in this group
+                href: '/rental-management',
+                icon: Bike,
+            },
+            {
+                title: 'Settings', // Added a new item
+                href: '/settings',
+                icon: Settings,
+            },
+        ],
+    },
+    {
+        // Group 4: Client Edittor
+        title: 'Website Editor', // Title for the second group
+        items: [
+            {
+                title: 'Rental Transaction', // Renamed for clarity in this group
+                href: '/rental-management',
+                icon: Edit3,
+            },
+        ],
     },
 ];
 
+// Footer items remain the same (assuming NavFooter handles a flat list)
 const footerNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits',
-        icon: BookOpen,
+        title: 'Client Site',
+        href: '/',
+        target: '_blank',
+        icon: ExternalLink,
     },
 ];
 
@@ -44,10 +106,12 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                {/* Pass the grouped data structure to NavMain */}
+                <NavMain groups={mainNavGroups} />
             </SidebarContent>
 
             <SidebarFooter>
+                {/* NavFooter likely still takes a flat list */}
                 <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
