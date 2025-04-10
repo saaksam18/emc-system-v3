@@ -84,9 +84,15 @@ const mainNavGroups: NavGroup[] = [
 const footerNavItems: NavItem[] = [
     {
         title: 'Client Site',
-        href: '/',
+        href: '/home',
         target: '_blank',
         icon: ExternalLink,
+    },
+    {
+        id: 1,
+        title: 'Administration',
+        href: '/administrator',
+        icon: User2,
     },
 ];
 
