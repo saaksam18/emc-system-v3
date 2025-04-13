@@ -37,6 +37,8 @@ const InputError = ({ message }: { message?: string }) => (message ? <p classNam
 export interface TableMeta {
     editRole: (role: Role) => void;
     permissions?: Permission[] | null | undefined;
+    globalFilter?: string; // State for the global filter value
+    onGlobalFilterChange?: (value: string) => void; // Function to update the filter value
 }
 
 export const columns: ColumnDef<Role, TableMeta>[] = [
@@ -107,6 +109,9 @@ export const columns: ColumnDef<Role, TableMeta>[] = [
     },
     {
         id: 'actions',
+        enableHiding: false,
+        enableSorting: false,
+        enableGlobalFilter: false, // Keep actions excluded from global filter
         cell: ({ row, table }) => {
             const role = row.original;
             // State to control the delete dialog's open/closed status

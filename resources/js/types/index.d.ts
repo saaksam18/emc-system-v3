@@ -62,3 +62,60 @@ export interface Permission {
     created_at?: string;
     updated_at?: string;
 }
+
+export interface Vehicle {
+    id?: number | string; // Added ID for the key prop
+    vehicle_no: string;
+    make: string;
+    model: string;
+    year: string;
+    license_plate: string;
+    vin: string;
+    color: string;
+    engine_cc: string;
+    vehicle_class: any;
+    compensation_price: string;
+    purchase_price: string;
+    daily_rental_price: string;
+    weekly_rental_price: string;
+    monthly_rental_price: string;
+    current_status_id: any;
+    current_location: string;
+    notes: string;
+    user_id?: string;
+    [key: string]: any;
+}
+
+export interface VehicleClass {
+    id: number;
+    name: string;
+    user_name: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface VehicleMakerType {
+    id: number;
+    name: string;
+    user_name: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface VehicleModelType {
+    id: number;
+    name: string;
+    maker_name: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface VehicleStatusType {
+    id: number;
+    status_name: string;
+    description: string;
+    is_rentable: string;
+    user_name: string;
+    created_at?: string;
+    updated_at?: string;
+}

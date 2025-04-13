@@ -2,10 +2,8 @@
 
 import { Role, User } from '@/types'; // Assuming RoleObject is defined in types
 import { useForm } from '@inertiajs/react';
-// Import Table type from @tanstack/react-table for meta typing
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown, MoreHorizontal, Trash2, UserRoundPen } from 'lucide-react';
-// Import useState for controlling dropdown state
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -35,15 +33,17 @@ import { Label } from '@/components/ui/label';
 // Assume InputError component exists
 const InputError = ({ message }: { message?: string }) => (message ? <p className="mt-1 text-sm text-red-600 dark:text-red-400">{message}</p> : null);
 
-// Define Table Meta Interface
+// --- Define Table Meta Interface (Updated) ---
+// Added globalFilter and onGlobalFilterChange for parent-controlled filtering
 export interface TableMeta {
     editUser: (user: User) => void;
     roles?: Role[] | null | undefined;
+    globalFilter?: string; // State for the global filter value
+    onGlobalFilterChange?: (value: string) => void; // Function to update the filter value
 }
 
-// Column Definitions
+// --- Column Definitions (No functional changes needed here for moving the filter) ---
 export const columns: ColumnDef<User, TableMeta>[] = [
-    // --- Other columns (ID, Name, Email, Roles, Inputer, Registered) remain the same ---
     {
         accessorKey: 'id',
         header: ({ column }) => (
@@ -51,6 +51,7 @@ export const columns: ColumnDef<User, TableMeta>[] = [
                 ID <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
+        enableGlobalFilter: false, // Explicitly disable global filtering for ID
     },
     {
         accessorKey: 'name',
@@ -84,6 +85,7 @@ export const columns: ColumnDef<User, TableMeta>[] = [
             );
         },
         enableSorting: false,
+        // Consider enableGlobalFilter: false if searching role names isn't desired
     },
     {
         accessorKey: 'user_name',
@@ -116,18 +118,19 @@ export const columns: ColumnDef<User, TableMeta>[] = [
                 return row.original.created_at; // Fallback
             }
         },
+        // Consider enableGlobalFilter: false if searching dates isn't desired
     },
-    // --- Actions Column ---
     {
         id: 'actions',
+        enableHiding: false,
+        enableSorting: false,
+        enableGlobalFilter: false, // Keep actions excluded from global filter
         cell: ({ row, table }) => {
             const user = row.original;
             const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-            // State to control DropdownMenu open/close
             const [isDropdownOpen, setIsDropdownOpen] = useState(false);
             const passwordInput = React.useRef<HTMLInputElement>(null);
 
-            // Delete Form Hook
             const {
                 data: deleteData,
                 setData: setDeleteData,
@@ -138,7 +141,6 @@ export const columns: ColumnDef<User, TableMeta>[] = [
                 clearErrors: clearDeleteErrors,
             } = useForm({ password: '' });
 
-            // Delete Submit Handler (remains the same)
             const handleDeleteSubmit = (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
                 clearDeleteErrors('password');
@@ -163,14 +165,12 @@ export const columns: ColumnDef<User, TableMeta>[] = [
                 });
             };
 
-            // Close Delete Modal Handler (remains the same)
             const closeDeleteModal = () => {
                 setIsDeleteDialogOpen(false);
                 resetDeleteForm('password');
                 clearDeleteErrors();
             };
 
-            // Effect to reset delete form when dialog closes (remains the same)
             useEffect(() => {
                 if (!isDeleteDialogOpen) {
                     resetDeleteForm('password');
@@ -178,12 +178,12 @@ export const columns: ColumnDef<User, TableMeta>[] = [
                 }
             }, [isDeleteDialogOpen, resetDeleteForm, clearDeleteErrors]);
 
-            // Function to call when Edit is clicked (remains the same)
             const handleEditClick = () => {
-                setIsDropdownOpen(false); // Close dropdown
+                setIsDropdownOpen(false);
+                // --- Access meta via table.options.meta ---
                 const meta = table.options.meta as TableMeta | undefined;
                 if (meta?.editUser) {
-                    meta.editUser(user); // Call parent function to open drawer
+                    meta.editUser(user);
                 } else {
                     console.warn('editUser function not found in table meta options.');
                     toast.error('Could not initiate edit action.');
@@ -191,9 +191,7 @@ export const columns: ColumnDef<User, TableMeta>[] = [
             };
 
             return (
-                // Delete Dialog
                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                    {/* Control DropdownMenu state */}
                     <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -204,20 +202,15 @@ export const columns: ColumnDef<User, TableMeta>[] = [
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-
-                            {/* Edit Item - Calls handleEditClick */}
                             <DropdownMenuItem onSelect={handleEditClick} className="cursor-pointer">
                                 <UserRoundPen className="mr-2 h-4 w-4" />
                                 <span>Edit</span>
                             </DropdownMenuItem>
-
-                            {/* Delete Dialog Trigger Item */}
                             <DialogTrigger asChild>
                                 <DropdownMenuItem
-                                    // --- MODIFICATION: Also close dropdown here ---
                                     onSelect={(e) => {
-                                        e.preventDefault(); // Keep this for DialogTrigger
-                                        setIsDropdownOpen(false); // Explicitly close dropdown
+                                        e.preventDefault();
+                                        setIsDropdownOpen(false);
                                     }}
                                     className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-500 dark:focus:bg-red-900/50 dark:focus:text-red-600"
                                 >
@@ -227,8 +220,6 @@ export const columns: ColumnDef<User, TableMeta>[] = [
                             </DialogTrigger>
                         </DropdownMenuContent>
                     </DropdownMenu>
-
-                    {/* Delete Dialog Content (remains the same) */}
                     <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
                             <DialogTitle>Delete Account: {user.name}</DialogTitle>
