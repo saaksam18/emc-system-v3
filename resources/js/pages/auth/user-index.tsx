@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 
 // --- Import the User Form Component ---
 // Make sure the path is correct for your project structure
+import { Input } from '@/components/ui/input';
 import UserForm from './register'; // Changed import from RoleRegisterForm to UserForm
 
 // --- Breadcrumbs Configuration ---
@@ -68,25 +69,24 @@ function UserIndex({ users, roles }: Props) {
     // State to hold the user data when editing
     const [editingUser, setEditingUser] = useState<User | null>(null);
 
+    // --- State for the global filter input ---
+    const [globalFilter, setGlobalFilter] = useState('');
+
     // --- Event Handlers ---
-    // Function to open the drawer in 'create' mode
     const handleCreateClick = () => {
         setDrawerMode('create');
-        setEditingUser(null); // No user data needed for create
-        setIsDrawerOpen(true); // Open the drawer
+        setEditingUser(null);
+        setIsDrawerOpen(true);
     };
 
-    // Function to open the drawer in 'edit' mode (passed via table meta)
     const handleEditUser = (userToEdit: User) => {
         setDrawerMode('edit');
-        setEditingUser(userToEdit); // Store the user data
-        setIsDrawerOpen(true); // Open the drawer
+        setEditingUser(userToEdit);
+        setIsDrawerOpen(true);
     };
 
-    // Function to close the drawer (passed to UserForm)
     const handleFormSubmitSuccess = () => {
-        setIsDrawerOpen(false); // Close the drawer on successful form submission
-        // Optionally add a success toast message here if UserForm doesn't handle it
+        setIsDrawerOpen(false);
         toast.success(drawerMode === 'create' ? 'User created successfully!' : 'User updated successfully!');
     };
 
@@ -123,11 +123,19 @@ function UserIndex({ users, roles }: Props) {
                         <HeadingSmall title="User Table Data" description="See all the registered users here." />
                     </div>
                     {/* Button to trigger Create User */}
-                    <Button variant="default" onClick={handleCreateClick}>
-                        {' '}
-                        {/* Changed DrawerTrigger to Button with onClick */}
-                        <UserPlus className="mr-2 h-4 w-4" /> Create
-                    </Button>
+                    {/* Filter Input and Create Button */}
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        {/* --- Global Filter Input --- */}
+                        <Input
+                            placeholder="Filter user..."
+                            value={globalFilter}
+                            onChange={(event) => setGlobalFilter(event.target.value)}
+                            className="w-full sm:max-w-xs" // Adjust width as needed
+                        />
+                        <Button variant="default" onClick={handleCreateClick} className="w-full sm:w-auto">
+                            <UserPlus className="mr-2 h-4 w-4" /> Create
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Create/Edit User Drawer - Now controlled */}
@@ -174,6 +182,8 @@ function UserIndex({ users, roles }: Props) {
                         meta={{
                             editUser: handleEditUser,
                             roles: roles,
+                            globalFilter: globalFilter, // Pass the filter value
+                            onGlobalFilterChange: setGlobalFilter, // Pass the state setter function
                         }}
                     />
                 </Deferred>

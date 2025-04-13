@@ -26,17 +26,17 @@ const mainNavGroups: NavGroup[] = [
         items: [
             {
                 title: 'Rental Management', // Renamed for clarity in this group
-                href: '/rental-management',
+                href: '/rentals',
                 icon: ReceiptCentIcon,
             },
             {
-                title: 'Scooter Management', // Renamed for clarity in this group
-                href: '/rental-management',
+                title: 'Vehicles', // Renamed for clarity in this group
+                href: '/vehicles',
                 icon: Bike,
             },
             {
                 title: 'Customer Management', // Renamed for clarity in this group
-                href: '/rental-management',
+                href: '/customers',
                 icon: User2,
             },
             {
@@ -52,12 +52,12 @@ const mainNavGroups: NavGroup[] = [
         items: [
             {
                 title: 'Rental Transaction', // Renamed for clarity in this group
-                href: '/rental-management',
+                href: '/rentals-transaction',
                 icon: ReceiptCentIcon,
             },
             {
                 title: 'Rental Chart', // Renamed for clarity in this group
-                href: '/rental-management',
+                href: '/rentals-transaction',
                 icon: Bike,
             },
             {
@@ -72,8 +72,8 @@ const mainNavGroups: NavGroup[] = [
         title: 'Website Editor', // Title for the second group
         items: [
             {
-                title: 'Rental Transaction', // Renamed for clarity in this group
-                href: '/rental-management',
+                title: 'Top', // Renamed for clarity in this group
+                href: '/web-editor/top',
                 icon: Edit3,
             },
         ],

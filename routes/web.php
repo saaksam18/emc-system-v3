@@ -5,6 +5,7 @@ use Inertia\Inertia;
 
 // Controller
 use App\Http\Controllers\Internals\UserController;
+use App\Http\Controllers\Internals\VehiclesController;
 
 Route::redirect('home', '/');
 Route::get('/', function () {
@@ -33,6 +34,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/administrator/roles/register', [UserController::class, 'roleStore'])->name('administrator.roles.register.store');
         Route::put('/administrator/roles/{role}/update', [UserController::class, 'updateRole'])->name('administrator.roles.update');
     Route::delete('/administrator/roles/{role}', [UserController::class, 'destroyRole'])->name('administrator.roles.destroy-role');
+
+    // Vehicles
+    Route::get('/vehicles', [VehiclesController::class, 'index'])->name('vehicles.index');
+        Route::post('/vehicles/register', [VehiclesController::class, 'store'])->name('vehicles.register.store');
+        Route::put('/vehicles/{vehicle}/update', [VehiclesController::class, 'update'])->name('vehicles.update');
+        Route::delete('/vehicles/{vehicle}', [VehiclesController::class, 'destroy'])->name('vehicles.destroy');
 });
 
 require __DIR__.'/settings.php';

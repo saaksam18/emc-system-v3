@@ -3,6 +3,7 @@ import { DataTable } from '@/components/auth/roles/data-table';
 import HeadingSmall from '@/components/heading-small';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
 import SubLayout from '@/layouts/auth/sub-layouts/admin-sub-layout';
 import { NavItem, Permission, Role, type BreadcrumbItem } from '@/types';
@@ -58,6 +59,9 @@ function Roles({ roles, permissions }: Props) {
     // State to hold the user data when editing
     const [editingRole, setEditingRole] = useState<Role | null>(null);
 
+    // --- State for the global filter input ---
+    const [globalFilter, setGlobalFilter] = useState('');
+
     // --- Event Handlers ---
     // Function to open the drawer in 'create' mode
     const handleCreateClick = () => {
@@ -101,17 +105,24 @@ function Roles({ roles, permissions }: Props) {
             <Head title="Role Administration" />
             <SubLayout sidebarNavItems={sidebarNavItems} title="Administrator" description="Manage system administration">
                 <div className="mb-4 flex items-center justify-between space-y-2">
-                    {' '}
                     {/* Adjusted layout for button */}
                     <div>
                         <HeadingSmall title="User Table Data" description="See all the registered users here." />
                     </div>
                     {/* Button to trigger Create User */}
-                    <Button variant="default" onClick={handleCreateClick}>
-                        {' '}
-                        {/* Changed DrawerTrigger to Button with onClick */}
-                        <KeySquare className="mr-2 h-4 w-4" /> Create
-                    </Button>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        {/* --- Global Filter Input --- */}
+                        <Input
+                            placeholder="Filter user..."
+                            value={globalFilter}
+                            onChange={(event) => setGlobalFilter(event.target.value)}
+                            className="w-full sm:max-w-xs" // Adjust width as needed
+                        />
+                        <Button variant="default" onClick={handleCreateClick}>
+                            {/* Changed DrawerTrigger to Button with onClick */}
+                            <KeySquare className="mr-2 h-4 w-4" /> Create
+                        </Button>
+                    </div>
                 </div>
                 {/* Create/Edit User Drawer - Now controlled */}
                 <Drawer direction="right" open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
@@ -156,6 +167,8 @@ function Roles({ roles, permissions }: Props) {
                         meta={{
                             editRole: handleEditRole,
                             permissions: permissions,
+                            globalFilter: globalFilter, // Pass the filter value
+                            onGlobalFilterChange: setGlobalFilter, // Pass the state setter function
                         }}
                     />
                 </Deferred>
