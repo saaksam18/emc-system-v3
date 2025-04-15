@@ -49,6 +49,7 @@ class Motorbikes extends Model
         'vehicle_class_id',
         'compensation_price',
         'purchase_price',
+        'purchase_date',
         'daily_rental_price',
         'weekly_rental_price',
         'monthly_rental_price',

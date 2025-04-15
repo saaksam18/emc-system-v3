@@ -1,39 +1,65 @@
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'; // Import Select components
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Textarea } from '@/components/ui/textarea'; // Import Textarea
-import { Vehicle, VehicleClass, VehicleMakerType, VehicleModelType, VehicleStatusType, type User } from '@/types'; // Import your Vehicle type and assume User type
-import { useForm } from '@inertiajs/react'; // Use Inertia's useForm
-import { FormEventHandler, useEffect, useMemo } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+// Removed unused User type import
+import { Vehicle, VehicleClass, VehicleMakerType, VehicleModelType, VehicleStatusType } from '@/types';
+import { useForm } from '@inertiajs/react';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+// Removed unused useRef import
+import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
 
 // --- Component Props Interface ---
 interface SheetLayoutProps {
     mode: 'create' | 'edit';
     initialData: Vehicle | null;
-    users: User[] | null | undefined; // Array of User objects for selection
-    vehicle_class: VehicleClass[] | null | undefined; // Array of strings for vehicle classes
+    // Removed unused 'users' prop
+    vehicle_class: VehicleClass[] | null | undefined;
     vehicle_models: VehicleModelType[];
     vehicle_makers: VehicleMakerType[];
     vehicle_status: VehicleStatusType[];
     onSubmitSuccess: () => void;
 }
 
+// --- Helper Function to Format Date String ---
+const formatToYyyyMmDd = (dateString: string | null | undefined): string | undefined => {
+    if (!dateString) return undefined;
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            console.warn('Invalid date string received for formatting:', dateString);
+            return undefined;
+        }
+        return format(date, 'yyyy-MM-dd');
+    } catch (error) {
+        console.error('Error parsing/formatting date:', dateString, error);
+        return undefined;
+    }
+};
+
 export function SheetForm({
     mode,
     onSubmitSuccess,
-    users,
+    // Removed unused 'users' prop from destructuring
     vehicle_class,
     initialData,
     vehicle_status,
     vehicle_models,
     vehicle_makers,
 }: SheetLayoutProps) {
-    // --- Calculate Initial Form Values with useMemo ---
-    const initialFormValues: Vehicle = useMemo(() => {
-        const values = {
+    // Removed unused sheetContentRef
+
+    // --- Calculate Initial Form Values (Raw) ---
+    const initialFormValues = useMemo(() => {
+        // This calculation remains the same
+        return {
             vehicle_no: mode === 'edit' && initialData ? initialData.vehicle_no : '',
             make: mode === 'edit' && initialData ? initialData.make : '',
             model: mode === 'edit' && initialData ? initialData.model : '',
@@ -42,10 +68,10 @@ export function SheetForm({
             vin: mode === 'edit' && initialData ? initialData.vin : '',
             color: mode === 'edit' && initialData ? initialData.color : '',
             engine_cc: mode === 'edit' && initialData ? initialData.engine_cc : '',
-
-            vehicle_class: mode === 'edit' && initialData ? initialData.vehicle_class_id : '',
+            vehicle_class_id: mode === 'edit' && initialData ? initialData.vehicle_class_id : '',
             compensation_price: mode === 'edit' && initialData ? initialData.compensation_price : '',
             purchase_price: mode === 'edit' && initialData ? initialData.purchase_price : '',
+            purchase_date: mode === 'edit' && initialData ? initialData.purchase_date : undefined,
             daily_rental_price: mode === 'edit' && initialData ? initialData.daily_rental_price : '',
             weekly_rental_price: mode === 'edit' && initialData ? initialData.weekly_rental_price : '',
             monthly_rental_price: mode === 'edit' && initialData ? initialData.monthly_rental_price : '',
@@ -53,23 +79,42 @@ export function SheetForm({
             current_location: mode === 'edit' && initialData ? initialData.current_location : '',
             notes: mode === 'edit' && initialData ? initialData.notes : '',
         };
-        return values;
     }, [mode, initialData]);
-    // --- Inertia Form Hook ---
-    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm<Vehicle>(initialFormValues);
 
-    // --- Effect to Reset Form on Prop Changes ---
+    // --- Format Initial Date for Form and Picker State ---
+    const initialFormattedDateString = formatToYyyyMmDd(initialFormValues.purchase_date);
+    const initialDateObject = initialFormattedDateString ? new Date(initialFormattedDateString + 'T00:00:00') : undefined;
+
+    // --- Inertia Form Hook ---
+    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm<Vehicle>({
+        ...initialFormValues,
+        purchase_date: initialFormattedDateString || '',
+    });
+
+    // --- State for Date Picker ---
+    const [purchaseDate, setPurchaseDate] = useState<Date | undefined>(initialDateObject);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // --- Effect to Reset Form and Date Picker on Prop Changes ---
     useEffect(() => {
         clearErrors();
-        reset(initialFormValues);
-    }, [mode, initialData, reset, clearErrors, initialFormValues]); // Dependencies
+        const rawDateString = mode === 'edit' && initialData ? initialData.purchase_date : undefined;
+        const formattedDateString = formatToYyyyMmDd(rawDateString);
+        const dateObject = formattedDateString ? new Date(formattedDateString + 'T00:00:00') : undefined;
+
+        reset({
+            ...initialFormValues,
+            purchase_date: formattedDateString || '',
+        });
+        setPurchaseDate(dateObject);
+        setIsDialogOpen(false);
+    }, [mode, initialData, reset, clearErrors, initialFormValues]);
 
     // --- Process Vehicle Classes ---
-    const validVehicleClass = useMemo<string[]>(() => {
-        if (!Array.isArray(vehicle_class)) {
-            return [];
-        }
-        return vehicle_class.map((vClass) => vClass?.name).filter((name): name is string => typeof name === 'string' && name !== '');
+    const validVehicleClass = useMemo<VehicleClass[]>(() => {
+        return Array.isArray(vehicle_class)
+            ? vehicle_class.filter((vClass): vClass is VehicleClass => vClass && typeof vClass.name === 'string' && vClass.name !== '')
+            : [];
     }, [vehicle_class]);
 
     // --- Process Vehicle Makers ---
@@ -79,104 +124,79 @@ export function SheetForm({
             : [];
     }, [vehicle_makers]);
 
-    const validVehicleStatus = useMemo<string[]>(() => {
-        if (!Array.isArray(vehicle_status)) {
-            return [];
-        }
-        return vehicle_status
-            .map((vStatus) => vStatus?.status_name)
-            .filter((status_name): status_name is string => typeof status_name === 'string' && status_name !== '');
+    // --- Process Vehicle Status ---
+    const validVehicleStatus = useMemo<VehicleStatusType[]>(() => {
+        return Array.isArray(vehicle_status)
+            ? vehicle_status.filter(
+                  (vStatus): vStatus is VehicleStatusType => vStatus && typeof vStatus.status_name === 'string' && vStatus.status_name !== '',
+              )
+            : [];
     }, [vehicle_status]);
 
     // --- Filter Models Based on Selected Make ---
     const availableModels = useMemo<VehicleModelType[]>(() => {
-        // Ensure vehicle_models is an array before proceeding
         const modelsArray = Array.isArray(vehicle_models) ? vehicle_models : [];
-
         if (!data.make || !validVehicleMakers.length || !modelsArray.length) {
-            // console.log("Condition not met (no make, makers, or models), returning []");
             return [];
         }
-
-        // Find the selected maker object by name to get its ID
         const selectedMaker = validVehicleMakers.find((maker) => maker.name === data.make);
-        // console.log("Selected maker object:", selectedMaker);
-
         if (!selectedMaker) {
-            return []; // No matching maker found
+            return [];
         }
-
-        // Filter models whose maker_id matches the selected maker's ID
-        // Use the correct property name 'maker_id' from your data
-        // Also, handle potential type mismatch (string vs number) for IDs
-        const filtered = modelsArray.filter((model): model is VehicleModelType => {
-            if (!model || typeof model.maker_id === 'undefined') return false; // Skip invalid model objects
-            // Compare IDs, converting to string for safety if types might differ
+        return modelsArray.filter((model): model is VehicleModelType => {
+            if (!model || typeof model.maker_id === 'undefined') return false;
             return String(model.maker_id) === String(selectedMaker.id);
         });
-
-        // console.log("Filtered models:", filtered);
-        return filtered;
-    }, [data.make, vehicle_models, validVehicleMakers]); // Depend on validVehicleMakers instead of raw prop
+    }, [data.make, vehicle_models, validVehicleMakers]);
 
     // --- Handle Make Change ---
     const handleMakeChange = (value: string) => {
         setData((prevData) => ({
             ...prevData,
             make: value,
-            model: '', // Reset model when make changes
+            model: '',
         }));
+    };
+
+    // --- Handle Date Select ---
+    const handleDateSelect = (selectedDate: Date | undefined) => {
+        const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
+        setPurchaseDate(selectedDate);
+        setData('purchase_date', formattedDate);
+        setIsDialogOpen(false);
     };
 
     // --- Handle Form Submission ---
     const handleSubmit: FormEventHandler = (e) => {
-        e.preventDefault(); // Prevent default form submission
-        clearErrors(); // Clear previous inline errors
+        e.preventDefault();
+        clearErrors();
 
-        const url = mode === 'create' ? '/vehicles/register' : `/vehicles/${initialData?.id}/update`; // Determine endpoint
+        const url = mode === 'create' ? '/vehicles/register' : `/vehicles/${initialData?.id}/update`;
 
-        // Define the onError callback for both post and put
         const handleError = (formErrors: Record<string, string>) => {
-            console.error(`${mode === 'create' ? 'Create' : 'Edit'} error:`, formErrors); // Log errors for debugging
-            // Check if there are any validation errors returned
+            console.error(`${mode === 'create' ? 'Create' : 'Edit'} error:`, formErrors);
             if (formErrors && Object.keys(formErrors).length > 0) {
-                // Iterate through the error messages and display a toast for each
-                Object.values(formErrors).forEach((errorMessage) => {
+                Object.entries(formErrors).forEach(([field, errorMessage]) => {
                     if (errorMessage) {
-                        // Ensure message exists
-                        toast.error(errorMessage); // Display error using toast
+                        toast.error(`${field}: ${errorMessage}`);
                     }
                 });
             } else {
-                // Generic error if no specific field errors are returned
-                toast.error(`Failed to ${mode === 'create' ? 'create' : 'update'} vehicle. Please try again.`);
+                toast.error(`Failed to ${mode === 'create' ? 'create' : 'update'} vehicle. Please check the details and try again.`);
             }
         };
 
-        // Define the onSuccess callback
         const handleSuccess = () => {
-            toast.success(`Vehicle successfully ${mode === 'create' ? 'created' : 'updated'}!`); // Success toast
-            onSubmitSuccess(); // Call the success callback passed via props (e.g., close sheet)
-            // Optionally reset form here if needed after success, though useEffect handles reset on mode/data change
-            // reset();
+            onSubmitSuccess();
         };
 
-        // Perform POST or PUT request using Inertia
         if (mode === 'create') {
-            post(url, {
-                onSuccess: handleSuccess,
-                onError: handleError, // Use the shared error handler
-            });
+            post(url, { onSuccess: handleSuccess, onError: handleError });
         } else if (initialData?.id) {
-            // Ensure ID exists for PUT request
-            put(url, {
-                onSuccess: handleSuccess,
-                onError: handleError, // Use the shared error handler
-            });
+            put(url, { onSuccess: handleSuccess, onError: handleError });
         } else {
-            // Handle case where edit mode is active but ID is missing
             console.error('Cannot submit edit form: Missing vehicle ID in initialData');
-            toast.error('Cannot update vehicle: Missing ID.'); // Inform user
+            toast.error('Cannot update vehicle: Missing ID.');
         }
     };
 
@@ -190,13 +210,8 @@ export function SheetForm({
             ? "Fill in the details for the new vehicle. Click save when you're done."
             : "Update the vehicle details. Click save when you're done.";
 
-    // --- Constant for "None" User ---
-    const NONE_USER_VALUE = 'none';
-
-    /* console.log('initialData', initialData);
-    console.log('validVehicleStatus', validVehicleStatus);
-    console.log('data', data); */
     return (
+        // Removed unused ref from SheetContent
         <SheetContent className="overflow-y-auto sm:max-w-2xl">
             <SheetHeader>
                 <SheetTitle>{title}</SheetTitle>
@@ -211,16 +226,16 @@ export function SheetForm({
                         </Label>
                         <Input
                             id={`${mode}-vehicle_no`}
-                            value={data.vehicle_no} // Bind directly
+                            value={data.vehicle_no}
                             onChange={(e) => setData('vehicle_no', e.target.value)}
                             autoFocus={mode === 'create'}
-                            autoComplete="vehicle_no"
-                            className={`col-span-3 ${errors.vehicle_no ? 'border-red-500' : ''}`}
+                            autoComplete="off"
+                            className={cn('col-span-3', errors.vehicle_no && 'border-red-500')}
                         />
                         {errors.vehicle_no && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.vehicle_no}</p>}
                     </div>
 
-                    {/* Make (Select Dropdown) */}
+                    {/* Make */}
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor={`${mode}-make`} className="text-right">
                             Make*
@@ -228,13 +243,13 @@ export function SheetForm({
                         <Select
                             required
                             name="make"
-                            value={data.make || ''} // Ensure value is controlled
-                            onValueChange={handleMakeChange} // Use the new handler
+                            value={data.make || ''}
+                            onValueChange={handleMakeChange}
                             disabled={processing || validVehicleMakers.length === 0}
                         >
                             <SelectTrigger
                                 id={`${mode}-make`}
-                                className={`col-span-3 ${errors.make ? 'border-red-500' : ''}`}
+                                className={cn('col-span-3', errors.make && 'border-red-500')}
                                 aria-label="Select maker"
                             >
                                 <SelectValue placeholder="Select maker" />
@@ -243,7 +258,6 @@ export function SheetForm({
                                 <SelectGroup>
                                     <SelectLabel>Vehicle Maker</SelectLabel>
                                     {validVehicleMakers.map((vMaker) => (
-                                        // Use maker name as value, assuming it's unique and matches data.make
                                         <SelectItem key={vMaker.id} value={vMaker.name}>
                                             {vMaker.name.charAt(0).toUpperCase() + vMaker.name.slice(1)}
                                         </SelectItem>
@@ -259,7 +273,7 @@ export function SheetForm({
                         {errors.make && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.make}</p>}
                     </div>
 
-                    {/* Model (Dependent Select Dropdown) */}
+                    {/* Model */}
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor={`${mode}-model`} className="text-right">
                             Model*
@@ -267,14 +281,13 @@ export function SheetForm({
                         <Select
                             required
                             name="model"
-                            value={data.model || ''} // Ensure value is controlled
+                            value={data.model || ''}
                             onValueChange={(value) => setData('model', value)}
-                            // Disable if processing, no make selected, or no models available for the selected make
                             disabled={processing || !data.make || availableModels.length === 0}
                         >
                             <SelectTrigger
                                 id={`${mode}-model`}
-                                className={`col-span-3 ${errors.model ? 'border-red-500' : ''}`}
+                                className={cn('col-span-3', errors.model && 'border-red-500')}
                                 aria-label="Select model"
                             >
                                 <SelectValue placeholder={!data.make ? 'Select make first' : 'Select model'} />
@@ -283,23 +296,15 @@ export function SheetForm({
                                 <SelectGroup>
                                     <SelectLabel>Vehicle Model</SelectLabel>
                                     {availableModels.map((vModel) => (
-                                        // Use model name as value, assuming it's unique for the make
                                         <SelectItem key={vModel.id} value={vModel.name}>
                                             {vModel.name.charAt(0).toUpperCase() + vModel.name.slice(1)}
                                         </SelectItem>
                                     ))}
-                                    {/* Show disabled item if make is selected but no models exist */}
                                     {data.make && availableModels.length === 0 && (
                                         <SelectItem value="no-models" disabled>
                                             No models found for {data.make}
                                         </SelectItem>
                                     )}
-                                    {/* Optional: Handle case where make isn't selected yet (covered by disabled state) */}
-                                    {/* {!data.make && (
-                                        <SelectItem value="select-make" disabled>
-                                            Select make first
-                                        </SelectItem>
-                                    )} */}
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
@@ -308,15 +313,15 @@ export function SheetForm({
 
                     {/* Year */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="year" className="text-right">
+                        <Label htmlFor={`${mode}-year`} className="text-right">
                             Year*
                         </Label>
                         <Input
-                            id="year"
+                            id={`${mode}-year`}
                             type="number"
-                            value={data.year} // Bind directly (Input handles number/string)
+                            value={data.year}
                             onChange={(e) => setData('year', e.target.value)}
-                            className={`col-span-3 ${errors.year ? 'border-red-500' : ''}`}
+                            className={cn('col-span-3', errors.year && 'border-red-500')}
                             min="1900"
                             max={new Date().getFullYear() + 1}
                         />
@@ -325,77 +330,77 @@ export function SheetForm({
 
                     {/* License Plate */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="license_plate" className="text-right">
+                        <Label htmlFor={`${mode}-license_plate`} className="text-right">
                             License Plate*
                         </Label>
                         <Input
-                            id="license_plate"
-                            value={data.license_plate} // Bind directly
+                            id={`${mode}-license_plate`}
+                            value={data.license_plate}
                             onChange={(e) => setData('license_plate', e.target.value)}
-                            className={`col-span-3 ${errors.license_plate ? 'border-red-500' : ''}`}
+                            className={cn('col-span-3', errors.license_plate && 'border-red-500')}
                         />
                         {errors.license_plate && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.license_plate}</p>}
                     </div>
 
                     {/* VIN */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="vin" className="text-right">
+                        <Label htmlFor={`${mode}-vin`} className="text-right">
                             VIN
                         </Label>
                         <Input
-                            id="vin"
-                            value={data.vin} // Bind directly
-                            onChange={(e) => setData('vin', e.target.value || '')} // Keep setting empty string if cleared
-                            className={`col-span-3 ${errors.vin ? 'border-red-500' : ''}`}
+                            id={`${mode}-vin`}
+                            value={data.vin ?? ''}
+                            onChange={(e) => setData('vin', e.target.value)}
+                            className={cn('col-span-3', errors.vin && 'border-red-500')}
                         />
                         {errors.vin && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.vin}</p>}
                     </div>
 
                     {/* Color */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="color" className="text-right">
+                        <Label htmlFor={`${mode}-color`} className="text-right">
                             Color
                         </Label>
                         <Input
-                            id="color"
-                            value={data.color} // Bind directly
-                            onChange={(e) => setData('color', e.target.value || '')}
-                            className={`col-span-3 ${errors.color ? 'border-red-500' : ''}`}
+                            id={`${mode}-color`}
+                            value={data.color ?? ''}
+                            onChange={(e) => setData('color', e.target.value)}
+                            className={cn('col-span-3', errors.color && 'border-red-500')}
                         />
                         {errors.color && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.color}</p>}
                     </div>
 
                     {/* Engine CC */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="engine_cc" className="text-right">
+                        <Label htmlFor={`${mode}-engine_cc`} className="text-right">
                             Engine CC
                         </Label>
                         <Input
-                            id="engine_cc"
+                            id={`${mode}-engine_cc`}
                             type="number"
-                            value={data.engine_cc} // Bind directly
+                            value={data.engine_cc ?? ''}
                             onChange={(e) => setData('engine_cc', e.target.value)}
-                            className={`col-span-3 ${errors.engine_cc ? 'border-red-500' : ''}`}
+                            className={cn('col-span-3', errors.engine_cc && 'border-red-500')}
                             min="0"
                         />
                         {errors.engine_cc && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.engine_cc}</p>}
                     </div>
 
-                    {/* Vehicle Class (Select Dropdown) */}
+                    {/* Vehicle Class */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="vehicle_class" className="text-right">
-                            Class
+                        <Label htmlFor={`${mode}-vehicle_class_id`} className="text-right">
+                            Class* {data.vehicle_class_id}
                         </Label>
                         <Select
                             required
-                            name="vehicle_class"
-                            value={data.vehicle_class} // Handle null for Select value
-                            onValueChange={(value) => setData('vehicle_class', value)} // Set null if placeholder selected
+                            name="vehicle_class_id"
+                            value={data.vehicle_class_id || ''}
+                            onValueChange={(value) => setData('vehicle_class_id', value)}
                             disabled={processing || validVehicleClass.length === 0}
                         >
                             <SelectTrigger
-                                id={`${mode}-vehicle_class`}
-                                className={`col-span-3 ${errors.vehicle_class ? 'border-red-500' : ''}`}
+                                id={`${mode}-vehicle_class_id`}
+                                className={cn('col-span-3', errors.vehicle_class_id && 'border-red-500')}
                                 aria-label="Select Class"
                             >
                                 <SelectValue placeholder="Select class" />
@@ -404,8 +409,8 @@ export function SheetForm({
                                 <SelectGroup>
                                     <SelectLabel>Vehicle Class</SelectLabel>
                                     {validVehicleClass.map((vClass) => (
-                                        <SelectItem key={vClass} value={vClass}>
-                                            {vClass.charAt(0).toUpperCase() + vClass.slice(1)}
+                                        <SelectItem key={vClass.id} value={vClass.name}>
+                                            {vClass.name.charAt(0).toUpperCase() + vClass.name.slice(1)}
                                         </SelectItem>
                                     ))}
                                     {validVehicleClass.length === 0 && (
@@ -416,21 +421,21 @@ export function SheetForm({
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                        {errors.vehicle_class && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.vehicle_class}</p>}
+                        {errors.vehicle_class_id && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.vehicle_class_id}</p>}
                     </div>
 
                     {/* Compensation Price */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="compensation_price" className="text-right">
+                        <Label htmlFor={`${mode}-compensation_price`} className="text-right">
                             Compensation Price
                         </Label>
                         <Input
-                            id="compensation_price"
+                            id={`${mode}-compensation_price`}
                             type="number"
                             step="0.01"
-                            value={data.compensation_price} // Bind directly
+                            value={data.compensation_price ?? ''}
                             onChange={(e) => setData('compensation_price', e.target.value)}
-                            className={`col-span-3 ${errors.compensation_price ? 'border-red-500' : ''}`}
+                            className={cn('col-span-3', errors.compensation_price && 'border-red-500')}
                             min="0"
                         />
                         {errors.compensation_price && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.compensation_price}</p>}
@@ -438,33 +443,62 @@ export function SheetForm({
 
                     {/* Purchase Price */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="purchase_price" className="text-right">
+                        <Label htmlFor={`${mode}-purchase_price`} className="text-right">
                             Purchase Price
                         </Label>
                         <Input
-                            id="purchase_price"
+                            id={`${mode}-purchase_price`}
                             type="number"
                             step="0.01"
-                            value={data.purchase_price} // Bind directly
+                            value={data.purchase_price ?? ''}
                             onChange={(e) => setData('purchase_price', e.target.value)}
-                            className={`col-span-3 ${errors.purchase_price ? 'border-red-500' : ''}`}
+                            className={cn('col-span-3', errors.purchase_price && 'border-red-500')}
                             min="0"
                         />
                         {errors.purchase_price && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.purchase_price}</p>}
                     </div>
 
+                    {/* Purchase Date */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor={`${mode}-purchase_date_trigger`} className="text-right">
+                            Purchase Date
+                        </Label>
+                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button
+                                    id={`${mode}-purchase_date_trigger`}
+                                    variant={'outline'}
+                                    type="button"
+                                    className={cn(
+                                        'col-span-3 w-full justify-start text-left font-normal',
+                                        !purchaseDate && 'text-muted-foreground',
+                                        errors.purchase_date ? 'border-red-500' : '',
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {purchaseDate ? format(purchaseDate, 'PPP') : <span>Pick a date</span>}
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="w-auto">
+                                <Calendar mode="single" selected={purchaseDate} onSelect={handleDateSelect} initialFocus />
+                            </DialogContent>
+                        </Dialog>
+                        {errors.purchase_date && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.purchase_date}</p>}
+                    </div>
+
                     {/* Daily Rental Price */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="daily_rental_price" className="text-right">
+                        <Label htmlFor={`${mode}-daily_rental_price`} className="text-right">
                             Daily Price*
                         </Label>
                         <Input
-                            id="daily_rental_price"
+                            id={`${mode}-daily_rental_price`}
                             type="number"
                             step="0.01"
-                            value={data.daily_rental_price} // Bind directly
+                            required
+                            value={data.daily_rental_price}
                             onChange={(e) => setData('daily_rental_price', e.target.value)}
-                            className={`col-span-3 ${errors.daily_rental_price ? 'border-red-500' : ''}`}
+                            className={cn('col-span-3', errors.daily_rental_price && 'border-red-500')}
                             min="0"
                         />
                         {errors.daily_rental_price && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.daily_rental_price}</p>}
@@ -472,16 +506,17 @@ export function SheetForm({
 
                     {/* Weekly Rental Price */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="weekly_rental_price" className="text-right">
+                        <Label htmlFor={`${mode}-weekly_rental_price`} className="text-right">
                             Weekly Price*
                         </Label>
                         <Input
-                            id="weekly_rental_price"
+                            id={`${mode}-weekly_rental_price`}
                             type="number"
                             step="0.01"
-                            value={data.weekly_rental_price} // Bind directly
+                            required
+                            value={data.weekly_rental_price}
                             onChange={(e) => setData('weekly_rental_price', e.target.value)}
-                            className={`col-span-3 ${errors.weekly_rental_price ? 'border-red-500' : ''}`}
+                            className={cn('col-span-3', errors.weekly_rental_price && 'border-red-500')}
                             min="0"
                         />
                         {errors.weekly_rental_price && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.weekly_rental_price}</p>}
@@ -489,22 +524,23 @@ export function SheetForm({
 
                     {/* Monthly Rental Price */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="monthly_rental_price" className="text-right">
+                        <Label htmlFor={`${mode}-monthly_rental_price`} className="text-right">
                             Monthly Price*
                         </Label>
                         <Input
-                            id="monthly_rental_price"
+                            id={`${mode}-monthly_rental_price`}
                             type="number"
                             step="0.01"
-                            value={data.monthly_rental_price} // Bind directly
+                            required
+                            value={data.monthly_rental_price}
                             onChange={(e) => setData('monthly_rental_price', e.target.value)}
-                            className={`col-span-3 ${errors.monthly_rental_price ? 'border-red-500' : ''}`}
+                            className={cn('col-span-3', errors.monthly_rental_price && 'border-red-500')}
                             min="0"
                         />
                         {errors.monthly_rental_price && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.monthly_rental_price}</p>}
                     </div>
 
-                    {/* Current Status (Select Dropdown - Updated) */}
+                    {/* Current Status */}
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor={`${mode}-current_status_id`} className="text-right">
                             Status*
@@ -512,15 +548,13 @@ export function SheetForm({
                         <Select
                             required
                             name="current_status_id"
-                            // Value should be the string representation of the status ID
-                            value={data.current_status_id}
-                            // Ensure the value passed to setData matches the type expected (string ID)
+                            value={data.current_status_id || ''}
                             onValueChange={(value) => setData('current_status_id', value)}
                             disabled={processing || validVehicleStatus.length === 0}
                         >
                             <SelectTrigger
                                 id={`${mode}-current_status_id`}
-                                className={`col-span-3 ${errors.current_status_id ? 'border-red-500' : ''}`}
+                                className={cn('col-span-3', errors.current_status_id && 'border-red-500')}
                                 aria-label="Select status"
                             >
                                 <SelectValue placeholder="Select status" />
@@ -528,14 +562,11 @@ export function SheetForm({
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectLabel>Vehicle Status</SelectLabel>
-                                    {/* Map over the processed status array */}
                                     {validVehicleStatus.map((vStatus) => (
-                                        // Use status ID as value (converted to string) and status name as display text
-                                        <SelectItem key={vStatus} value={vStatus}>
-                                            {vStatus.charAt(0).toUpperCase() + vStatus.slice(1)}
+                                        <SelectItem key={vStatus.id} value={vStatus.status_name}>
+                                            {vStatus.status_name.charAt(0).toUpperCase() + vStatus.status_name.slice(1)}
                                         </SelectItem>
                                     ))}
-                                    {/* Show disabled item if no statuses are available */}
                                     {validVehicleStatus.length === 0 && (
                                         <SelectItem value="no-status" disabled>
                                             No statuses available
@@ -549,17 +580,17 @@ export function SheetForm({
 
                     {/* Current Location */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="current_location" className="text-right">
+                        <Label htmlFor={`${mode}-current_location`} className="text-right">
                             Location
                         </Label>
                         <Input
-                            id="current_location"
-                            value={data.current_location} // Bind directly
-                            onChange={(e) => setData('current_location', e.target.value || '')}
-                            className={`col-span-3 ${errors.current_location ? 'border-red-500' : ''}`}
-                            list="location-suggestions"
+                            id={`${mode}-current_location`}
+                            value={data.current_location ?? ''}
+                            onChange={(e) => setData('current_location', e.target.value)}
+                            className={cn('col-span-3', errors.current_location && 'border-red-500')}
+                            list={`${mode}-location-suggestions`}
                         />
-                        <datalist id="location-suggestions">
+                        <datalist id={`${mode}-location-suggestions`}>
                             {suggestedLocations.map((loc) => (
                                 <option key={loc} value={loc} />
                             ))}
@@ -572,14 +603,14 @@ export function SheetForm({
 
                     {/* Notes */}
                     <div className="grid grid-cols-4 items-start gap-4">
-                        <Label htmlFor="notes" className="pt-2 text-right">
+                        <Label htmlFor={`${mode}-notes`} className="pt-2 text-right">
                             Notes
                         </Label>
                         <Textarea
-                            id="notes"
-                            value={data.notes} // Bind directly
-                            onChange={(e) => setData('notes', e.target.value || '')}
-                            className={`col-span-3 ${errors.notes ? 'border-red-500' : ''}`}
+                            id={`${mode}-notes`}
+                            value={data.notes ?? ''}
+                            onChange={(e) => setData('notes', e.target.value)}
+                            className={cn('col-span-3', errors.notes && 'border-red-500')}
                             rows={3}
                         />
                         {errors.notes && <p className="col-span-3 col-start-2 text-sm text-red-500">{errors.notes}</p>}

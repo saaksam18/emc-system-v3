@@ -7,13 +7,11 @@ import {
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
-    getPaginationRowModel,
     getSortedRowModel,
     SortingState,
     useReactTable,
     VisibilityState,
 } from '@tanstack/react-table';
-import { TableMeta } from './columns'; // Assuming TableMeta is defined here
 
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -27,25 +25,26 @@ import React from 'react';
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
-    meta?: TableMeta;
 }
 
-export function DataTable<TData, TValue>({ columns, data, meta }: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
     // --- State hooks remain the same ---
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
         year: false,
+        color: false,
+        license_plate: false,
         daily_rental_price: false,
         weekly_rental_price: false,
         monthly_rental_price: false,
         vin: false,
-        color: false,
         engine_cc: false,
         compensation_price: false,
         purchase_price: false,
-        current_location: false,
         notes: false,
+        purchase_date: false,
+        user_name: false,
         created_at: false,
     });
 
@@ -53,21 +52,22 @@ export function DataTable<TData, TValue>({ columns, data, meta }: DataTableProps
     const table = useReactTable({
         data,
         columns,
-        meta, // Pass meta down
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         onSortingChange: setSorting,
         getSortedRowModel: getSortedRowModel(),
         onColumnFiltersChange: setColumnFilters,
-        onGlobalFilterChange: meta?.onGlobalFilterChange, // Use handler from parent
         onColumnVisibilityChange: setColumnVisibility,
         getFilteredRowModel: getFilteredRowModel(),
         state: {
             sorting,
             columnFilters,
             columnVisibility,
-            globalFilter: meta?.globalFilter, // Use filter value from parent
         },
+        /* initialState: {
+            pagination: {
+              pageSize: 20,
+            },
+          }, */
     });
 
     return (
@@ -114,7 +114,7 @@ export function DataTable<TData, TValue>({ columns, data, meta }: DataTableProps
                     )}
                 </TableBody>
             </Table>
-            <div className="flex items-center justify-between space-x-2 py-4">
+            <div className="flex items-center justify-between space-x-2 p-4">
                 {/* Column Visibility Dropdown */}
                 <div>
                     <DropdownMenu>
@@ -142,15 +142,6 @@ export function DataTable<TData, TValue>({ columns, data, meta }: DataTableProps
                                 })}
                         </DropdownMenuContent>
                     </DropdownMenu>
-                </div>
-                {/* Pagination Buttons */}
-                <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-                        Previous
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-                        Next
-                    </Button>
                 </div>
             </div>
         </div>

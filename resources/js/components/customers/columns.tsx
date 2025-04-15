@@ -21,263 +21,112 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Vehicle } from '@/types';
+import { Customers } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown, MoreHorizontal, Trash2, UserRoundPen } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-// Assume InputError component exists
 const InputError = ({ message }: { message?: string }) => (message ? <p className="mt-1 text-sm text-red-600 dark:text-red-400">{message}</p> : null);
 
-// --- Define Table Meta Interface (Updated) ---
-// Added globalFilter and onGlobalFilterChange for parent-controlled filtering
 export interface TableMeta {
-    editVehicle: (vehicle: Vehicle) => void;
-    globalFilter?: string; // State for the global filter value
-    onGlobalFilterChange?: (value: string) => void; // Function to update the filter value
+    editCustomer: (customers: Customers) => void;
+    globalFilter?: string;
+    onGlobalFilterChange?: (value: string) => void;
 }
 
 // --- Column Definitions (No functional changes needed here for moving the filter) ---
-export const columns: ColumnDef<Vehicle, TableMeta>[] = [
+export const columns: ColumnDef<Customers, TableMeta>[] = [
     {
-        accessorKey: 'vehicle_no',
+        accessorKey: 'id',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                No. <ArrowUpDown className="ml-2 h-4 w-4" />
+                ID <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => <div>{row.getValue('vehicle_no')}</div>,
+        cell: ({ row }) => <div>{row.getValue('id')}</div>,
     },
     {
-        accessorKey: 'make',
+        accessorKey: 'name',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Maker <ArrowUpDown className="ml-2 h-4 w-4" />
+                Name <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => <div>{row.getValue('make')}</div>,
-    },
-    // Model Column
-    {
-        accessorKey: 'model',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Model <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => <div>{row.getValue('model')}</div>,
+        cell: ({ row }) => row.original.name || 'N/A',
     },
     // Year Column
     {
-        accessorKey: 'year',
+        accessorKey: 'date_of_birth',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Year <ArrowUpDown className="ml-2 h-4 w-4" />
+                Date of Birth <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => <div>{row.getValue('year')}</div>,
+        cell: ({ row }) => row.original.date_of_birth || 'N/A',
     },
     // License Plate Column
     {
-        accessorKey: 'license_plate',
+        accessorKey: 'email',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                License Plate <ArrowUpDown className="ml-2 h-4 w-4" />
+                Email <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => <div>{row.getValue('license_plate')}</div>,
+        cell: ({ row }) => row.original.email || 'N/A',
     },
     // current_status_id Column
     {
-        accessorKey: 'current_status_id',
+        accessorKey: 'phone_number',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Status <ArrowUpDown className="ml-2 h-4 w-4" />
+                Contact <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => <div className="capitalize">{row.getValue('current_status_id')}</div>,
-        // Example filter function (can be expanded)
-        filterFn: (row, id, value) => {
-            return value.includes(row.getValue(id));
-        },
+        cell: ({ row }) => row.original.phone_number || 'N/A',
     },
     // Daily Rental Price Column
     {
-        accessorKey: 'daily_rental_price',
+        accessorKey: 'address',
         header: ({ column }) => {
             return (
                 <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Daily Price
+                    Address
                     <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
             );
         },
-        cell: ({ row }) => {
-            const amount = parseFloat(row.getValue('daily_rental_price'));
-            // Format as currency (basic example)
-            const formatted = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD', // Adjust currency as needed
-            }).format(amount);
-            return <div className="text-center font-medium">{formatted}</div>;
-        },
-    },
-    // Daily Rental Price Column
-    {
-        accessorKey: 'weekly_rental_price',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Weekly Price
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            );
-        },
-        cell: ({ row }) => {
-            const amount = parseFloat(row.getValue('weekly_rental_price'));
-            // Format as currency (basic example)
-            const formatted = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD', // Adjust currency as needed
-            }).format(amount);
-            return <div className="text-center font-medium">{formatted}</div>;
-        },
-    },
-    // Daily Rental Price Column
-    {
-        accessorKey: 'monthly_rental_price',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Monthly Price
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            );
-        },
-        cell: ({ row }) => {
-            const amount = parseFloat(row.getValue('monthly_rental_price'));
-            // Format as currency (basic example)
-            const formatted = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD', // Adjust currency as needed
-            }).format(amount);
-            return <div className="text-center font-medium">{formatted}</div>;
-        },
+        cell: ({ row }) => row.original.address || 'N/A',
     },
     {
-        accessorKey: 'vin',
+        accessorKey: 'passport_number',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                VIN <ArrowUpDown className="ml-2 h-4 w-4" />
+                Passport Number <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => row.original.vin || 'N/A',
+        cell: ({ row }) => row.original.passport_number || 'N/A',
     },
     {
-        accessorKey: 'color',
+        accessorKey: 'passport_expiry',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Color <ArrowUpDown className="ml-2 h-4 w-4" />
+                Passport Expiry <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => row.original.color || 'N/A',
-    },
-    {
-        accessorKey: 'engine_cc',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Engine Size <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.engine_cc || 'N/A',
-    },
-    {
-        accessorKey: 'vehicle_class_id',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Class <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.vehicle_class_id || 'N/A',
-    },
-    {
-        accessorKey: 'compensation_price',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Compensation Price
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            );
-        },
-        cell: ({ row }) => {
-            const amount = parseFloat(row.getValue('compensation_price'));
-            // Format as currency (basic example)
-            const formatted = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD', // Adjust currency as needed
-            }).format(amount);
-            return <div className="text-center font-medium">{formatted}</div>;
-        },
-    },
-    {
-        accessorKey: 'purchase_price',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Purchase Price
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            );
-        },
-        cell: ({ row }) => {
-            const amount = parseFloat(row.getValue('purchase_price'));
-            // Format as currency (basic example)
-            const formatted = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD', // Adjust currency as needed
-            }).format(amount);
-            return <div className="text-center font-medium">{formatted}</div>;
-        },
-    },
-    {
-        accessorKey: 'current_location',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Current Location <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.current_location || 'N/A',
-    },
-    {
-        accessorKey: 'purchase_date',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Purchase Date <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => {
-            try {
-                const createdAt = new Date(row.original.purchase_date);
-                return createdAt.toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                });
-            } catch (e) {
-                return row.original.created_at; // Fallback
-            }
-        },
+        cell: ({ row }) => row.original.passport_expiry || 'N/A',
     },
     {
         accessorKey: 'notes',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Notes <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                    Note
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            );
+        },
         cell: ({ row }) => row.original.notes || 'N/A',
     },
     {
@@ -299,7 +148,7 @@ export const columns: ColumnDef<Vehicle, TableMeta>[] = [
                     hour12: true,
                 });
             } catch (e) {
-                return row.original.created_at; // Fallback
+                return row.original.created_at;
             }
         },
     },
@@ -336,13 +185,13 @@ export const columns: ColumnDef<Vehicle, TableMeta>[] = [
             const handleDeleteSubmit = (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
                 clearDeleteErrors('password');
-                const toastId = toast.loading(`Deleting vehicle no. ${vehicle.vehicle_no}...`);
+                const toastId = toast.loading(`Deleting customer name ${vehicle.vehicle_no}...`);
                 destroy(route('vehicles.destroy', vehicle.id), {
                     preserveScroll: true,
                     preserveState: true,
                     data: { password: deleteData.password },
                     onSuccess: () => {
-                        toast.success(`Vehicle no.  ${vehicle.vehicle_no} deleted successfully.`, { id: toastId });
+                        toast.success(`Customer name  ${vehicle.vehicle_no} deleted successfully.`, { id: toastId });
                         closeDeleteModal();
                     },
                     onError: (errorResponse) => {
@@ -351,7 +200,7 @@ export const columns: ColumnDef<Vehicle, TableMeta>[] = [
                             toast.error(errorResponse.password, { id: toastId });
                             passwordInput.current?.focus();
                         } else {
-                            toast.error(`Failed to vehicle no.  ${vehicle.vehicle_no}. Please try again.`, { id: toastId });
+                            toast.error(`Failed to customer name  ${vehicle.vehicle_no}. Please try again.`, { id: toastId });
                         }
                     },
                 });
@@ -374,8 +223,8 @@ export const columns: ColumnDef<Vehicle, TableMeta>[] = [
                 setIsDropdownOpen(false);
                 // --- Access meta via table.options.meta ---
                 const meta = table.options.meta as TableMeta | undefined;
-                if (meta?.editVehicle) {
-                    meta.editVehicle(vehicle);
+                if (meta?.editCustomer) {
+                    meta.editCustomer(vehicle);
                 } else {
                     console.warn('editVehicle function not found in table meta options.');
                     toast.error('Could not initiate edit action.');

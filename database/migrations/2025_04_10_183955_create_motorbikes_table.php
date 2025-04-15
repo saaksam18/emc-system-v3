@@ -26,6 +26,7 @@ return new class extends Migration
             $table->unsignedBigInteger('vehicle_class_id');
             $table->integer('compensation_price');
             $table->integer('purchase_price');
+            $table->datetime('purchase_date');
 
             // Rental & Status Information
             $table->decimal('daily_rental_price', 8, 2)->unsigned(); // Cost to rent the motorbike per week (e.g., 15.00). Required, unsigned decimal.

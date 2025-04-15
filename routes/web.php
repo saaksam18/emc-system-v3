@@ -6,6 +6,7 @@ use Inertia\Inertia;
 // Controller
 use App\Http\Controllers\Internals\UserController;
 use App\Http\Controllers\Internals\VehiclesController;
+use App\Http\Controllers\Internals\CustomersController;
 
 Route::redirect('home', '/');
 Route::get('/', function () {
@@ -40,6 +41,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/vehicles/register', [VehiclesController::class, 'store'])->name('vehicles.register.store');
         Route::put('/vehicles/{vehicle}/update', [VehiclesController::class, 'update'])->name('vehicles.update');
         Route::delete('/vehicles/{vehicle}', [VehiclesController::class, 'destroy'])->name('vehicles.destroy');
+
+    // Customers
+    Route::get('/customers', [CustomersController::class, 'index'])->name('customers.index');
 });
 
 require __DIR__.'/settings.php';

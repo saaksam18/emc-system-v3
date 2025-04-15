@@ -52,13 +52,13 @@ export function VehicleStockChart({ chartData, vehicleClasses }: VehicleStockCha
         );
     }
     return (
-        <CardContent>
+        <CardContent className="w-full px-0">
             {/* Pass the dynamically generated config */}
             <ChartContainer config={chartConfig} className="text-primary h-[250px] w-full">
                 <ComposedChart
                     accessibilityLayer
                     data={chartData} // Use the prop data
-                    margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                    margin={{ top: 2, right: 20, bottom: 2, left: 0 }}
                 >
                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
                     <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
