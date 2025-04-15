@@ -35,18 +35,11 @@ export function DataTable<TData, TValue>({ columns, data, meta }: DataTableProps
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
-        year: false,
-        daily_rental_price: false,
-        weekly_rental_price: false,
-        monthly_rental_price: false,
-        vin: false,
-        color: false,
-        engine_cc: false,
-        compensation_price: false,
-        purchase_price: false,
-        current_location: false,
+        date_of_birth: false,
+        email: false,
+        address: false,
+        passport_expiry: false,
         notes: false,
-        created_at: false,
     });
 
     // --- useReactTable hook remains the same ---

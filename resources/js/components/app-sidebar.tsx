@@ -35,7 +35,7 @@ const mainNavGroups: NavGroup[] = [
                 icon: Bike,
             },
             {
-                title: 'Customer Management', // Renamed for clarity in this group
+                title: 'Customers', // Renamed for clarity in this group
                 href: '/customers',
                 icon: User2,
             },

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'; // Import useMemo
+import { useEffect, useMemo, useRef, useState } from 'react'; // Import useMemo
+import { useReactToPrint } from 'react-to-print';
 
 // --- Inertia Imports ---
 import { Deferred, Head, router, usePage } from '@inertiajs/react';
@@ -19,22 +20,34 @@ import { toast } from 'sonner'; // For notifications
 import { columns } from '@/components/vehicles/columns'; // Adjust path
 import { DataTable } from '@/components/vehicles/data-table'; // Adjust path
 import { SheetForm } from '@/components/vehicles/sheet-form'; // Adjust path
+import { columns as stockCBCColumn } from '@/components/vehicles/stock-cbc-columns';
+import { DataTable as StockCBCDataTable } from '@/components/vehicles/stock-cbc-data-table';
+import { columns as stockCBMColumn } from '@/components/vehicles/stock-cbm-columns';
 import { VehicleStockChart } from '@/components/vehicles/stock-chart'; // Adjust path
+import { columns as stockColumn } from '@/components/vehicles/stock-columns';
+import { DataTable as StockDataTable } from '@/components/vehicles/stock-data-table'; // Adjust path
 
 // --- Type Imports ---
 // Make sure these types are correctly defined in '@/types'
-import { type BreadcrumbItem, User, Vehicle, VehicleClass, VehicleMakerType, VehicleModelType, VehicleStatusType } from '@/types';
+import {
+    type BreadcrumbItem,
+    User,
+    Vehicle,
+    VehicleClass,
+    VehicleCountByClass,
+    VehicleCountByModel,
+    VehicleMakerType,
+    VehicleModelType,
+    VehicleStatusType,
+} from '@/types';
 
 // --- Utility Imports ---
 import { cn } from '@/lib/utils'; // For Tailwind class merging
 // Import necessary date-fns functions
+import { Label } from '@/components/ui/label';
 import { endOfDay, format, isValid, isWithinInterval, parse, startOfDay, startOfMonth } from 'date-fns';
-import { Bike, CalendarIcon } from 'lucide-react'; // Icons
+import { Bike, CalendarIcon, Printer } from 'lucide-react'; // Icons
 import { DateRange } from 'react-day-picker'; // Type for date range picker
-
-// ========================================================================
-// Constants and Type Definitions (Module Level)
-// ========================================================================
 
 // --- Breadcrumbs ---
 const breadcrumbs: BreadcrumbItem[] = [
@@ -42,18 +55,6 @@ const breadcrumbs: BreadcrumbItem[] = [
         title: 'Vehicle',
         href: '/vehicles', // Ensure this route exists and is correct
     },
-];
-
-// --- Data Source (Dropdown for Chart/Filters) ---
-// Note: This is currently unused but kept from previous version.
-type DataSourceValue = 'inStock' | 'onRent'; // Example values, adjust if needed
-interface DataSourceOption {
-    value: DataSourceValue;
-    label: string;
-}
-const dataSourceOptions: DataSourceOption[] = [
-    { value: 'inStock', label: 'In Stock' }, // Example option
-    { value: 'onRent', label: 'On Rent' }, // Example option
 ];
 
 // --- Page Props Interface ---
@@ -64,6 +65,9 @@ interface PageProps {
     vehicle_makers: VehicleMakerType[];
     vehicle_status: VehicleStatusType[];
     vehicles?: Vehicle[];
+    vehicles_stock?: Vehicle[];
+    vehicles_stock_cbc?: VehicleCountByClass[];
+    vehicles_stock_cbm?: VehicleCountByModel[];
     chartData?: any[]; // Define a more specific type if possible { date: string; totalMoto: number; [key: string]: any }
     vehicleClasses?: { id: number | string; name: string; color: string }[];
     auth: { user: User };
@@ -75,9 +79,6 @@ interface PageProps {
     [key: string]: any;
 }
 
-// ========================================================================
-// React Component: VehiclesIndex
-// ========================================================================
 export default function VehiclesIndex() {
     // --- Hooks ---
     const { props: pageProps } = usePage<PageProps>();
@@ -89,7 +90,6 @@ export default function VehiclesIndex() {
     const [date, setDate] = useState<DateRange | undefined>(undefined); // Default to undefined initially
 
     // Other UI State
-    const [selectedDataSource, setSelectedDataSource] = useState<DataSourceOption>(dataSourceOptions[0]); // Currently unused
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [sheetMode, setSheetMode] = useState<'create' | 'edit'>('create');
     const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
@@ -178,15 +178,6 @@ export default function VehiclesIndex() {
         });
     }, [pageProps.chartData, date]); // Re-run memo only if data or date range changes
 
-    // --- Event Handlers ---
-
-    // Note: This handler is currently not connected to any active UI element
-    const handleDataSourceChange = (value: string) => {
-        const selectedOption = dataSourceOptions.find((option) => option.value === value);
-        setSelectedDataSource(selectedOption || dataSourceOptions[0]);
-        console.log('Selected Data Source:', value);
-    };
-
     const handleCreateClick = () => {
         setSheetMode('create');
         setEditingVehicle(null);
@@ -201,16 +192,17 @@ export default function VehiclesIndex() {
 
     const handleFormSubmitSuccess = () => {
         setIsSheetOpen(false);
-        toast.success(sheetMode === 'create' ? 'Vehicle created successfully!' : 'Vehicle updated successfully!');
-        // Consider reloading vehicles if needed: router.reload({ only: ['vehicles'] });
+        router.reload({ only: ['vehicles'] });
     };
 
-    // --- Render Logic ---
+    const contentRef = useRef<HTMLDivElement>(null);
+    const reactToPrintFn = useReactToPrint({ contentRef });
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Vehicle Dashboard" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 md:gap-8 md:p-6 lg:p-8">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Top Section: Chart Card */}
                 <Card>
                     <CardHeader>
@@ -271,6 +263,7 @@ export default function VehiclesIndex() {
                 </Card>
 
                 {/* Bottom Section: Data Table Card */}
+
                 <Card>
                     <CardHeader>
                         <CardTitle>Vehicles Management</CardTitle>
@@ -279,12 +272,18 @@ export default function VehiclesIndex() {
                     <CardContent>
                         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <Input
-                                    placeholder="Filter vehicles (by any field)..."
-                                    value={globalFilter}
-                                    onChange={(event) => setGlobalFilter(event.target.value)}
-                                    className="w-full sm:max-w-xs"
-                                />
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="Filter vehicles (by any field)..."
+                                        value={globalFilter}
+                                        onChange={(event) => setGlobalFilter(event.target.value)}
+                                        className="w-full sm:max-w-xs"
+                                    />
+
+                                    <Button variant="outline" onClick={() => reactToPrintFn()} className="w-full sm:w-auto">
+                                        <Printer className="mr-2 h-4 w-4" /> Print Stock
+                                    </Button>
+                                </div>
                                 <SheetTrigger asChild>
                                     <Button variant="default" onClick={handleCreateClick} className="w-full sm:w-auto">
                                         <Bike className="mr-2 h-4 w-4" /> Create Vehicle
@@ -296,7 +295,6 @@ export default function VehiclesIndex() {
                                 mode={sheetMode}
                                 initialData={editingVehicle}
                                 onSubmitSuccess={handleFormSubmitSuccess}
-                                users={pageProps.users || []}
                                 vehicle_class={pageProps.vehicle_class || []}
                                 vehicle_status={pageProps.vehicle_status || []}
                                 vehicle_models={pageProps.vehicle_models || []}
@@ -304,7 +302,7 @@ export default function VehiclesIndex() {
                             />
                         </Sheet>
 
-                        <Deferred data="users" fallback={<div className="p-4 text-center">Loading vehicles data...</div>}>
+                        <Deferred data="vehicles" fallback={<div className="p-4 text-center">Loading vehicles data...</div>}>
                             <DataTable
                                 columns={columns}
                                 data={pageProps.vehicles || []}
@@ -318,6 +316,38 @@ export default function VehiclesIndex() {
                         </Deferred>
                     </CardContent>
                 </Card>
+                <div className="hidden">
+                    <Card ref={contentRef}>
+                        <CardHeader>
+                            <CardTitle> Stock Check List</CardTitle>
+                            <CardDescription>Check the checkbox and make sure the vehicles location.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <div className="border-sidebar-border/70 dark:border-sidebar-border relative col-span-2 overflow-hidden rounded-xl border">
+                                    <Deferred data="vehicles_stock" fallback={<div className="p-4 text-center">Loading vehicles data...</div>}>
+                                        <StockDataTable columns={stockColumn} data={pageProps.vehicles_stock || []} />
+                                    </Deferred>
+                                </div>
+                                <div className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border p-4">
+                                    <Label>Count by Classes</Label>
+                                    <ul className="list-disc space-y-1 pl-5">
+                                        <Deferred
+                                            data="vehicles_stock_cbc"
+                                            fallback={<div className="p-4 text-center">Loading vehicles data...</div>}
+                                        >
+                                            <StockCBCDataTable columns={stockCBCColumn} data={pageProps.vehicles_stock_cbc || []} />
+                                        </Deferred>
+                                    </ul>
+                                    <Label>Count by Models</Label>
+                                    <Deferred data="vehicles_stock_cbm" fallback={<div className="p-4 text-center">Loading vehicles data...</div>}>
+                                        <StockCBCDataTable columns={stockCBMColumn} data={pageProps.vehicles_stock_cbm || []} />
+                                    </Deferred>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </AppLayout>
     );

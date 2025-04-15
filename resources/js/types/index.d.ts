@@ -86,6 +86,18 @@ export interface Vehicle {
     [key: string]: any;
 }
 
+export interface VehicleCountByClass {
+    class_id: number;
+    rentable_count: number;
+    class_name: string;
+}
+
+export interface VehicleCountByModel {
+    model_id: number;
+    rentable_count: number;
+    model_name: string;
+}
+
 export interface VehicleClass {
     id: number;
     name: string;
@@ -118,4 +130,26 @@ export interface VehicleStatusType {
     user_name: string;
     created_at?: string;
     updated_at?: string;
+}
+
+// Customers
+export interface Customers {
+    id: number;
+    first_name: string;
+    last_name: string;
+    date_of_birth: string;
+    email: string;
+    phone_number: string;
+    address_line_1: string;
+    address_line_2: string;
+    city: string;
+    state_province: string;
+    country: string;
+    passport_number: string;
+    passport_expiry: string;
+    notes: string | null | undefined;
+    user_id: string;
+    created_at?: any;
+    updated_at?: any;
+    [key: string]: any;
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes; // Import SoftDeletes
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Casts\Attribute; // Required for the full name accessor
 
@@ -119,11 +120,8 @@ class Customers extends Model
     {
         return $query->where('email', $email);
     }
-
     public function creator(): BelongsTo
     {
-        // Links the 'created_by_user_id' column in the 'roles' table
-        // back to the 'id' column in the 'users' table.
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }
