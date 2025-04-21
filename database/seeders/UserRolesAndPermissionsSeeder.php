@@ -34,6 +34,11 @@ class UserRolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'customer-create']);
         Permission::create(['name' => 'customer-edit']);
         Permission::create(['name' => 'customer-delete']);
+        // Contact/Type
+        Permission::create(['name' => 'contact-type-list']);
+        Permission::create(['name' => 'contact-type-create']);
+        Permission::create(['name' => 'contact-type-edit']);
+        Permission::create(['name' => 'contact-type-delete']);
 
         // Report
         Permission::create(['name' => 'report-list']);

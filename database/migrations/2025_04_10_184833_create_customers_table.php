@@ -19,22 +19,15 @@ return new class extends Migration
             $table->string('first_name'); // Customer's first name. Required.
             $table->string('last_name');  // Customer's last name. Required.
             $table->date('date_of_birth')->nullable(); // Customer's date of birth. Optional.
-
-            // Contact Information
-            $table->string('email')->unique(); // Customer's email address. Required and must be unique.
-            $table->string('phone_number')->unique()->nullable(); // Customer's phone number. Optional, but unique if provided.
+            $table->string('gender')->nullable(); // Customer's gender. Optional.
+            $table->string('nationality')->nullable(); // Customer's nationality. Optional.
 
             // Address Information (all optional)
             $table->string('address_line_1')->nullable();
             $table->string('address_line_2')->nullable();
+            $table->string('commune')->nullable();
+            $table->string('district')->nullable();
             $table->string('city')->nullable();
-            $table->string('state_province')->nullable();
-            $table->string('country')->nullable();
-
-            // Identification (Optional - consider data privacy regulations)
-            $table->string('passport_number')->unique()->nullable(); // Passport number. Optional, unique if provided.
-            $table->date('passport_expiry')->nullable(); // Passport expiry date. Optional.
-
 
             // Additional Information
             $table->text('notes')->nullable(); // Any relevant notes about the customer. Optional.
@@ -48,9 +41,7 @@ return new class extends Migration
             $table->softDeletes(); // Adds `deleted_at` for soft deletion. Recommended for customer data.
 
             // Indexes for faster searching
-            $table->index('last_name');
-            $table->index('phone_number');
-            // `email`, `driver_license_number`, `passport_number` are already indexed by the `unique()` constraint.
+            $table->index('user_id');
         });
     }
 

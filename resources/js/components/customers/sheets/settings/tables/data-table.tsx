@@ -34,14 +34,7 @@ export function DataTable<TData, TValue>({ columns, data, meta }: DataTableProps
     // --- State hooks remain the same ---
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
-        date_of_birth: false,
-        address: false,
-        passport_number: false,
-        passport_expiry: false,
-        notes: false,
-        created_at: false,
-    });
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
 
     // --- useReactTable hook remains the same ---
     const table = useReactTable({

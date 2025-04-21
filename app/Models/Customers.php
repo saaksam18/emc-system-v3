@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Casts\Attribute; // Required for the full name accessor
 
 use App\Models\Rentals;
+use App\Models\Contacts;
+use App\Models\Deposits;
 use App\Models\User;
 
 class Customers extends Model
@@ -33,16 +35,14 @@ class Customers extends Model
         'first_name',
         'last_name',
         'date_of_birth',
-        'email',
-        'phone_number',
+        'gender',
+        'nationality',
         'address_line_1',
         'address_line_2',
+        'commune',
+        'district',
         'city',
-        'state_province',
-        'postal_code',
-        'country',
-        'passport_number',
-        'passport_expiry',
+        'user_id',
         'notes',
     ];
 
@@ -53,7 +53,6 @@ class Customers extends Model
      */
     protected $casts = [
         'date_of_birth' => 'date', // Cast to Date object (or null)
-        'passport_expiry' => 'date', // Cast to Date object (or null)
         'deleted_at' => 'datetime', // Required for SoftDeletes functionality
     ];
 
@@ -102,6 +101,12 @@ class Customers extends Model
             get: fn ($value, $attributes) => trim(($attributes['first_name'] ?? '') . ' ' . ($attributes['last_name'] ?? '')),
         );
     }
+    protected function fullAddress(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, $attributes) => trim(($attributes['address_line_1'] ?? 'N/A') . ' ' . ($attributes['address_line_2'] ?? '') . ' ' . ($attributes['commune'] ?? '') . ' ' . ($attributes['district'] ?? '') . ' ' . ($attributes['city'] ?? '')),
+        );
+    }
 
     //--------------------------------------------------------------------------
     // Scopes (Optional Query Constraints)
@@ -124,4 +129,48 @@ class Customers extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
+
+    /**
+         * Get all contacts associated with the customer (including inactive ones).
+         *
+         * @return \Illuminate\Database\Eloquent\Relations\HasMany
+         */
+        public function contacts(): HasMany
+        {
+            return $this->hasMany(Contacts::class, 'customer_id');
+        }
+
+        /**
+         * Get only the active contacts associated with the customer.
+         *
+         * @return \Illuminate\Database\Eloquent\Relations\HasMany
+         */
+        public function activeContacts(): HasMany
+        {
+            return $this->hasMany(Contacts::class, 'customer_id')->where('is_active', true);
+            // Alternatively, using the scope defined in Contact model:
+            // return $this->hasMany(Contact::class)->active();
+        }
+
+    /**
+         * Get all contacts associated with the customer (including inactive ones).
+         *
+         * @return \Illuminate\Database\Eloquent\Relations\HasMany
+         */
+        public function deposits(): HasMany
+        {
+            return $this->hasMany(Deposits::class, 'customer_id');
+        }
+
+        /**
+         * Get only the active contacts associated with the customer.
+         *
+         * @return \Illuminate\Database\Eloquent\Relations\HasMany
+         */
+        public function activeDeposits(): HasMany
+        {
+            return $this->hasMany(Deposits::class, 'customer_id')->where('is_active', true);
+            // Alternatively, using the scope defined in Contact model:
+            // return $this->hasMany(Contact::class)->active();
+        }
 }

@@ -468,7 +468,6 @@ export function SheetForm({
                                 <Button
                                     id={`${mode}-purchase_date_trigger`}
                                     variant={'outline'}
-                                    type="button"
                                     className={cn(
                                         'col-span-3 w-full justify-start text-left font-normal',
                                         !purchaseDate && 'text-muted-foreground',

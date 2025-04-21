@@ -21,26 +21,25 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Customers } from '@/types';
+import { ContactTypes } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { ArrowUpDown, Info, MoreHorizontal, Trash2, UserRoundPen } from 'lucide-react';
+import { ArrowUpDown, Info, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Badge } from '../ui/badge';
 
 const InputError = ({ message }: { message?: string }) => (message ? <p className="mt-1 text-sm text-red-600 dark:text-red-400">{message}</p> : null);
 
 export interface TableMeta {
-    createCustomer: (customer: Customers) => void; // Function to show details sheet
-    editCustomer: (customer: Customers) => void; // Renamed for clarity
-    showDetails: (customer: Customers) => void; // Function to show details sheet
+    createContactTypes: (contactTypes: ContactTypes) => void; // Function to show details sheet
+    editContactTypes: (contactTypes: ContactTypes) => void; // Renamed for clarity
+    showDetails: (contactTypes: ContactTypes) => void; // Function to show details sheet
     globalFilter?: string;
     onGlobalFilterChange?: (value: string) => void;
 }
 
 // --- Column Definitions (No functional changes needed here for moving the filter) ---
-export const columns: ColumnDef<Customers, TableMeta>[] = [
+export const columns: ColumnDef<ContactTypes, TableMeta>[] = [
     {
         accessorKey: 'id',
         header: ({ column }) => (
@@ -51,108 +50,25 @@ export const columns: ColumnDef<Customers, TableMeta>[] = [
         cell: ({ row }) => <div>{row.getValue('id')}</div>,
     },
     {
-        accessorKey: 'full_name',
+        accessorKey: 'name',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
                 Name <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => row.original.full_name || 'N/A',
+        cell: ({ row }) => row.original.name || 'N/A',
     },
     {
-        accessorKey: 'gender',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Gender <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.gender || 'N/A',
-    },
-    {
-        accessorKey: 'nationality',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Nationality <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.nationality || 'N/A',
-    },
-    // Year Column
-    {
-        accessorKey: 'date_of_birth',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Date of Birth <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.date_of_birth || 'N/A',
-    },
-    {
-        // Combine Phone and Contact Count
-        id: 'primary_contact_and_count', // Give a unique ID
-        accessorKey: 'primary_contact_type', // Still allows sorting by primary_contact_type if needed
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Primary Contact <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => {
-            const type = row.original.primary_contact_type;
-            const contact = row.original.primary_contact;
-            const count = row.original.active_contacts_count;
-            return (
-                // Use flex to position phone and badge
-                <div className="flex items-center space-x-2">
-                    <span className="font-bold">{type}:</span>
-                    <span>{contact}</span>
-                    {/* Conditionally render badge only if count > 0 */}
-                    {count > 0 && <Badge variant="secondary">Total: {count}</Badge>}
-                </div>
-            );
-        },
-    },
-    // Daily Rental Price Column
-    {
-        accessorKey: 'address',
+        accessorKey: 'description',
         header: ({ column }) => {
             return (
                 <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Address
+                    Description
                     <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
             );
         },
-        cell: ({ row }) => row.original.address || 'N/A',
-    },
-    {
-        accessorKey: 'passport_number',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Passport Number <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.passport_number || 'N/A',
-    },
-    {
-        accessorKey: 'passport_expiry',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Passport Expiry <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.passport_expiry || 'N/A',
-    },
-    {
-        accessorKey: 'notes',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Note
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            );
-        },
-        cell: ({ row }) => row.original.notes || 'N/A',
+        cell: ({ row }) => row.original.description || 'N/A',
     },
     {
         accessorKey: 'created_at',
@@ -194,7 +110,7 @@ export const columns: ColumnDef<Customers, TableMeta>[] = [
         enableGlobalFilter: false,
         cell: ({ row, table }) => {
             // Get the specific customer data for this row
-            const customer = row.original;
+            const contactTypes = row.original;
             // State for the delete confirmation dialog
             const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
             // State to control the dropdown menu visibility
@@ -218,16 +134,16 @@ export const columns: ColumnDef<Customers, TableMeta>[] = [
                 e.preventDefault();
                 clearDeleteErrors('password'); // Clear previous password errors
                 // Show loading toast
-                const toastId = toast.loading(`Deleting customer ${customer.full_name || customer.id}...`);
+                const toastId = toast.loading(`Deleting contact type ${contactTypes.name || contactTypes.id}...`);
                 // Call the destroy route (ensure 'customers.destroy' matches your route name)
-                destroy(route('customers.destroy', customer.id), {
+                destroy(route('customers.settings.contact-type.destroy', contactTypes.id), {
                     // Use customer.id
                     preserveScroll: true, // Keep scroll position
                     preserveState: true, // Keep component state if possible
                     data: { password: deleteData.password }, // Send password
                     onSuccess: () => {
                         // Show success toast on successful deletion
-                        toast.success(`Customer ${customer.full_name || customer.id} deleted successfully.`, { id: toastId });
+                        toast.success(`Contact type ${contactTypes.name || contactTypes.id} deleted successfully.`, { id: toastId });
                         closeDeleteModal(); // Close the dialog
                     },
                     onError: (errorResponse) => {
@@ -239,7 +155,7 @@ export const columns: ColumnDef<Customers, TableMeta>[] = [
                             passwordInput.current?.focus(); // Focus the password input
                         } else {
                             // Generic error
-                            toast.error(`Failed to delete customer ${customer.full_name || customer.id}. Please try again.`, { id: toastId });
+                            toast.error(`Failed to delete contact type ${contactTypes.name || contactTypes.id}. Please try again.`, { id: toastId });
                         }
                     },
                 });
@@ -267,7 +183,7 @@ export const columns: ColumnDef<Customers, TableMeta>[] = [
                 // Access meta from table options, ensuring it exists and has showDetails
                 const meta = table.options.meta as TableMeta | undefined;
                 if (meta?.showDetails) {
-                    meta.showDetails(customer); // Call the function passed from parent
+                    meta.showDetails(contactTypes); // Call the function passed from parent
                 } else {
                     // Warn if the function is missing
                     console.warn('showDetails function not found in table meta options.');
@@ -280,8 +196,8 @@ export const columns: ColumnDef<Customers, TableMeta>[] = [
                 setIsDropdownOpen(false); // Close the dropdown
                 // Access meta from table options, ensuring it exists and has editCustomer
                 const meta = table.options.meta as TableMeta | undefined;
-                if (meta?.editCustomer) {
-                    meta.editCustomer(customer); // Call the function passed from parent
+                if (meta?.editContactTypes) {
+                    meta.editContactTypes(contactTypes); // Call the function passed from parent
                 } else {
                     // Warn if the function is missing
                     console.warn('editCustomer function not found in table meta options.');
@@ -311,7 +227,7 @@ export const columns: ColumnDef<Customers, TableMeta>[] = [
                             </DropdownMenuItem>
                             {/* Edit Action Item */}
                             <DropdownMenuItem onSelect={handleEditClick} className="cursor-pointer">
-                                <UserRoundPen className="mr-2 h-4 w-4" />
+                                <Pencil className="mr-2 h-4 w-4" />
                                 <span>Edit</span>
                             </DropdownMenuItem>
                             {/* Delete Action Item (Triggers Dialog) */}
@@ -335,7 +251,7 @@ export const columns: ColumnDef<Customers, TableMeta>[] = [
                     {/* Delete Dialog Content */}
                     <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
-                            <DialogTitle>Delete Customer: {customer.full_name || customer.id}</DialogTitle>
+                            <DialogTitle>Delete Contact Type: {contactTypes.full_name || contactTypes.id}</DialogTitle>
                             <DialogDescription>
                                 Are you sure? This action cannot be undone. Enter your administrator password to confirm.
                             </DialogDescription>
@@ -343,9 +259,9 @@ export const columns: ColumnDef<Customers, TableMeta>[] = [
                         {/* Delete Form */}
                         <form onSubmit={handleDeleteSubmit} className="space-y-4 py-4">
                             <div className="grid gap-2">
-                                <Label htmlFor={`delete-password-${customer.id}`}>Administrator Password</Label>
+                                <Label htmlFor={`delete-password-${contactTypes.id}`}>Administrator Password</Label>
                                 <Input
-                                    id={`delete-password-${customer.id}`} // Unique ID for accessibility
+                                    id={`delete-password-${contactTypes.id}`} // Unique ID for accessibility
                                     type="password"
                                     name="password"
                                     ref={passwordInput}
@@ -366,7 +282,7 @@ export const columns: ColumnDef<Customers, TableMeta>[] = [
                                     </Button>
                                 </DialogClose>
                                 <Button type="submit" variant="destructive" disabled={processingDelete || !deleteData.password}>
-                                    {processingDelete ? 'Deleting...' : 'Delete Customer'}
+                                    {processingDelete ? 'Deleting...' : 'Delete Contact Type'}
                                 </Button>
                             </DialogFooter>
                         </form>

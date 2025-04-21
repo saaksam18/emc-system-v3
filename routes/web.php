@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\Internals\UserController;
 use App\Http\Controllers\Internals\VehiclesController;
 use App\Http\Controllers\Internals\CustomersController;
+use App\Http\Controllers\Internals\Contacts\TypesController;
 
 Route::redirect('home', '/');
 Route::get('/', function () {
@@ -44,6 +45,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Customers
     Route::get('/customers', [CustomersController::class, 'index'])->name('customers.index');
+        Route::post('/customers/register', [CustomersController::class, 'store'])->name('customers.register.store');
+        Route::put('/customers/{customer}/update', [CustomersController::class, 'update'])->name('customers.update');
+        Route::delete('/customers/{customer}', [CustomersController::class, 'destroy'])->name('customers.destroy');
+        // Settings
+        Route::get('/customers/settings', [TypesController::class, 'index'])->name('customers.settings.contact-type.index');
+        Route::post('/customers/settings/contact-type/register', [TypesController::class, 'store'])->name('customers.settings.contact-type.register.store');
+        Route::put('/customers/settings/contact-type/{contactType}/update', [TypesController::class, 'update'])->name('customers.settings.contact-type.update');
+        Route::delete('/customers/settings/contact-type/{contactType}', [TypesController::class, 'destroy'])->name('customers.settings.contact-type.destroy');
 });
 
 require __DIR__.'/settings.php';
