@@ -18,7 +18,7 @@ return new class extends Migration
             ->constrained('customers') // Links to 'id' on 'customers' table
             ->cascadeOnDelete(); // If a customer is deleted, their contacts are also deleted
 
-            $table->string('contact_type'); // e.g., 'Email', 'Phone', 'WhatsApp', 'LINE'
+            $table->unsignedBigInteger('contact_type_id');
             $table->string('contact_value'); // The actual contact detail (e.g., email address, phone number)
             $table->boolean('is_primary')->default(false); // Is this the primary contact of its type?
             $table->string('description')->nullable(); // Optional description (e.g., 'Work Phone', 'Personal Email')
@@ -35,6 +35,7 @@ return new class extends Migration
             $table->timestamps(); // Adds created_at and updated_at columns
 
             $table->index('customer_id');
+            $table->index('contact_type_id');
             $table->index('user_id');
         });
     }

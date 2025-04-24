@@ -32,6 +32,7 @@ class VehicleClasses extends Model
      */
     protected $fillable = [
         'name',
+        'description',
         'user_id',
     ];
 

@@ -117,7 +117,6 @@ function UserIndex({ users, roles }: Props) {
             <Head title="User Administration" />
             <SubLayout sidebarNavItems={sidebarNavItems} title="Administrator" description="Manage system administration">
                 <div className="mb-4 flex items-center justify-between space-y-2">
-                    {' '}
                     {/* Adjusted layout for button */}
                     <div>
                         <HeadingSmall title="User Table Data" description="See all the registered users here." />

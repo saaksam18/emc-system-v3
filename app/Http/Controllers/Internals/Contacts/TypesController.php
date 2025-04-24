@@ -14,6 +14,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
@@ -114,7 +115,7 @@ class TypesController extends Controller
 
             // 1. Define validation rules
             $rules = [
-                'name' => 'required|string|max:255|unique:types,name', // Added unique rule here
+                'name' => 'required|string|max:255', // Added unique rule here
                 'description' => 'nullable|string|max:1000',
             ];
 
@@ -123,7 +124,6 @@ class TypesController extends Controller
                 'name.required' => 'Please enter a name for the contact type.',
                 'name.string' => 'The name must be a valid string.',
                 'name.max' => 'The name cannot be longer than :max characters.',
-                'name.unique' => 'This contact type name already exists.', // Added unique message
                 'description.string' => 'The description must be a valid string.',
                 'description.max' => 'The description cannot be longer than :max characters.',
             ];
@@ -260,59 +260,51 @@ class TypesController extends Controller
      * @param  \App\Models\Contacts\Types  $contactType The ContactType instance via route model binding.
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function destroy(Types $contactType): RedirectResponse
+    public function destroy(Request $request, Types $contactType): RedirectResponse
     {
-        $userID = Auth::id(); // Get user ID before potential logout/session issue
-        $customerIdentifier = $contactType->name ?? $contactType->id; // Use for logging
+        $userId = Auth::id();
+        $vehicleIdentifier = $contactType->name ?? $contactType->id;
+        Log::info("User [ID: {$userId}] attempting to delete Vehicle [ID: {$contactType->id}, Identifier: {$vehicleIdentifier}].");
 
-        Log::info("User [ID: {$userID}] attempting to soft delete (deactivate) Contact Type [ID: {$contactType->id}, Name: {$customerIdentifier}].");
-
-        // Check authentication explicitly just in case middleware fails or isn't applied
-        if (!$userID) {
-            Log::warning("Attempted to delete Contact Type [ID: {$contactType->id}] without authenticated user.");
-            // Redirecting to login might be better than just back() if auth is required
+        if (!$userId) { // Extra check
+            Log::warning("Attempted to delete contact type [ID: {$contactType->id}] without authenticated user.");
             return redirect()->route('login')->with('error', 'You must be logged in to perform this action.');
-        }
+       }
 
-        try {
-            // 1. Authorize: Ensure the authenticated user has permission.
-            $this->authorize('contact-type-delete', $contactType);
-            Log::info("User [ID: {$userID}] authorized to delete Contact Type [ID: {$contactType->id}].");
+       try {
+            $this->authorize('contact-type-delete'); // Assumes 'user-delete' policy or gate exists
 
-            // 2. Perform the soft delete (deactivation)
-            Log::info("Attempting database update to deactivate Contact Type [ID: {$contactType->id}] by User [ID: {$userID}].");
-            // It's better practice to have an 'updated_by' or similar field
-            // if you need to track who deactivated it. Overwriting user_id is usually wrong.
-            // Consider adding an 'updated_by' field to your migration and model.
-            // $contactType->updated_by = $userID; // Example if field exists
-            $contactType->end_date = now();
-            $contactType->is_active = false;
-            $saved = $contactType->save();
-
-            if ($saved) {
-                 Log::info("Successfully deactivated Contact Type [ID: {$contactType->id}] by User [ID: {$userID}].");
-                 // Redirect to index on success
-                 return redirect()->route('customers.settings.contact-type.index') // Use named route if available
-                        ->with('success', "Contact Type '{$customerIdentifier}' deactivated successfully.");
-            } else {
-                 Log::error("Failed to save deactivation changes for Contact Type [ID: {$contactType->id}] by User [ID: {$userID}]. Save() returned false.");
-                 return redirect()->back()
-                        ->with('error', 'Could not save the changes to deactivate the contact type. Please try again.');
+            $validator = Validator::make($request->all(), [
+                'password' => 'required|string', // Ensure password is required
+            ]);
+        
+            if ($validator->fails()) {
+                Log::warning("Attempted to delete contact type {$contactType->id} without authenticated user.");
+                return back()->withErrors($validator)->withInput();
             }
-
+        
+            $admin = Auth::user();
+        
+            if (!$admin) {
+                Log::warning("Attempted to delete contact type {$contactType->id} without permissions.");
+                return back()->withErrors(['password' => 'Authentication error. Please log in again.']);
+            }
+        
+            if (!Hash::check($request->input('password'), $admin->password)) {
+                return back()->withErrors(['password' => 'The provided administrator password does not match.'])->withInput();
+            }
+            $contactType->is_active = false;
+            $contactType->end_date = now();
+            $contactType->user_id = Auth::id();
+            $contactType->save();
+            return redirect()->back();
 
         } catch (AuthorizationException $e) {
-            Log::warning("Authorization failed for User [ID: {$userID}] deleting Contact Type [ID: {$contactType->id}]: " . $e->getMessage());
-            // Provide a user-friendly error message
-            return redirect()->back()->with('error', 'You do not have permission to delete this contact type.');
-
+            Log::warning("Authorization failed for User [ID: {$userId}] deleting contact type [ID: {$contactType->id}]: " . $e->getMessage());
+            return redirect()->back()->with('error', 'You do not have permission to delete this vehicle class.');
         } catch (Exception $e) {
-            // Catch any other errors during the process
-            Log::error("Error deactivating Contact Type [ID: {$contactType->id}] by User [ID: {$userID}]: " . $e->getMessage(), [
-                'exception' => $e
-            ]);
-            return redirect()->back()
-                   ->with('error', 'Could not deactivate the contact type due to a server error. Please try again later.');
+            Log::error("Error deleting contact type [ID: {$contactType->id}] by User [ID: {$userId}]: " . $e->getMessage(), ['exception' => $e]);
+            return redirect()->back()->with('error', 'Could not delete the vehicle class due to a server error. Please try again later.');
         }
     }
 }

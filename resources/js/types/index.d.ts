@@ -99,11 +99,13 @@ export interface VehicleCountByModel {
 }
 
 export interface VehicleClass {
-    id: number;
+    id?: number;
     name: string;
-    user_name: string;
-    created_at?: string;
-    updated_at?: string;
+    description: string;
+    user_name?: string;
+    created_at?: any;
+    updated_at?: any;
+    [key: string]: any;
 }
 
 export interface VehicleMakerType {
@@ -115,6 +117,7 @@ export interface VehicleMakerType {
 }
 
 export interface VehicleModelType {
+    maker_id: any;
     id: number;
     name: string;
     maker_name: string;
@@ -126,10 +129,10 @@ export interface VehicleStatusType {
     id: number;
     status_name: string;
     description: string;
-    is_rentable: string;
-    user_name: string;
-    created_at?: string;
-    updated_at?: string;
+    is_rentable: boolean;
+    user_name?: string;
+    created_at?: any;
+    updated_at?: any;
 }
 
 // Customers

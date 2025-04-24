@@ -4,11 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder; // Import Builder for scopes
+use Illuminate\Database\Eloquent\Builder;
 
 // Modle
 use App\Models\User;
+use App\Models\Contacts\Types;
 use App\Models\Customers;
 class Contacts extends Model
 {
@@ -21,7 +23,7 @@ class Contacts extends Model
          */
         protected $fillable = [
             'customer_id', // Important: Ensure foreign key is fillable if creating contacts via mass assignment
-            'contact_type',
+            'contact_type_id',
             'contact_value',
             'is_primary',
             'description',
@@ -82,5 +84,9 @@ class Contacts extends Model
         public function scopeInactive(Builder $query): Builder
         {
             return $query->where('is_active', false);
+        }
+        public function contactType(): BelongsTo
+        {
+            return $this->belongsTo(Types::class);
         }
 }

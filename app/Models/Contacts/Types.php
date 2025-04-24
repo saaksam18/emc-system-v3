@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 // Modle
 use App\Models\User;
+use App\Models\Contacts;
 
 class Types extends Model
 {
@@ -50,6 +51,10 @@ class Types extends Model
         public function creator(): BelongsTo
         {
             return $this->belongsTo(User::class, 'user_id', 'id');
+        }
+        public function contacts(): BelongsTo
+        {
+            return $this->belongsTo(Contacts::class, 'id');
         }
 
         /**

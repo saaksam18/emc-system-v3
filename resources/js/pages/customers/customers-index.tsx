@@ -209,7 +209,7 @@ export default function CustomersIndex({ customers, contactTypes }: PageProps) {
                                     <SheetDescription>Update the customer's details.</SheetDescription>
                                 </SheetHeader>
                                 {/* Placeholder for your Customer Edit Form Component */}
-                                <Edit selectedCustomer={selectedCustomer} onSubmitSuccess={handleFormSubmitSuccess} />
+                                <Edit selectedCustomer={selectedCustomer} contactTypes={contactTypes} onSubmitSuccess={handleFormSubmitSuccess} />
                             </>
                         )}
                     </SheetContent>

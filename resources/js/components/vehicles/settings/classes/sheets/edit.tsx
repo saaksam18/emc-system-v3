@@ -1,29 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-// Removed unused imports: Command, Dialog, Select, countries, Check, ChevronsUpDown, Trash2
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { ContactTypes } from '@/types'; // Assuming ContactTypes type is defined
+import { ContactTypes, VehicleClass } from '@/types'; // Assuming ContactTypes type includes an 'id' field
 import { useForm } from '@inertiajs/react';
-// Removed unused import: Lucide icons that were previously removed
-import React, { ChangeEvent, FormEventHandler } from 'react'; // Added ChangeEvent
-import { toast } from 'sonner';
-// Removed unused import: useState, useEffect, Customers, Contacts
+import React, { ChangeEvent, FormEventHandler, useEffect } from 'react'; // Added useEffect
 
-// --- Type Definitions ---
-// Use the imported ContactTypes directly if it matches the required structure
-type InitialFormValues = ContactTypes;
-
-// --- Define Initial Empty Form Values ---
-// Initialize activeContacts with one primary contact object
-const initialFormValues: InitialFormValues = {
-    name: '',
-    description: '',
-};
-
-// --- Reusable Form Section Component ---
+// --- Reusable Form Section Component --- (Assuming this is defined elsewhere or kept)
 interface FormSectionProps {
     title: string;
     description: string;
@@ -39,7 +24,7 @@ const FormSection: React.FC<FormSectionProps> = ({ title, description, children 
     </Card>
 );
 
-// --- Reusable Form Field Component ---
+// --- Reusable Form Field Component --- (Assuming this is defined elsewhere or kept)
 interface FormFieldProps {
     label: string;
     htmlFor: string;
@@ -54,7 +39,7 @@ const FormField: React.FC<FormFieldProps> = ({ label, htmlFor, error, required, 
     <div className={cn('grid grid-cols-1 items-start gap-4 md:grid-cols-4 md:items-center', className)}>
         <Label htmlFor={htmlFor} className={cn('text-left md:text-right', labelClassName)}>
             {label}
-            {required && <span className="text-red-500">*</span>} {/* Added asterisk styling */}
+            {required && <span className="text-red-500">*</span>}
         </Label>
         <div className={cn('col-span-1 md:col-span-3', contentClassName)}>
             {children}
@@ -63,47 +48,63 @@ const FormField: React.FC<FormFieldProps> = ({ label, htmlFor, error, required, 
     </div>
 );
 
-// --- Main Create Component ---
-interface CreateProps {
-    onSubmitSuccess: () => void; // Callback on successful creation
+// --- Main Edit Component ---
+interface EditProps {
+    vehicleClass: VehicleClass | null; // Pass the existing contact type data
+    onSubmitSuccess: () => void; // Callback on successful update
 }
 
-export function Create({ onSubmitSuccess }: CreateProps) {
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm<InitialFormValues>(initialFormValues);
+// Use Omit to exclude 'id' if it's not directly editable but needed for the URL
+// Or adjust InitialFormValues if your form structure differs slightly from ContactTypes
+type InitialFormValues = Omit<ContactTypes, 'id' | 'created_at' | 'updated_at'>; // Example: Exclude non-editable fields
+
+export function Edit({ vehicleClass, onSubmitSuccess }: EditProps) {
+    // Initialize useForm with the existing contactType data
+    // Note: The initial values passed here are used by the reset() function later.
+    const { data, setData, put, processing, errors, reset, clearErrors } = useForm<InitialFormValues>({
+        name: vehicleClass?.name || '',
+        description: vehicleClass?.description || '',
+    });
+
+    // Effect to update the form data if the contactType prop changes
+    useEffect(() => {
+        // Use setData for each field instead of reset({..})
+        setData('name', vehicleClass?.name || '');
+        setData('description', vehicleClass?.description || '');
+        clearErrors(); // Clear errors when the item changes
+        // Add setData to the dependency array as it's used in the effect
+    }, [vehicleClass, setData, clearErrors]);
 
     /**
      * Handles input changes and updates the form state.
      * @param e - The change event from the input element.
      */
     const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        // Added TextAreaElement for description if needed
         const { name, value } = e.target;
-        setData(name as keyof InitialFormValues, value); // Use keyof for type safety
+        setData(name as keyof InitialFormValues, value);
     };
 
     /**
-     * Handles the form submission.
-     * Prevents default submission, sends data using Inertia's post method,
+     * Handles the form submission for updating.
+     * Prevents default submission, sends data using Inertia's put method,
      * and handles success/error scenarios.
      * @param e - The form event.
      */
     const handleSubmit: FormEventHandler<HTMLFormElement> = (e) => {
         e.preventDefault(); // Prevent default browser form submission
-        // Assuming '/contact-types' is the endpoint to create a new contact type.
-        // Adjust the URL as needed.
 
-        post('/customers/settings/contact-type/register', {
+        // Construct the URL for the update request using the contactType's ID
+        const updateUrl = `/vehicles/settings/classes/${vehicleClass?.id}/update`;
+        put(updateUrl, {
             onSuccess: () => {
-                reset(); // Reset form fields
-                clearErrors(); // Clear any existing errors
-                onSubmitSuccess(); // Call the success callback provided by the parent
+                clearErrors();
+                onSubmitSuccess(); // Call the success callback
             },
             onError: (errorResponse) => {
-                console.error('Error creating contact type:', errorResponse);
-                toast.error('Failed to create contact type. Please check errors.');
-                // Errors are automatically populated into the `errors` object by useForm
+                console.error('Error updating vehicle class:', errorResponse);
             },
-            preserveState: true, // Keep component state on validation errors
+            preserveState: true,
+            preserveScroll: true,
         });
     };
 
@@ -112,31 +113,29 @@ export function Create({ onSubmitSuccess }: CreateProps) {
             {/* --- Form Submission Handler --- */}
             <form onSubmit={handleSubmit} className="space-y-4">
                 {/* --- Basic Information --- */}
-                {/* Updated title and description to be more generic or specific to ContactTypes */}
-                <FormSection title="Basic Information" description="Enter the basic infomations.">
+                <FormSection title="Edit Contact Type" description="Update the details for the contact type.">
                     {/* --- Name Field --- */}
                     <FormField label="Name" htmlFor="name" error={errors.name} required>
                         <Input
                             id="name"
-                            name="name" // Corrected name attribute
-                            value={data.name}
+                            name="name"
+                            value={data.name} // Bind to form state
                             onChange={handleInputChange}
                             autoFocus
                             autoComplete="off"
-                            className={cn(errors.name && 'border-red-500')} // Use errors object
+                            className={cn(errors.name && 'border-red-500')}
                         />
                     </FormField>
 
                     {/* --- Description Field --- */}
                     <FormField label="Description" htmlFor="description" error={errors.description}>
-                        {/* Consider using Textarea for longer descriptions */}
                         <Input
                             id="description"
-                            name="description" // Corrected name attribute
-                            value={data.description}
+                            name="description"
+                            value={data.description} // Bind to form state
                             onChange={handleInputChange}
                             autoComplete="off"
-                            className={cn(errors.description && 'border-red-500')} // Use errors object
+                            className={cn(errors.description && 'border-red-500')}
                         />
                     </FormField>
                 </FormSection>
@@ -154,17 +153,15 @@ export function Create({ onSubmitSuccess }: CreateProps) {
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => {
-                                reset();
-                                clearErrors();
-                            }}
+                            // Reset to the initial values the form was loaded with (from useForm init)
+                            onClick={() => reset()}
                             disabled={processing}
                         >
-                            Reset
+                            Reset Changes
                         </Button>
                         {/* --- Submit Button --- */}
                         <Button type="submit" disabled={processing} className="w-full sm:w-auto">
-                            {processing ? 'Creating...' : 'Create'} {/* Updated button text */}
+                            {processing ? 'Saving...' : 'Save Changes'} {/* Updated button text */}
                         </Button>
                     </div>
                 </SheetFooter>
@@ -174,4 +171,4 @@ export function Create({ onSubmitSuccess }: CreateProps) {
 }
 
 // Export the component if it's the main export of the file
-export default Create;
+export default Edit;

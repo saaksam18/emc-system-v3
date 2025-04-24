@@ -5,20 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { ContactTypes } from '@/types'; // Assuming ContactTypes type is defined
+import { VehicleClass } from '@/types'; // Assuming ContactTypes type is defined
 import { useForm } from '@inertiajs/react';
-// Removed unused import: Lucide icons that were previously removed
 import React, { ChangeEvent, FormEventHandler } from 'react'; // Added ChangeEvent
 import { toast } from 'sonner';
-// Removed unused import: useState, useEffect, Customers, Contacts
-
-// --- Type Definitions ---
-// Use the imported ContactTypes directly if it matches the required structure
-type InitialFormValues = ContactTypes;
 
 // --- Define Initial Empty Form Values ---
 // Initialize activeContacts with one primary contact object
-const initialFormValues: InitialFormValues = {
+const initialFormValues: VehicleClass = {
     name: '',
     description: '',
 };
@@ -69,7 +63,7 @@ interface CreateProps {
 }
 
 export function Create({ onSubmitSuccess }: CreateProps) {
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm<InitialFormValues>(initialFormValues);
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm<VehicleClass>(initialFormValues);
 
     /**
      * Handles input changes and updates the form state.
@@ -78,7 +72,7 @@ export function Create({ onSubmitSuccess }: CreateProps) {
     const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         // Added TextAreaElement for description if needed
         const { name, value } = e.target;
-        setData(name as keyof InitialFormValues, value); // Use keyof for type safety
+        setData(name as keyof VehicleClass, value); // Use keyof for type safety
     };
 
     /**
@@ -92,15 +86,15 @@ export function Create({ onSubmitSuccess }: CreateProps) {
         // Assuming '/contact-types' is the endpoint to create a new contact type.
         // Adjust the URL as needed.
 
-        post('/customers/settings/contact-type/register', {
+        post('/vehicles/settings/classes/store', {
             onSuccess: () => {
                 reset(); // Reset form fields
                 clearErrors(); // Clear any existing errors
                 onSubmitSuccess(); // Call the success callback provided by the parent
             },
             onError: (errorResponse) => {
-                console.error('Error creating contact type:', errorResponse);
-                toast.error('Failed to create contact type. Please check errors.');
+                console.error('Error creating vehicle class:', errorResponse);
+                toast.error('Failed to create vehicle class. Please check errors.');
                 // Errors are automatically populated into the `errors` object by useForm
             },
             preserveState: true, // Keep component state on validation errors

@@ -24,7 +24,7 @@ import { Label } from '@/components/ui/label';
 import { Vehicle } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { ArrowUpDown, MoreHorizontal, Trash2, UserRoundPen } from 'lucide-react';
+import { ArrowUpDown, Info, MoreHorizontal, Trash2, UserRoundPen } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -34,6 +34,7 @@ const InputError = ({ message }: { message?: string }) => (message ? <p classNam
 // --- Define Table Meta Interface (Updated) ---
 // Added globalFilter and onGlobalFilterChange for parent-controlled filtering
 export interface TableMeta {
+    showDetails: (vehicle: Vehicle) => void;
     editVehicle: (vehicle: Vehicle) => void;
     globalFilter?: string; // State for the global filter value
     onGlobalFilterChange?: (value: string) => void; // Function to update the filter value
@@ -91,13 +92,13 @@ export const columns: ColumnDef<Vehicle, TableMeta>[] = [
     },
     // current_status_id Column
     {
-        accessorKey: 'current_status_id',
+        accessorKey: 'current_status_name',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
                 Status <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => <div className="capitalize">{row.getValue('current_status_id')}</div>,
+        cell: ({ row }) => <div className="capitalize">{row.getValue('current_status_name')}</div>,
         // Example filter function (can be expanded)
         filterFn: (row, id, value) => {
             return value.includes(row.getValue(id));
@@ -194,13 +195,13 @@ export const columns: ColumnDef<Vehicle, TableMeta>[] = [
         cell: ({ row }) => row.original.engine_cc || 'N/A',
     },
     {
-        accessorKey: 'vehicle_class_id',
+        accessorKey: 'vehicle_class_name',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
                 Class <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => row.original.vehicle_class_id || 'N/A',
+        cell: ({ row }) => row.original.vehicle_class_name || 'N/A',
     },
     {
         accessorKey: 'compensation_price',
@@ -370,6 +371,20 @@ export const columns: ColumnDef<Vehicle, TableMeta>[] = [
                 }
             }, [isDeleteDialogOpen, resetDeleteForm, clearDeleteErrors]);
 
+            // --- Handle Details Click ---
+            const handleDetailsClick = () => {
+                setIsDropdownOpen(false); // Close the dropdown
+                // Access meta from table options, ensuring it exists and has showDetails
+                const meta = table.options.meta as TableMeta | undefined;
+                if (meta?.showDetails) {
+                    meta.showDetails(vehicle); // Call the function passed from parent
+                } else {
+                    // Warn if the function is missing
+                    console.warn('showDetails function not found in table meta options.');
+                    toast.error('Could not show details.');
+                }
+            };
+
             const handleEditClick = () => {
                 setIsDropdownOpen(false);
                 // --- Access meta via table.options.meta ---
@@ -394,6 +409,10 @@ export const columns: ColumnDef<Vehicle, TableMeta>[] = [
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={handleDetailsClick} className="cursor-pointer">
+                                <Info className="mr-2 h-4 w-4" />
+                                <span>Details</span>
+                            </DropdownMenuItem>
                             <DropdownMenuItem onSelect={handleEditClick} className="cursor-pointer">
                                 <UserRoundPen className="mr-2 h-4 w-4" />
                                 <span>Edit</span>

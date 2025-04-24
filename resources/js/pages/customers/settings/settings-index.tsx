@@ -10,7 +10,7 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHe
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, ContactTypes, User } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
-import { PhoneCall } from 'lucide-react';
+import { BookUser } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -160,7 +160,7 @@ export default function SettingsIndex() {
                                     className="w-full sm:max-w-xs"
                                 />
                                 <Button variant="outline" onClick={handleCreateClick} className="w-full sm:w-auto">
-                                    <PhoneCall className="mr-2 h-4 w-4" /> Create Type {/* Updated button text */}
+                                    <BookUser className="mr-2 h-4 w-4" /> Create {/* Updated button text */}
                                 </Button>
                             </div>
                             {/* Use contactTypes directly from the destructured props */}

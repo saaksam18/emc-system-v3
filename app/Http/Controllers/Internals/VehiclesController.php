@@ -169,14 +169,16 @@ class VehiclesController extends Controller
                     'vin' => $vehicle->vin ?? 'N/A',
                     'color' => $vehicle->color ?? 'N/A',
                     'engine_cc' => $vehicle->engine_cc ?? 'N/A',
-                    'vehicle_class_id' => $vehicle->vehicleClasses?->name ?? 'N/A', // Use nullsafe
+                    'vehicle_class_name' => $vehicle->vehicleClasses?->name ?? 'N/A', // Use nullsafe
+                    'vehicle_class_id' => $vehicle->vehicle_class_id ?? 'N/A',
                     'compensation_price' => $vehicle->compensation_price ?? 'N/A',
                     'purchase_price' => $vehicle->purchase_price ?? 'N/A',
                     'purchase_date' => $vehicle->purchase_date ? Carbon::parse($vehicle->purchase_date)->toDateString() : 'N/A', // Format date
                     'daily_rental_price' => $vehicle->daily_rental_price ?? 'N/A',
                     'weekly_rental_price' => $vehicle->weekly_rental_price ?? 'N/A',
                     'monthly_rental_price' => $vehicle->monthly_rental_price ?? 'N/A',
-                    'current_status_id' => $vehicle->vehicleStatus?->status_name ?? 'N/A', // Use nullsafe
+                    'current_status_name' => $vehicle->vehicleStatus?->status_name ?? 'N/A', // Use nullsafe
+                    'current_status_id' => $vehicle->current_status_id ?? 'N/A',
                     'current_location' => $vehicle->current_location ?? 'N/A',
                     'current_Rentals_id' => $vehicle->current_Rentals_id,
                     'notes' => $vehicle->notes ?? 'N/A',
@@ -390,14 +392,14 @@ class VehiclesController extends Controller
                 'vin' => ['nullable', 'string', 'max:255', Rule::unique('motorbikes', 'vin')->ignore($vehicle->id)->whereNotNull('vin')],
                 'color' => 'required|string|max:50',
                 'engine_cc' => 'required|integer|min:0',
-                'vehicle_class_id' => ['required', 'string', Rule::exists('vehicle_classes', 'name')],
+                'vehicle_class_id' => ['required', 'string', Rule::exists('vehicle_classes', 'id')],
                 'compensation_price' => 'required|numeric|min:0',
                 'purchase_price' => 'required|numeric|min:0',
                 'purchase_date' => 'required|date_format:Y-m-d|before_or_equal:today',
                 'daily_rental_price' => 'required|numeric|min:0',
                 'weekly_rental_price' => 'required|numeric|min:0',
                 'monthly_rental_price' => 'required|numeric|min:0',
-                'current_status_id' => ['required', 'string', Rule::exists('vehicle_statuses', 'status_name')],
+                'current_status_id' => ['required', 'string', Rule::exists('vehicle_statuses', 'id')],
                 'current_location' => 'nullable|string|max:255',
                 'notes' => 'nullable|string',
             ];
@@ -412,8 +414,8 @@ class VehiclesController extends Controller
 
             // --- Find Foreign Key IDs ---
             Log::info("Looking up foreign key IDs for update based on names provided by User [ID: {$userId}].");
-            $vehicleClass = VehicleClasses::where('name', $validatedData['vehicle_class_id'])->firstOrFail();
-            $vehicleStatus = VehicleStatus::where('status_name', $validatedData['current_status_id'])->firstOrFail();
+            $vehicleClass = VehicleClasses::where('id', $validatedData['vehicle_class_id'])->firstOrFail();
+            $vehicleStatus = VehicleStatus::where('id', $validatedData['current_status_id'])->firstOrFail();
             $vehicleMaker = VehicleMaker::where('name', $validatedData['make'])->firstOrFail();
             $vehicleModel = VehicleActualModel::where('name', $validatedData['model'])
                                             ->where('maker_id', $vehicleMaker->id)
@@ -478,7 +480,7 @@ class VehiclesController extends Controller
         }
     }
 
-    public function destroy(Motorbikes $vehicle): RedirectResponse
+    public function destroy(Request $request, Motorbikes $vehicle): RedirectResponse
     {
         $userId = Auth::id();
         $vehicleIdentifier = $vehicle->vehicle_no ?? $vehicle->license_plate ?? $vehicle->id;
@@ -490,8 +492,31 @@ class VehiclesController extends Controller
         }
 
         try {
-            $this->authorize('vehicle-delete', $vehicle);
+            $this->authorize('vehicle-delete');
             Log::info("User [ID: {$userId}] authorized to delete Vehicle [ID: {$vehicle->id}].");
+
+            $validator = Validator::make($request->all(), [
+                'password' => 'required|string', // Ensure password is required
+            ]);
+        
+            // Check if validation fails
+            if ($validator->fails()) {
+                Log::warning("Attempted to delete vehicle {$vehicle->id} without authenticated user.");
+                return back()->withErrors($validator)->withInput();
+            }
+        
+            $admin = Auth::user();
+        
+            // Ensure we have an authenticated admin user
+            if (!$admin) {
+                Log::warning("Attempted to delete vehicle {$vehicle->id} without permissions.");
+                 return back()->withErrors(['password' => 'Authentication error. Please log in again.']);
+            }
+        
+            // Check the provided password against the admin's stored hashed password.
+            if (!Hash::check($request->input('password'), $admin->password)) {
+                return back()->withErrors(['password' => 'The provided administrator password does not match.'])->withInput();
+            }
 
             // Attempt to delete the vehicle record.
             Log::info("Attempting database delete for Vehicle [ID: {$vehicle->id}] by User [ID: {$userId}].");

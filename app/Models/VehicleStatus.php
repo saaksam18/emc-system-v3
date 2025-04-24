@@ -36,6 +36,7 @@ class VehicleStatus extends Model
         'status_name',
         'description',
         'is_rentable',
+        'user_id',
     ];
 
     /**

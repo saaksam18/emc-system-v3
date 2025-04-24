@@ -296,7 +296,6 @@ export function Create({ contactTypes, onSubmitSuccess }: CreateProps) {
                 setDobDay('');
                 setDobYear('');
                 onSubmitSuccess();
-                toast.success('Customer created successfully!'); // Added success toast
             },
             onError: (receivedErrors) => {
                 const currentErrors = receivedErrors as FormErrors;
