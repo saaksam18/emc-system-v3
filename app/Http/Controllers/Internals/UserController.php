@@ -15,6 +15,7 @@ use Inertia\Response;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password; // For more robust password rules
 use Illuminate\Support\Facades\Validator; // Using Validator facade

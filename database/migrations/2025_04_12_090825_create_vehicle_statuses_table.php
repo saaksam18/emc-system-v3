@@ -16,6 +16,10 @@ return new class extends Migration
             $table->string('status_name', 100)->unique();
             $table->text('description')->nullable();
             $table->boolean('is_rentable')->default(false);
+            $table->foreignId('user_id')
+                  ->nullable()
+                  ->constrained('users')
+                  ->onDelete('set null');
             $table->timestamps();
             $table->softDeletes();
         });

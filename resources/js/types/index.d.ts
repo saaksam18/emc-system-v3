@@ -99,11 +99,13 @@ export interface VehicleCountByModel {
 }
 
 export interface VehicleClass {
-    id: number;
+    id?: number;
     name: string;
-    user_name: string;
-    created_at?: string;
-    updated_at?: string;
+    description: string;
+    user_name?: string;
+    created_at?: any;
+    updated_at?: any;
+    [key: string]: any;
 }
 
 export interface VehicleMakerType {
@@ -115,6 +117,7 @@ export interface VehicleMakerType {
 }
 
 export interface VehicleModelType {
+    maker_id: any;
     id: number;
     name: string;
     maker_name: string;
@@ -126,29 +129,68 @@ export interface VehicleStatusType {
     id: number;
     status_name: string;
     description: string;
-    is_rentable: string;
-    user_name: string;
-    created_at?: string;
-    updated_at?: string;
+    is_rentable: boolean;
+    user_name?: string;
+    created_at?: any;
+    updated_at?: any;
 }
 
 // Customers
 export interface Customers {
+    id?: number;
+    first_name: string | undefined;
+    last_name: string | undefined;
+    date_of_birth: string | undefined;
+    address_line_1?: string | undefined;
+    address_line_2?: string | undefined;
+    commune?: string | undefined;
+    district?: string | undefined;
+    city?: string | undefined;
+    notes?: string | null | undefined;
+    user_id?: string | null | undefined;
+    created_at?: any;
+    updated_at?: any;
+    [key: string]: any;
+}
+
+export interface Contacts {
+    id: number | any;
+    contact_type: string;
+    contact_value: string;
+    is_primary?: any;
+    description?: string;
+    is_active?: any;
+    start_date?: any;
+    end_date?: any;
+    notes?: string | null | undefined;
+    created_at?: any;
+    updated_at?: any;
+    [key: string]: any;
+}
+
+export interface ContactTypes {
+    id?: number | any;
+    name?: any;
+    description?: string;
+    is_active?: any;
+    start_date?: any;
+    end_date?: any;
+    created_at?: any;
+    updated_at?: any;
+    [key: string]: any;
+}
+
+export interface Deposits {
     id: number;
-    first_name: string;
-    last_name: string;
-    date_of_birth: string;
-    email: string;
-    phone_number: string;
-    address_line_1: string;
-    address_line_2: string;
-    city: string;
-    state_province: string;
-    country: string;
-    passport_number: string;
-    passport_expiry: string;
-    notes: string | null | undefined;
-    user_id: string;
+    type: string;
+    registered_number: string;
+    expiry_date: any;
+    is_primary?: any;
+    description?: string;
+    is_active?: any;
+    start_date?: any;
+    end_date?: any;
+    notes?: string | null | undefined;
     created_at?: any;
     updated_at?: any;
     [key: string]: any;

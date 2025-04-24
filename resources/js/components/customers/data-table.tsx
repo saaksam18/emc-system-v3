@@ -36,10 +36,11 @@ export function DataTable<TData, TValue>({ columns, data, meta }: DataTableProps
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
         date_of_birth: false,
-        email: false,
         address: false,
+        passport_number: false,
         passport_expiry: false,
         notes: false,
+        created_at: false,
     });
 
     // --- useReactTable hook remains the same ---

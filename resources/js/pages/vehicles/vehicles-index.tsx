@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'; // Import useMemo
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'; // Import useMemo
 import { useReactToPrint } from 'react-to-print';
 
 // --- Inertia Imports ---
-import { Deferred, Head, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 
 // --- Layout Imports ---
 import AppLayout from '@/layouts/app-layout'; // Adjust path if needed
@@ -13,13 +13,12 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Sheet, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { toast } from 'sonner'; // For notifications
 
 // --- Custom Component Imports ---
-import { columns } from '@/components/vehicles/columns'; // Adjust path
+import { columns, TableMeta } from '@/components/vehicles/columns'; // Adjust path
 import { DataTable } from '@/components/vehicles/data-table'; // Adjust path
-import { SheetForm } from '@/components/vehicles/sheet-form'; // Adjust path
 import { columns as stockCBCColumn } from '@/components/vehicles/stock-cbc-columns';
 import { DataTable as StockCBCDataTable } from '@/components/vehicles/stock-cbc-data-table';
 import { columns as stockCBMColumn } from '@/components/vehicles/stock-cbm-columns';
@@ -45,8 +44,11 @@ import {
 import { cn } from '@/lib/utils'; // For Tailwind class merging
 // Import necessary date-fns functions
 import { Label } from '@/components/ui/label';
+import { Create } from '@/components/vehicles/sheets/create';
+import { Edit } from '@/components/vehicles/sheets/edit';
+import { Show } from '@/components/vehicles/sheets/show';
 import { endOfDay, format, isValid, isWithinInterval, parse, startOfDay, startOfMonth } from 'date-fns';
-import { Bike, CalendarIcon, Printer } from 'lucide-react'; // Icons
+import { Bike, CalendarIcon, Printer, Settings } from 'lucide-react'; // Icons
 import { DateRange } from 'react-day-picker'; // Type for date range picker
 
 // --- Breadcrumbs ---
@@ -91,7 +93,8 @@ export default function VehiclesIndex() {
 
     // Other UI State
     const [isSheetOpen, setIsSheetOpen] = useState(false);
-    const [sheetMode, setSheetMode] = useState<'create' | 'edit'>('create');
+    const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+    const [sheetMode, setSheetMode] = useState<'show' | 'create' | 'edit'>('create');
     const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
     const [globalFilter, setGlobalFilter] = useState('');
 
@@ -178,21 +181,42 @@ export default function VehiclesIndex() {
         });
     }, [pageProps.chartData, date]); // Re-run memo only if data or date range changes
 
+    // --- Handlers for Sheet Actions ---
     const handleCreateClick = () => {
         setSheetMode('create');
-        setEditingVehicle(null);
+        setSelectedVehicle(null); // Clear details view
+        setEditingVehicle(null); // Clear editing view
         setIsSheetOpen(true);
+        // You'll likely want a separate form component rendered conditionally based on sheetMode
     };
 
-    const handleEditVehicle = (vehicleToEdit: Vehicle) => {
+    const handleShowDetails = useCallback((vehicle: Vehicle) => {
+        setSheetMode('show'); // Set mode to show details
+        setSelectedVehicle(vehicle);
+        setEditingVehicle(null); // Clear editing view
+        setIsSheetOpen(true);
+    }, []);
+
+    const handleEditVehicle = useCallback((vehicleToEdit: Vehicle) => {
         setSheetMode('edit');
+        setSelectedVehicle(vehicleToEdit); // Clear details view
         setEditingVehicle(vehicleToEdit);
         setIsSheetOpen(true);
-    };
+        // You'll likely want a separate form component rendered conditionally based on sheetMode
+    }, []);
 
     const handleFormSubmitSuccess = () => {
         setIsSheetOpen(false);
         router.reload({ only: ['vehicles'] });
+    };
+
+    // Create the meta object to pass to the table
+    const tableMeta: TableMeta = {
+        // Pass filter state and handler if you want filtering within the table component itself
+        globalFilter: globalFilter,
+        onGlobalFilterChange: setGlobalFilter,
+        showDetails: handleShowDetails,
+        editVehicle: handleEditVehicle,
     };
 
     const contentRef = useRef<HTMLDivElement>(null);
@@ -284,22 +308,74 @@ export default function VehiclesIndex() {
                                         <Printer className="mr-2 h-4 w-4" /> Print Stock
                                     </Button>
                                 </div>
-                                <SheetTrigger asChild>
+                                <div className="flex gap-2">
                                     <Button variant="default" onClick={handleCreateClick} className="w-full sm:w-auto">
                                         <Bike className="mr-2 h-4 w-4" /> Create Vehicle
                                     </Button>
-                                </SheetTrigger>
+                                    <Button variant="outline" className="w-full sm:w-auto">
+                                        <Link href={'/vehicles/settings'} className="flex items-center gap-2">
+                                            <Settings className="mr-2 h-4 w-4" /> Setting
+                                        </Link>
+                                    </Button>
+                                </div>
                             </div>
-                            <SheetForm
-                                key={sheetMode === 'edit' ? editingVehicle?.id : 'create'}
-                                mode={sheetMode}
-                                initialData={editingVehicle}
-                                onSubmitSuccess={handleFormSubmitSuccess}
-                                vehicle_class={pageProps.vehicle_class || []}
-                                vehicle_status={pageProps.vehicle_status || []}
-                                vehicle_models={pageProps.vehicle_models || []}
-                                vehicle_makers={pageProps.vehicle_makers || []}
-                            />
+                            <SheetContent className="overflow-y-auto sm:max-w-lg">
+                                {/* Conditionally render Sheet content based on mode */}
+                                {sheetMode === 'show' && selectedVehicle && (
+                                    <>
+                                        <SheetHeader>
+                                            <SheetTitle>Vehicle No. {selectedVehicle?.vehicle_no || 'N/A'} Details:</SheetTitle>
+                                            <SheetDescription>
+                                                Viewing details for vehicle no: {selectedVehicle?.vehicle_no || 'N/A'}
+                                            </SheetDescription>
+                                        </SheetHeader>
+
+                                        <Show selectedVehicle={selectedVehicle} />
+                                        <SheetFooter>
+                                            <SheetClose asChild>
+                                                <Button type="button" variant="outline">
+                                                    Close
+                                                </Button>
+                                            </SheetClose>
+                                        </SheetFooter>
+                                    </>
+                                )}
+
+                                {sheetMode === 'create' && (
+                                    <>
+                                        <SheetHeader>
+                                            <SheetTitle>Create New Customer</SheetTitle>
+                                            <SheetDescription>Enter the details for the new customer.</SheetDescription>
+                                        </SheetHeader>
+                                        {/* Placeholder for your Customer Create Form Component */}
+                                        <Create
+                                            vehicle_class={pageProps.vehicle_class || []}
+                                            vehicle_status={pageProps.vehicle_status || []}
+                                            vehicle_models={pageProps.vehicle_models || []}
+                                            vehicle_makers={pageProps.vehicle_makers || []}
+                                            onSubmitSuccess={handleFormSubmitSuccess}
+                                        />
+                                    </>
+                                )}
+
+                                {sheetMode === 'edit' && editingVehicle && (
+                                    <>
+                                        <SheetHeader>
+                                            <SheetTitle>Edit Customer: {editingVehicle.full_name}</SheetTitle>
+                                            <SheetDescription>Update the customer's details.</SheetDescription>
+                                        </SheetHeader>
+                                        {/* Placeholder for your Customer Edit Form Component */}
+                                        <Edit
+                                            vehicle={selectedVehicle}
+                                            onUpdateSuccess={handleFormSubmitSuccess}
+                                            vehicle_class={pageProps.vehicle_class || []}
+                                            vehicle_status={pageProps.vehicle_status || []}
+                                            vehicle_models={pageProps.vehicle_models || []}
+                                            vehicle_makers={pageProps.vehicle_makers || []}
+                                        />
+                                    </>
+                                )}
+                            </SheetContent>
                         </Sheet>
 
                         <Deferred data="vehicles" fallback={<div className="p-4 text-center">Loading vehicles data...</div>}>
@@ -308,10 +384,7 @@ export default function VehiclesIndex() {
                                 data={pageProps.vehicles || []}
                                 // Pass the edit handler function and roles via meta
                                 // Ensure your DataTable component forwards meta to useReactTable
-                                meta={{
-                                    editVehicle: handleEditVehicle,
-                                    globalFilter: globalFilter,
-                                }}
+                                meta={tableMeta}
                             />
                         </Deferred>
                     </CardContent>

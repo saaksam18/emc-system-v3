@@ -28,12 +28,37 @@ class UserRolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'vehicle-create']);
         Permission::create(['name' => 'vehicle-edit']);
         Permission::create(['name' => 'vehicle-delete']);
+        // Vehicle class
+        Permission::create(['name' => 'class-list']);
+        Permission::create(['name' => 'class-create']);
+        Permission::create(['name' => 'class-edit']);
+        Permission::create(['name' => 'class-delete']);
+        // Vehicle status
+        Permission::create(['name' => 'status-list']);
+        Permission::create(['name' => 'status-create']);
+        Permission::create(['name' => 'status-edit']);
+        Permission::create(['name' => 'status-delete']);
+        // Vehicle maker
+        Permission::create(['name' => 'maker-list']);
+        Permission::create(['name' => 'maker-create']);
+        Permission::create(['name' => 'maker-edit']);
+        Permission::create(['name' => 'maker-delete']);
+        // Vehicle model
+        Permission::create(['name' => 'model-list']);
+        Permission::create(['name' => 'model-create']);
+        Permission::create(['name' => 'model-edit']);
+        Permission::create(['name' => 'model-delete']);
 
         // Customer
         Permission::create(['name' => 'customer-list']);
         Permission::create(['name' => 'customer-create']);
         Permission::create(['name' => 'customer-edit']);
         Permission::create(['name' => 'customer-delete']);
+        // Contact/Type
+        Permission::create(['name' => 'contact-type-list']);
+        Permission::create(['name' => 'contact-type-create']);
+        Permission::create(['name' => 'contact-type-edit']);
+        Permission::create(['name' => 'contact-type-delete']);
 
         // Report
         Permission::create(['name' => 'report-list']);
