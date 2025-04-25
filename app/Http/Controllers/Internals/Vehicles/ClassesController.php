@@ -71,7 +71,7 @@ class ClassesController extends Controller
             Log::info("Successfully formatted Vehicle Classs for User [ID: {$userId}]. Rendering view.");
 
             return Inertia::render('vehicles/settings/vehicles-setting-classes', [
-                'vehicleClasses' => $formattedVehicleClasses,
+                'vehicleClasses' => Inertia::defer(fn () => $formattedVehicleClasses),
             ]);
 
         } catch (AuthorizationException $e) {

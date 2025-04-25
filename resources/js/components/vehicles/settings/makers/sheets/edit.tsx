@@ -4,11 +4,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { ContactTypes, VehicleClass } from '@/types'; // Assuming ContactTypes type includes an 'id' field
+import { VehicleMakerType } from '@/types'; // Assuming vehicleMakerType includes 'id'
 import { useForm } from '@inertiajs/react';
-import React, { ChangeEvent, FormEventHandler, useEffect } from 'react'; // Added useEffect
+import React, { ChangeEvent, FormEventHandler, useEffect } from 'react';
+import { toast } from 'sonner';
 
-// --- Reusable Form Section Component --- (Assuming this is defined elsewhere or kept)
+// Define the expected structure for the form data, including the 'id'
+// Omit 'id' from initial values but include it in the type definition for useForm
+type vehicleMakerFormData = Omit<VehicleMakerType, 'id'>;
+
+// --- Reusable Form Section Component (No changes needed) ---
 interface FormSectionProps {
     title: string;
     description: string;
@@ -24,7 +29,7 @@ const FormSection: React.FC<FormSectionProps> = ({ title, description, children 
     </Card>
 );
 
-// --- Reusable Form Field Component --- (Assuming this is defined elsewhere or kept)
+// --- Reusable Form Field Component (No changes needed) ---
 interface FormFieldProps {
     label: string;
     htmlFor: string;
@@ -43,125 +48,120 @@ const FormField: React.FC<FormFieldProps> = ({ label, htmlFor, error, required, 
         </Label>
         <div className={cn('col-span-1 md:col-span-3', contentClassName)}>
             {children}
-            {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+            {error && (
+                // Use the htmlFor to link the error message to the input for accessibility
+                <p id={`${htmlFor}-error`} className="mt-1 text-sm text-red-500">
+                    {error}
+                </p>
+            )}
         </div>
     </div>
 );
 
 // --- Main Edit Component ---
 interface EditProps {
-    vehicleClass: VehicleClass | null; // Pass the existing contact type data
+    vehicleMaker: VehicleMakerType | null; // Prop to receive the existing data
     onSubmitSuccess: () => void; // Callback on successful update
 }
 
-// Use Omit to exclude 'id' if it's not directly editable but needed for the URL
-// Or adjust InitialFormValues if your form structure differs slightly from ContactTypes
-type InitialFormValues = Omit<ContactTypes, 'id' | 'created_at' | 'updated_at'>; // Example: Exclude non-editable fields
-
-export function Edit({ vehicleClass, onSubmitSuccess }: EditProps) {
-    // Initialize useForm with the existing contactType data
-    // Note: The initial values passed here are used by the reset() function later.
-    const { data, setData, put, processing, errors, reset, clearErrors } = useForm<InitialFormValues>({
-        name: vehicleClass?.name || '',
-        description: vehicleClass?.description || '',
+export function Edit({ vehicleMaker, onSubmitSuccess }: EditProps) {
+    // Initialize the form with data from the vehicleMaker prop
+    // Ensure is_rentable is treated as a boolean
+    const { data, setData, put, processing, errors, reset, clearErrors } = useForm<vehicleMakerFormData>({
+        name: vehicleMaker?.name || '',
     });
 
-    // Effect to update the form data if the contactType prop changes
+    // Effect to update the form state if the vehicleMaker prop changes
+    // This is useful if the same form instance is reused for different items
     useEffect(() => {
-        // Use setData for each field instead of reset({..})
-        setData('name', vehicleClass?.name || '');
-        setData('description', vehicleClass?.description || '');
-        clearErrors(); // Clear errors when the item changes
-        // Add setData to the dependency array as it's used in the effect
-    }, [vehicleClass, setData, clearErrors]);
+        // Use setData to update form fields when the prop changes
+        setData({
+            name: vehicleMaker?.name || '',
+        });
+        clearErrors(); // Clear any previous errors when loading new data
+        // Add setData to dependency array as per React hooks lint rules (optional but good practice)
+    }, [vehicleMaker, setData, clearErrors]);
 
     /**
-     * Handles input changes and updates the form state.
-     * @param e - The change event from the input element.
+     * Handles input changes for standard text inputs and textareas.
+     * @param e - The change event from the input/textarea element.
      */
     const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setData(name as keyof InitialFormValues, value);
+        setData(name as keyof vehicleMakerFormData, value);
     };
 
     /**
-     * Handles the form submission for updating.
-     * Prevents default submission, sends data using Inertia's put method,
-     * and handles success/error scenarios.
+     * Handles the form submission for updating the vehicle status.
      * @param e - The form event.
      */
     const handleSubmit: FormEventHandler<HTMLFormElement> = (e) => {
-        e.preventDefault(); // Prevent default browser form submission
-
-        // Construct the URL for the update request using the contactType's ID
-        const updateUrl = `/vehicles/settings/classes/${vehicleClass?.id}/update`;
-        put(updateUrl, {
+        e.preventDefault();
+        put(`/vehicles/settings/makers/${vehicleMaker?.id}/update`, {
             onSuccess: () => {
                 clearErrors();
-                onSubmitSuccess(); // Call the success callback
+                onSubmitSuccess();
             },
             onError: (errorResponse) => {
-                console.error('Error updating vehicle class:', errorResponse);
+                console.error('Error updating vehicle status:', errorResponse);
+                toast.error('Failed to update vehicle status. Please check errors.');
             },
             preserveState: true,
             preserveScroll: true,
         });
     };
 
+    // Cleanup effect to clear errors when the component unmounts
+    useEffect(() => {
+        return () => {
+            clearErrors();
+        };
+    }, [clearErrors]);
     return (
         <div className="px-4">
-            {/* --- Form Submission Handler --- */}
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* --- Basic Information --- */}
-                <FormSection title="Edit Vehicle Class" description="Update the basic infomations.">
+                <FormSection title="Edit Vehicle Status" description="Modify the details for the vehicle status.">
                     {/* --- Name Field --- */}
                     <FormField label="Name" htmlFor="name" error={errors.name} required>
                         <Input
                             id="name"
                             name="name"
-                            value={data.name} // Bind to form state
+                            value={data.name}
                             onChange={handleInputChange}
                             autoFocus
                             autoComplete="off"
                             className={cn(errors.name && 'border-red-500')}
-                        />
-                    </FormField>
-
-                    {/* --- Description Field --- */}
-                    <FormField label="Description" htmlFor="description" error={errors.description}>
-                        <Input
-                            id="description"
-                            name="description"
-                            value={data.description} // Bind to form state
-                            onChange={handleInputChange}
-                            autoComplete="off"
-                            className={cn(errors.description && 'border-red-500')}
+                            aria-invalid={!!errors.name}
+                            aria-describedby={errors.name ? 'name-error' : undefined}
                         />
                     </FormField>
                 </FormSection>
 
-                {/* --- Form Actions --- */}
                 <SheetFooter>
                     <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                        {/* --- Cancel Button --- */}
                         <SheetClose asChild>
                             <Button type="button" variant="outline">
                                 Cancel
                             </Button>
                         </SheetClose>
-                        {/* --- Reset Button --- */}
+                        {/* Reset Button - Resets to original loaded values */}
                         <Button
                             type="button"
                             variant="outline"
-                            // Reset to the initial values the form was loaded with (from useForm init)
-                            onClick={() => reset()}
+                            onClick={() => {
+                                // Reset now correctly resets to the initial values set by useForm
+                                // which were derived from the *original* vehicleMaker prop
+                                // or the last values set by setData in the useEffect hook if the prop changed.
+                                reset();
+                                clearErrors();
+                            }}
                             disabled={processing}
                         >
                             Reset Changes
                         </Button>
-                        {/* --- Submit Button --- */}
+                        {/* Submit Button --- */}
                         <Button type="submit" disabled={processing} className="w-full sm:w-auto">
-                            {processing ? 'Saving...' : 'Update'} {/* Updated button text */}
+                            {processing ? 'Updating...' : 'Update'} {/* Updated text */}
                         </Button>
                     </div>
                 </SheetFooter>
@@ -170,5 +170,5 @@ export function Edit({ vehicleClass, onSubmitSuccess }: EditProps) {
     );
 }
 
-// Export the component if it's the main export of the file
+// Export the component as default
 export default Edit;

@@ -72,7 +72,7 @@ class StatusController extends Controller
             Log::info("Successfully formatted Vehicle Status for User [ID: {$userId}]. Rendering view.");
 
             return Inertia::render('vehicles/settings/vehicles-setting-status', [
-                'vehicleStatus' => $formattedVehicleStatus,
+                'vehicleStatus' => Inertia::defer(fn () => $formattedVehicleStatus),
             ]);
 
         } catch (AuthorizationException $e) {

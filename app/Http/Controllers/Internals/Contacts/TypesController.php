@@ -72,9 +72,8 @@ class TypesController extends Controller
             });
 
             Log::info("Successfully formatted contact types for User [ID: {$userId}]. Rendering view.");
-
-            return Inertia::render('customers/settings/settings-index', [
-                'contactTypes' => $formattedContactTypes,
+            return Inertia::render('customers/settings/customers-setting-types', [
+                'contactTypes' => Inertia::defer(fn () => $formattedContactTypes),
             ]);
 
         } catch (AuthorizationException $e) {

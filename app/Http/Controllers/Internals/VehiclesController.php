@@ -215,7 +215,6 @@ class VehiclesController extends Controller
                 ];
             });
             Log::info("Finished formatting data. Rendering view for User [ID: {$userId}].");
-
             // --- Render View ---
             return Inertia::render('vehicles/vehicles-index', [
                 // Use defer for potentially large datasets

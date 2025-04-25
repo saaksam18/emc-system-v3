@@ -177,11 +177,10 @@ class CustomersController extends Controller
                 ];
             });
             Log::info("Finished formatting data. Rendering view for User [ID: {$userId}].");
-
             // --- Render View ---
             return Inertia::render('customers/customers-index', [
-                'customers' => $formattedCustomers,
-                'contactTypes' => $formattedContactTypes,
+                'customers' => Inertia::defer(fn () => $formattedCustomers),
+                'contactTypes' => Inertia::defer(fn () => $formattedContactTypes),
             ]);
 
         } catch (AuthorizationException $e) {

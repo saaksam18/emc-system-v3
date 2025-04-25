@@ -1,5 +1,12 @@
 'use client';
 
+import { VehicleMakerType } from '@/types'; // Assuming RoleObject is defined in types
+import { useForm } from '@inertiajs/react';
+import { ColumnDef } from '@tanstack/react-table';
+import { ArrowUpDown, MoreHorizontal, Trash2, UserRoundPen } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -21,25 +28,20 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ContactTypes } from '@/types';
-import { useForm } from '@inertiajs/react';
-import { ColumnDef } from '@tanstack/react-table';
-import { ArrowUpDown, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 
+// Assume InputError component exists
 const InputError = ({ message }: { message?: string }) => (message ? <p className="mt-1 text-sm text-red-600 dark:text-red-400">{message}</p> : null);
 
+// --- Define Table Meta Interface (Updated) ---
+// Added globalFilter and onGlobalFilterChange for parent-controlled filtering
 export interface TableMeta {
-    createContactTypes: (contactTypes: ContactTypes) => void; // Function to show details sheet
-    editContactTypes: (contactTypes: ContactTypes) => void; // Renamed for clarity
-    showDetails: (contactTypes: ContactTypes) => void; // Function to show details sheet
-    globalFilter?: string;
-    onGlobalFilterChange?: (value: string) => void;
+    edit: (status: VehicleMakerType) => void;
+    globalFilter?: string; // State for the global filter value
+    onGlobalFilterChange?: (value: string) => void; // Function to update the filter value
 }
 
 // --- Column Definitions (No functional changes needed here for moving the filter) ---
-export const columns: ColumnDef<ContactTypes, TableMeta>[] = [
+export const columns: ColumnDef<VehicleMakerType, TableMeta>[] = [
     {
         accessorKey: 'id',
         header: ({ column }) => (
@@ -47,7 +49,7 @@ export const columns: ColumnDef<ContactTypes, TableMeta>[] = [
                 ID <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => <div>{row.getValue('id')}</div>,
+        enableGlobalFilter: false, // Explicitly disable global filtering for ID
     },
     {
         accessorKey: 'name',
@@ -56,19 +58,15 @@ export const columns: ColumnDef<ContactTypes, TableMeta>[] = [
                 Name <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => row.original.name || 'N/A',
     },
     {
-        accessorKey: 'description',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Description
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            );
-        },
-        cell: ({ row }) => row.original.description || 'N/A',
+        accessorKey: 'user_name',
+        header: ({ column }) => (
+            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                Inputer <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+        ),
+        cell: ({ row }) => row.original.user_name || 'N/A',
     },
     {
         accessorKey: 'created_at',
@@ -89,36 +87,22 @@ export const columns: ColumnDef<ContactTypes, TableMeta>[] = [
                     hour12: true,
                 });
             } catch (e) {
-                return row.original.created_at;
+                return row.original.created_at; // Fallback
             }
         },
+        enableGlobalFilter: false,
     },
-    {
-        accessorKey: 'user_name',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Inputer <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.user_name || 'N/A',
-    },
-    // --- Updated Actions Column ---
     {
         id: 'actions',
         enableHiding: false,
         enableSorting: false,
-        enableGlobalFilter: false,
+        enableGlobalFilter: false, // Keep actions excluded from global filter
         cell: ({ row, table }) => {
-            // Get the specific customer data for this row
-            const contactTypes = row.original;
-            // State for the delete confirmation dialog
+            const vehicleMakers = row.original;
             const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-            // State to control the dropdown menu visibility
             const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-            // Ref for the password input in the delete dialog
             const passwordInput = React.useRef<HTMLInputElement>(null);
 
-            // Inertia form hook for handling the delete operation
             const {
                 data: deleteData,
                 setData: setDeleteData,
@@ -129,47 +113,36 @@ export const columns: ColumnDef<ContactTypes, TableMeta>[] = [
                 clearErrors: clearDeleteErrors,
             } = useForm({ password: '' });
 
-            // --- Handle Delete Submission ---
             const handleDeleteSubmit = (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
-                clearDeleteErrors('password'); // Clear previous password errors
-                // Show loading toast
-                const toastId = toast.loading(`Deleting contact type ${contactTypes.name || contactTypes.id}...`);
-                // Call the destroy route (ensure 'customers.destroy' matches your route name)
-                destroy(route('customers.settings.types.destroy', contactTypes.id), {
-                    // Use customer.id
-                    preserveScroll: true, // Keep scroll position
-                    preserveState: true, // Keep component state if possible
-                    data: { password: deleteData.password }, // Send password
+                clearDeleteErrors('password');
+                const toastId = toast.loading(`Deleting vehicle maker ${vehicleMakers.name}...`);
+                destroy(route('vehicles.makers.delete', vehicleMakers.id), {
+                    preserveScroll: true,
+                    preserveState: true,
+                    data: { password: deleteData.password },
                     onSuccess: () => {
-                        // Show success toast on successful deletion
-                        toast.success(`Contact type ${contactTypes.name || contactTypes.id} deleted successfully.`, { id: toastId });
-                        closeDeleteModal(); // Close the dialog
+                        toast.success(`Vehicle maker ${vehicleMakers.name} deleted successfully.`, { id: toastId });
+                        closeDeleteModal();
                     },
                     onError: (errorResponse) => {
-                        // Log error and show error toast
                         console.error('Deletion error:', errorResponse);
                         if (errorResponse.password) {
-                            // Specific password error
                             toast.error(errorResponse.password, { id: toastId });
-                            passwordInput.current?.focus(); // Focus the password input
+                            passwordInput.current?.focus();
                         } else {
-                            // Generic error
-                            toast.error(`Failed to delete contact type ${contactTypes.name || contactTypes.id}. Please try again.`, { id: toastId });
+                            toast.error(`Failed to delete vehicle maker ${vehicleMakers.name}. Please try again.`, { id: toastId });
                         }
                     },
                 });
             };
 
-            // --- Close Delete Modal ---
             const closeDeleteModal = () => {
-                setIsDeleteDialogOpen(false); // Close the dialog
-                resetDeleteForm('password'); // Reset the password field
-                clearDeleteErrors(); // Clear any validation errors
+                setIsDeleteDialogOpen(false);
+                resetDeleteForm('password');
+                clearDeleteErrors();
             };
 
-            // --- Reset Form on Dialog Close ---
-            // Effect to reset the delete form when the dialog closes
             useEffect(() => {
                 if (!isDeleteDialogOpen) {
                     resetDeleteForm('password');
@@ -177,42 +150,23 @@ export const columns: ColumnDef<ContactTypes, TableMeta>[] = [
                 }
             }, [isDeleteDialogOpen, resetDeleteForm, clearDeleteErrors]);
 
-            // --- Handle Details Click ---
-            const handleDetailsClick = () => {
-                setIsDropdownOpen(false); // Close the dropdown
-                // Access meta from table options, ensuring it exists and has showDetails
+            const handleEdit = () => {
+                setIsDropdownOpen(false);
+                // --- Access meta via table.options.meta ---
                 const meta = table.options.meta as TableMeta | undefined;
-                if (meta?.showDetails) {
-                    meta.showDetails(contactTypes); // Call the function passed from parent
+                if (meta?.edit) {
+                    meta.edit(vehicleMakers);
                 } else {
-                    // Warn if the function is missing
-                    console.warn('showDetails function not found in table meta options.');
-                    toast.error('Could not show details.');
-                }
-            };
-
-            // --- Handle Edit Click ---
-            const handleEditClick = () => {
-                setIsDropdownOpen(false); // Close the dropdown
-                // Access meta from table options, ensuring it exists and has editCustomer
-                const meta = table.options.meta as TableMeta | undefined;
-                if (meta?.editContactTypes) {
-                    meta.editContactTypes(contactTypes); // Call the function passed from parent
-                } else {
-                    // Warn if the function is missing
-                    console.warn('editCustomer function not found in table meta options.');
+                    console.warn('edit function not found in table meta options.');
                     toast.error('Could not initiate edit action.');
                 }
             };
 
             return (
-                // Delete Confirmation Dialog
                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                    {/* Actions Dropdown Menu */}
                     <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
                         <DropdownMenuTrigger asChild>
-                            {/* Button to open the dropdown */}
-                            <Button variant="ghost" className="h-8 w-8 p-0 hover:cursor-pointer">
+                            <Button variant="ghost" className="h-8 w-8 p-0">
                                 <span className="sr-only">Open menu</span>
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
@@ -220,25 +174,15 @@ export const columns: ColumnDef<ContactTypes, TableMeta>[] = [
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            {/* Details Action Item */}
-                            {/* <DropdownMenuItem onSelect={handleDetailsClick} className="cursor-pointer">
-                                <Info className="mr-2 h-4 w-4" />
-                                <span>Details</span>
-                            </DropdownMenuItem> */}
-                            {/* Edit Action Item */}
-                            <DropdownMenuItem onSelect={handleEditClick} className="cursor-pointer">
-                                <Pencil className="mr-2 h-4 w-4" />
+                            <DropdownMenuItem onSelect={handleEdit} className="cursor-pointer">
+                                <UserRoundPen className="mr-2 h-4 w-4" />
                                 <span>Edit</span>
                             </DropdownMenuItem>
-                            {/* Delete Action Item (Triggers Dialog) */}
                             <DialogTrigger asChild>
                                 <DropdownMenuItem
                                     onSelect={(e) => {
-                                        // Prevent default selection behavior which might close dropdown prematurely
                                         e.preventDefault();
-                                        // Manually close dropdown before opening dialog
                                         setIsDropdownOpen(false);
-                                        // Dialog opening is handled by DialogTrigger
                                     }}
                                     className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-500 dark:focus:bg-red-900/50 dark:focus:text-red-600"
                                 >
@@ -248,20 +192,18 @@ export const columns: ColumnDef<ContactTypes, TableMeta>[] = [
                             </DialogTrigger>
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    {/* Delete Dialog Content */}
                     <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
-                            <DialogTitle>Delete Contact Type: {contactTypes.full_name || contactTypes.id}</DialogTitle>
+                            <DialogTitle>Delete vehicle class: {vehicleMakers.name}</DialogTitle>
                             <DialogDescription>
                                 Are you sure? This action cannot be undone. Enter your administrator password to confirm.
                             </DialogDescription>
                         </DialogHeader>
-                        {/* Delete Form */}
                         <form onSubmit={handleDeleteSubmit} className="space-y-4 py-4">
                             <div className="grid gap-2">
-                                <Label htmlFor={`delete-password-${contactTypes.id}`}>Administrator Password</Label>
+                                <Label htmlFor={`delete-password-${vehicleMakers.id}`}>Administrator Password</Label>
                                 <Input
-                                    id={`delete-password-${contactTypes.id}`} // Unique ID for accessibility
+                                    id={`delete-password-${vehicleMakers.id}`}
                                     type="password"
                                     name="password"
                                     ref={passwordInput}
@@ -269,9 +211,9 @@ export const columns: ColumnDef<ContactTypes, TableMeta>[] = [
                                     onChange={(e) => setDeleteData('password', e.target.value)}
                                     placeholder="Enter your password"
                                     required
-                                    autoComplete="current-password" // Help password managers
-                                    className={deleteErrors.password ? 'border-red-500' : ''} // Highlight if error
-                                    disabled={processingDelete} // Disable while deleting
+                                    autoComplete="current-password"
+                                    className={deleteErrors.password ? 'border-red-500' : ''}
+                                    disabled={processingDelete}
                                 />
                                 <InputError message={deleteErrors.password} />
                             </div>
@@ -282,7 +224,7 @@ export const columns: ColumnDef<ContactTypes, TableMeta>[] = [
                                     </Button>
                                 </DialogClose>
                                 <Button type="submit" variant="destructive" disabled={processingDelete || !deleteData.password}>
-                                    {processingDelete ? 'Deleting...' : 'Delete Contact Type'}
+                                    {processingDelete ? 'Deleting...' : 'Delete Vehicle Maker'}
                                 </Button>
                             </DialogFooter>
                         </form>

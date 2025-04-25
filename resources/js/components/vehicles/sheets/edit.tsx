@@ -270,7 +270,6 @@ export function Edit({ vehicle, onUpdateSuccess, vehicle_class, vehicle_status, 
         };
 
         const handleSuccess = () => {
-            toast.success('Vehicle updated successfully!');
             onUpdateSuccess(); // Call the success callback
             // Optionally reset form to the *updated* values if needed,
             // but typically the component might close or navigate away.

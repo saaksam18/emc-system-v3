@@ -8,28 +8,13 @@ import { type PropsWithChildren } from 'react';
 
 const sidebarNavItems: NavItem[] = [
     {
-        title: 'Classes',
-        href: '/vehicles/settings/classes',
-        icon: null,
-    },
-    {
-        title: 'Status',
-        href: '/vehicles/settings/status',
-        icon: null,
-    },
-    {
-        title: 'Maker',
-        href: '/vehicles/settings/makers',
-        icon: null,
-    },
-    {
-        title: 'Model',
-        href: '/vehicles/settings/models',
+        title: 'Type',
+        href: '/customers/settings/types',
         icon: null,
     },
 ];
 
-export default function VehiclesSettingsLayout({ children }: PropsWithChildren) {
+export default function CustomersSettingsLayout({ children }: PropsWithChildren) {
     // When server-side rendering, we only render the layout on the client...
     if (typeof window === 'undefined') {
         return null;
