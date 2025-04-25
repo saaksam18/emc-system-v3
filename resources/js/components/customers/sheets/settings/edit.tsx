@@ -94,7 +94,7 @@ export function Edit({ contactType, onSubmitSuccess }: EditProps) {
         e.preventDefault(); // Prevent default browser form submission
 
         // Construct the URL for the update request using the contactType's ID
-        const updateUrl = `/customers/settings/contact-type/${contactType?.id}/update`;
+        const updateUrl = `/customers/settings/types/${contactType?.id}/update`;
         console.log(updateUrl);
         put(updateUrl, {
             onSuccess: () => {

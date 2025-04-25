@@ -214,7 +214,7 @@ export function Edit({ vehicleStatus, onSubmitSuccess }: EditProps) {
                         </Button>
                         {/* Submit Button --- */}
                         <Button type="submit" disabled={processing} className="w-full sm:w-auto">
-                            {processing ? 'Updating...' : 'Update Vehicle Status'} {/* Updated text */}
+                            {processing ? 'Updating...' : 'Update'} {/* Updated text */}
                         </Button>
                     </div>
                 </SheetFooter>

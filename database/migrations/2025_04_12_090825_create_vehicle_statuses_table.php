@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('vehicle_statuses', function (Blueprint $table) {
             $table->id();
-            $table->string('status_name', 100)->unique();
+            $table->string('status_name', 100);
             $table->text('description')->nullable();
             $table->boolean('is_rentable')->default(false);
             $table->foreignId('user_id')

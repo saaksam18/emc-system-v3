@@ -111,18 +111,19 @@ export interface VehicleClass {
 export interface VehicleMakerType {
     id: number;
     name: string;
-    user_name: string;
-    created_at?: string;
-    updated_at?: string;
+    user_name?: string;
+    created_at?: any;
+    updated_at?: any;
 }
 
 export interface VehicleModelType {
-    maker_id: any;
-    id: number;
+    maker_id?: any;
+    id?: number;
     name: string;
-    maker_name: string;
-    created_at?: string;
-    updated_at?: string;
+    maker_name?: string;
+    created_at?: any;
+    updated_at?: any;
+    [key: string]: any;
 }
 
 export interface VehicleStatusType {

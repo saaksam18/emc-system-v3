@@ -83,7 +83,7 @@ export function Create({ onSubmitSuccess }: CreateProps) {
      */
     const handleSubmit: FormEventHandler<HTMLFormElement> = (e) => {
         e.preventDefault(); // Prevent default browser form submission
-        // Assuming '/contact-types' is the endpoint to create a new contact type.
+        // Assuming '/typess' is the endpoint to create a new contact type.
         // Adjust the URL as needed.
 
         post('/vehicles/settings/classes/store', {

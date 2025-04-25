@@ -10,22 +10,22 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 // --- Table Components ---
-// UPDATED: Import columns and TableMeta specifically for status
-import { columns, TableMeta } from '@/components/vehicles/settings/status/columns'; // Assuming path
-import { DataTable } from '@/components/vehicles/settings/status/data-table'; // Assuming path
+// UPDATED: Import columns and TableMeta specifically for models
+import { columns, TableMeta } from '@/components/vehicles/settings/makers copy/columns'; // Assuming path
+import { DataTable } from '@/components/vehicles/settings/makers copy/data-table'; // Assuming path
 
 // --- Form Components ---
-// UPDATED: Import Create and Edit components specifically for status
-import Create from '@/components/vehicles/settings/status/sheets/create'; // Assuming path
-import { Edit } from '@/components/vehicles/settings/status/sheets/edit'; // Assuming path
+// UPDATED: Import Create and Edit components specifically for models
+import Create from '@/components/vehicles/settings/makers copy/sheets/create'; // Assuming path
+import { Edit } from '@/components/vehicles/settings/makers copy/sheets/edit'; // Assuming path
 
 // --- Layouts ---
 import AppLayout from '@/layouts/app-layout'; // Assuming path
 import VehiclesSettingsLayout from './vehicles-settings-layout'; // Assuming path
 
 // --- Types ---
-// UPDATED: Import VehicleStatusType
-import type { BreadcrumbItem, VehicleStatusType } from '@/types'; // Assuming path
+// UPDATED: Import VehicleModelType and VehicleMakerType
+import type { BreadcrumbItem, VehicleMakerType, VehicleModelType } from '@/types'; // Assuming path
 
 // --- Utility Function for Class Names (like shadcn/ui uses) ---
 /**
@@ -69,13 +69,13 @@ interface SkeletonTableProps {
 function SkeletonTable({ rowCount = 5, columnCount = 4 }: SkeletonTableProps) {
     // Define typical widths for skeleton columns to mimic the real table
     // Ensure these Tailwind classes are available in your project
-    // Adjust based on the actual columns for status if needed
-    const columnWidths = ['w-12', 'w-3/5', 'w-1/4', 'w-16']; // Example widths
+    // Adjust based on the actual columns for models
+    const columnWidths = ['w-12', 'w-2/5', 'w-1/3', 'w-1/6', 'w-16'];
 
     return (
         <div className="border-border overflow-x-auto rounded-lg border shadow-sm">
             {/* Added min-width to prevent excessive squishing on small screens */}
-            <table className="bg-card text-card-foreground w-full min-w-[500px] table-auto border-collapse">
+            <table className="bg-card text-card-foreground w-full min-w-[600px] table-auto border-collapse">
                 {/* Skeleton Table Header */}
                 <thead className="bg-muted/50">
                     <tr>
@@ -108,22 +108,24 @@ function SkeletonTable({ rowCount = 5, columnCount = 4 }: SkeletonTableProps) {
 }
 
 // --- Breadcrumbs Configuration ---
-// UPDATED: Breadcrumbs for Status
+// UPDATED: Breadcrumbs for Models
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Vehicle',
         href: '/vehicles',
     },
     {
-        title: 'Status', // Changed
-        href: '/vehicles/settings/status', // Changed
+        title: 'Models', // Changed
+        href: '/vehicles/settings/models', // Changed
     },
 ];
 
 // --- Component Props Interface ---
 interface PageProps {
-    // UPDATED: Prop name for status data
-    vehicleStatus: VehicleStatusType[];
+    // UPDATED: Prop name for models (using camelCase)
+    VehicleActualModels: VehicleModelType[];
+    // Prop for makers, needed for Create/Edit forms
+    vehicleMakers: VehicleMakerType[] | null; // Allow null if it might not be present initially
     flash?: {
         success?: string;
         error?: string;
@@ -132,17 +134,20 @@ interface PageProps {
     [key: string]: any;
 }
 
-// --- VehiclesSettingStatus Component ---
-// UPDATED: Component name and props destructuring
-const VehiclesSettingStatus: React.FC<PageProps> = ({ vehicleStatus: initialVehicleStatus }) => {
+// --- VehiclesSettingModels Component ---
+// UPDATED: Component name and props destructuring (using camelCase for VehicleActualModels)
+const VehiclesSettingModels: React.FC<PageProps> = ({
+    VehicleActualModels: initialVehicleActualModels,
+    vehicleMakers, // Destructure makers prop
+}) => {
     // Type the page props obtained from usePage
     const { props: pageProps } = usePage<PageProps>();
 
     // State for sheet management
     const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
     const [sheetMode, setSheetMode] = useState<'create' | 'edit'>('create');
-    // UPDATED: State variable name for the status being edited
-    const [editStatus, setEditStatus] = useState<VehicleStatusType | null>(null);
+    // UPDATED: State variable name for the model being edited
+    const [editModel, setEditModel] = useState<VehicleModelType | null>(null);
 
     // State for table filtering
     const [globalFilter, setGlobalFilter] = useState<string>('');
@@ -172,23 +177,23 @@ const VehiclesSettingStatus: React.FC<PageProps> = ({ vehicleStatus: initialVehi
     const handleCreate = () => {
         setSheetMode('create');
         // UPDATED: Clear the correct state variable
-        setEditStatus(null);
+        setEditModel(null);
         setIsSheetOpen(true);
     };
 
     // Use useCallback to memoize the handler
-    const handleEdit = useCallback((statusToEdit: VehicleStatusType) => {
+    const handleEdit = useCallback((modelToEdit: VehicleModelType) => {
         setSheetMode('edit');
         // UPDATED: Set the correct state variable
-        setEditStatus(statusToEdit);
+        setEditModel(modelToEdit);
         setIsSheetOpen(true);
     }, []);
 
     // Handler for successful form submission
     const handleFormSubmitSuccess = () => {
         setIsSheetOpen(false);
-        // UPDATED: Reload the correct data key
-        router.reload({ only: ['vehicleStatus'] });
+        // UPDATED: Reload the correct data key (matching the prop name)
+        router.reload({ only: ['VehicleActualModels'] });
     };
 
     // Memoize table meta object
@@ -206,39 +211,40 @@ const VehiclesSettingStatus: React.FC<PageProps> = ({ vehicleStatus: initialVehi
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             {/* UPDATED: Head title */}
-            <Head title="Vehicle Status Settings" />
+            <Head title="Vehicle Models Settings" />
             <VehiclesSettingsLayout>
                 {/* Header Section */}
                 <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     {/* Page Title and Description */}
                     <div>
                         {/* UPDATED: Title and description */}
-                        <HeadingSmall title="Vehicle Status" description="Manage registered vehicle statuses." />
+                        <HeadingSmall title="Vehicle Models" description="Manage registered vehicle models." />
                     </div>
 
                     {/* Actions: Filter and Create Button */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <Input
                             // UPDATED: Placeholder text
-                            placeholder="Filter status..."
+                            placeholder="Filter models..."
                             value={globalFilter}
                             onChange={(event: React.ChangeEvent<HTMLInputElement>) => setGlobalFilter(event.target.value)}
                             className="w-full sm:max-w-xs"
                         />
                         <Button variant="default" onClick={handleCreate} className="w-full shrink-0 sm:w-auto">
                             {/* UPDATED: Button text */}
-                            <UserPlus className="mr-2 h-4 w-4" /> Create Status
+                            <UserPlus className="mr-2 h-4 w-4" /> Create Model
                         </Button>
                     </div>
                 </div>
 
                 {/* Data Table Section with Deferred Loading and Skeleton Fallback */}
-                {/* UPDATED: data prop name in Deferred */}
-                <Deferred data="vehicleStatus" fallback={<SkeletonTable rowCount={10} columnCount={columns.length} />}>
+                {/* UPDATED: data prop name in Deferred (matching the prop name) */}
+                <Deferred data="VehicleActualModels" fallback={<SkeletonTable rowCount={10} columnCount={columns.length} />}>
                     <DataTable
-                        columns={columns} // Use status columns
-                        // UPDATED: data prop passed to DataTable
-                        data={pageProps.vehicleStatus || initialVehicleStatus || []}
+                        columns={columns} // Use model columns
+                        // UPDATED: data prop passed to DataTable (using camelCase)
+                        // Use latest props from usePage if available, otherwise initial props
+                        data={pageProps.VehicleActualModels || initialVehicleActualModels || []}
                         meta={tableMeta} // Pass the memoized meta object
                     />
                 </Deferred>
@@ -251,24 +257,31 @@ const VehiclesSettingStatus: React.FC<PageProps> = ({ vehicleStatus: initialVehi
                             <>
                                 <SheetHeader>
                                     {/* UPDATED: Sheet title/description */}
-                                    <SheetTitle>Create New Vehicle Status</SheetTitle>
-                                    <SheetDescription>Enter the details for the new vehicle status.</SheetDescription>
+                                    <SheetTitle>Create New Vehicle Model</SheetTitle>
+                                    <SheetDescription>Enter the details for the new vehicle model.</SheetDescription>
                                 </SheetHeader>
-                                {/* Use the Create component for status */}
-                                <Create onSubmitSuccess={handleFormSubmitSuccess} />
+                                {/* UPDATED: Use the Create component for models, pass vehicleMakers */}
+                                <Create
+                                    vehicleMakers={pageProps.vehicleMakers || vehicleMakers || []} // Pass makers data
+                                    onSubmitSuccess={handleFormSubmitSuccess}
+                                />
                             </>
                         )}
 
                         {/* UPDATED: Check the correct state variable */}
-                        {sheetMode === 'edit' && editStatus && (
+                        {sheetMode === 'edit' && editModel && (
                             <>
                                 <SheetHeader>
-                                    {/* UPDATED: Sheet title/description, use correct property for name */}
-                                    <SheetTitle>Edit Vehicle Status: {editStatus.status_name}</SheetTitle>
-                                    <SheetDescription>Update the vehicle status's details.</SheetDescription>
+                                    {/* UPDATED: Sheet title/description */}
+                                    <SheetTitle>Edit Vehicle Model: {editModel.name}</SheetTitle>
+                                    <SheetDescription>Update the vehicle model's details.</SheetDescription>
                                 </SheetHeader>
-                                {/* UPDATED: Pass the correct prop name 'vehicleStatus' to the Edit component */}
-                                <Edit vehicleStatus={editStatus} onSubmitSuccess={handleFormSubmitSuccess} />
+                                {/* UPDATED: Pass the correct props 'vehicleModel' and 'vehicleMakers' to the Edit component */}
+                                <Edit
+                                    vehicleModel={editModel} // Pass the model being edited
+                                    vehicleMakers={pageProps.vehicleMakers || vehicleMakers || []} // Pass makers data
+                                    onSubmitSuccess={handleFormSubmitSuccess}
+                                />
                             </>
                         )}
                     </SheetContent>
@@ -279,4 +292,4 @@ const VehiclesSettingStatus: React.FC<PageProps> = ({ vehicleStatus: initialVehi
 };
 
 // UPDATED: Export the correctly named component
-export default VehiclesSettingStatus;
+export default VehiclesSettingModels;

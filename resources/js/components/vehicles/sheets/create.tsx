@@ -280,17 +280,15 @@ export function Create({ onSubmitSuccess, vehicle_class, vehicle_status, vehicle
 
         // Define success handling callback for Inertia post
         const handleSuccess = () => {
-            toast.success('Vehicle created successfully!'); // Success notification
             onSubmitSuccess(); // Call the provided success callback (e.g., close sheet, refresh list)
-            // reset(); // Optionally reset the form fields after successful submission
         };
 
         // Perform the POST request using Inertia
         post(url, {
             onSuccess: handleSuccess,
             onError: handleError,
-            // preserveState: true, // Consider if you want to preserve state on validation errors
-            // preserveScroll: true, // Consider preserving scroll position
+            preserveState: true, // Consider if you want to preserve state on validation errors
+            preserveScroll: true, // Consider preserving scroll position
         });
     };
 
