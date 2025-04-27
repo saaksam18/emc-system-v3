@@ -89,7 +89,7 @@ export function Edit({ vehicle, onUpdateSuccess, vehicle_class, vehicle_status, 
     // Inertia form helper hook, initialized with vehicle data
     // Ensure IDs are strings for Select compatibility if they come as numbers
     const { data, setData, put, processing, errors, reset, clearErrors } = useForm<EditFormValues>({
-        vehicle_no: vehicle?.vehicle_no ?? '',
+        vehicle_no: String(vehicle?.vehicle_no) ?? '',
         make: vehicle?.make ?? '',
         model: vehicle?.model ?? '',
         year: vehicle?.year ?? '',
@@ -282,6 +282,7 @@ export function Edit({ vehicle, onUpdateSuccess, vehicle_class, vehicle_status, 
                 ...data,
                 // Ensure numeric fields are sent as numbers if required by backend
                 // Convert potentially empty strings for optional numbers to null or omit them
+                vehicle_no: data.vehicle_no ? parseInt(String(data.vehicle_no)) : null,
                 year: data.year ? parseInt(data.year) : null,
                 engine_cc: data.engine_cc ? parseInt(String(data.engine_cc)) : null,
                 compensation_price: data.compensation_price ? parseFloat(String(data.compensation_price)) : null,
@@ -305,7 +306,6 @@ export function Edit({ vehicle, onUpdateSuccess, vehicle_class, vehicle_status, 
     const title = 'Edit Vehicle Details';
     const description = `Editing vehicle: ${vehicle?.vehicle_no || 'N/A'}. Modify the details below and click save.`;
 
-    console.log(vehicle);
     // --- JSX ---
     return (
         <div className="px-1 py-4 md:px-4">

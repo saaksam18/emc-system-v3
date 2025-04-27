@@ -47,7 +47,7 @@ class TypesController extends Controller
 
         try {
             // Authorize before proceeding
-            $this->authorize('contact-type-list');
+            $this->authorize('type-list');
             Log::info("User [ID: {$userId}] authorized for contact-type-list.");
 
             // Fetch active contact types and eager-load creator
@@ -109,7 +109,7 @@ class TypesController extends Controller
 
         try {
             // Authorize action
-            $this->authorize('contact-type-create');
+            $this->authorize('type-create');
             Log::info("User [ID: {$userID}] authorized for contact-type-create.");
 
             // 1. Define validation rules
@@ -185,7 +185,7 @@ class TypesController extends Controller
 
         try {
             // Authorize action
-            $this->authorize('contact-type-edit', $contactType); // Pass model if policy needs it
+            $this->authorize('type-edit', $contactType); // Pass model if policy needs it
             Log::info("User [ID: {$userID}] authorized to edit Contact Type [ID: {$contactType->id}].");
 
             // 1. Define validation rules for update
@@ -271,7 +271,7 @@ class TypesController extends Controller
        }
 
        try {
-            $this->authorize('contact-type-delete'); // Assumes 'user-delete' policy or gate exists
+            $this->authorize('type-delete'); // Assumes 'user-delete' policy or gate exists
 
             $validator = Validator::make($request->all(), [
                 'password' => 'required|string', // Ensure password is required

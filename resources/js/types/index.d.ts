@@ -131,6 +131,7 @@ export interface VehicleStatusType {
     status_name: string;
     description: string;
     is_rentable: boolean;
+    is_rentable_yn?: boolean;
     user_name?: string;
     created_at?: any;
     updated_at?: any;
@@ -192,6 +193,43 @@ export interface Deposits {
     start_date?: any;
     end_date?: any;
     notes?: string | null | undefined;
+    created_at?: any;
+    updated_at?: any;
+    [key: string]: any;
+}
+
+// Rentals
+export interface RentalsType {
+    id?: number;
+    vehicle_id: any;
+    vehicle_no: string;
+    customer_id: any;
+    customer_name: string;
+    start_date?: any;
+    end_date?: any;
+    period?: any;
+    coming_date?: any;
+    actual_start_date?: any;
+    actual_return_date?: any;
+    total_cost?: string;
+    is_active?: boolean;
+    status_id: any;
+    status_name: string;
+    notes?: string | null | undefined;
+    incharger_id?: string;
+    user_name?: string;
+    created_at?: any;
+    updated_at?: any;
+    version_timestamp?: any;
+    is_latest_version?: boolean;
+    [key: string]: any;
+}
+export interface DepositTypes {
+    id?: number;
+    name: string;
+    is_active: boolean;
+    description?: string | null | undefined;
+    user_name?: string;
     created_at?: any;
     updated_at?: any;
     [key: string]: any;

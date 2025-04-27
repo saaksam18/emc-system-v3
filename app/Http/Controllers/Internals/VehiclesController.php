@@ -23,7 +23,7 @@ use Illuminate\Validation\ValidationException; // <-- Import Validation Exceptio
 // Model
 use App\Models\User;
 use App\Models\Rentals;
-use App\Models\Motorbikes;
+use App\Models\Vehicles;
 use App\Models\VehicleClasses;
 use App\Models\VehicleStatus;
 use App\Models\VehicleActualModel;
@@ -76,13 +76,13 @@ class VehiclesController extends Controller
                 $monthLabel = $date->format('M \'y');
                 Log::debug("Calculating chart data for month: {$monthLabel}");
 
-                $rentedMotorbikeIdsInMonth = Rentals::where('start_date', '<=', $monthEnd)
+                $rentedvehicleIdsInMonth = Rentals::where('start_date', '<=', $monthEnd)
                     ->where(function ($query) use ($monthStart) {
                         $query->where('end_date', '>=', $monthStart)->orWhereNull('end_date');
                     })
                     ->distinct()
-                    ->pluck('motorbike_id');
-                Log::debug("Found {$rentedMotorbikeIdsInMonth->count()} distinct rented motorbikes in {$monthLabel}.");
+                    ->pluck('vehicle_id');
+                Log::debug("Found {$rentedvehicleIdsInMonth->count()} distinct rented vehicles in {$monthLabel}.");
 
                 $totalMotoCount = $this->getTotalFleetSizeForMonth($monthEnd); // Uses helper with logging
                 Log::debug("Total fleet size for {$monthLabel}: {$totalMotoCount}.");
@@ -92,10 +92,10 @@ class VehiclesController extends Controller
                     $monthlyEntry[(string)$id] = 0;
                 }
 
-                if ($rentedMotorbikeIdsInMonth->isNotEmpty()) {
-                    $countsByClassId = Motorbikes::whereIn('motorbikes.id', $rentedMotorbikeIdsInMonth)
-                        ->select('motorbikes.vehicle_class_id', DB::raw('COUNT(motorbikes.id) as count'))
-                        ->groupBy('motorbikes.vehicle_class_id')
+                if ($rentedvehicleIdsInMonth->isNotEmpty()) {
+                    $countsByClassId = Vehicles::whereIn('vehicles.id', $rentedvehicleIdsInMonth)
+                        ->select('vehicles.vehicle_class_id', DB::raw('COUNT(vehicles.id) as count'))
+                        ->groupBy('vehicles.vehicle_class_id')
                         ->pluck('count', 'vehicle_class_id');
                     Log::debug("Counts by class for {$monthLabel}: ", $countsByClassId->toArray());
 
@@ -113,22 +113,22 @@ class VehiclesController extends Controller
             Log::info("Fetching users, all vehicles, stock vehicles, and related data for User [ID: {$userId}].");
             $users = User::select('id', 'name')->get(); // Select only needed columns
 
-            $vehicles = Motorbikes::orderBy('vehicle_no', 'asc')
+            $vehicles = Vehicles::orderBy('vehicle_no', 'asc')
                               ->with(['vehicleMaker:id,name', 'vehicleModel:id,name', 'vehicleClasses:id,name', 'vehicleStatus:id,status_name', 'creator:id,name'])
                               ->get();
             Log::info("Retrieved {$vehicles->count()} total vehicles.");
 
-            $vehicles_stock = Motorbikes::orderBy('vehicle_no', 'asc')
+            $vehicles_stock = Vehicles::orderBy('vehicle_no', 'asc')
                 ->whereHas('vehicleStatus', fn ($query) => $query->where('is_rentable', 1))
                 ->with(['vehicleMaker:id,name', 'vehicleModel:id,name', 'vehicleClasses:id,name', 'vehicleStatus:id,status_name,is_rentable', 'creator:id,name'])
                 ->get();
             Log::info("Retrieved {$vehicles_stock->count()} stock (rentable) vehicles.");
 
             // Rentable counts by class
-            $rentableCountsByClass = Motorbikes::query()
+            $rentableCountsByClass = Vehicles::query()
                 ->whereHas('vehicleStatus', fn (Builder $q) => $q->where('is_rentable', 1))
-                ->join('vehicle_classes', 'motorbikes.vehicle_class_id', '=', 'vehicle_classes.id')
-                ->select('vehicle_classes.id as class_id', 'vehicle_classes.name as class_name', DB::raw('count(motorbikes.id) as rentable_count'))
+                ->join('vehicle_classes', 'vehicles.vehicle_class_id', '=', 'vehicle_classes.id')
+                ->select('vehicle_classes.id as class_id', 'vehicle_classes.name as class_name', DB::raw('count(vehicles.id) as rentable_count'))
                 ->groupBy('vehicle_classes.id', 'vehicle_classes.name')
                 ->orderBy('vehicle_classes.name')
                 ->get();
@@ -136,10 +136,10 @@ class VehiclesController extends Controller
             Log::info("Calculated rentable counts for {$rentableCountsByClass->count()} classes.");
 
             // Rentable counts by model
-            $rentableCountsByModel = Motorbikes::query()
+            $rentableCountsByModel = Vehicles::query()
                 ->whereHas('vehicleStatus', fn (Builder $q) => $q->where('is_rentable', 1))
-                ->join('vehicle_actual_models', 'motorbikes.vehicle_model_id', '=', 'vehicle_actual_models.id')
-                ->select('vehicle_actual_models.id as model_id', 'vehicle_actual_models.name as model_name', DB::raw('count(motorbikes.id) as rentable_count'))
+                ->join('vehicle_actual_models', 'vehicles.vehicle_model_id', '=', 'vehicle_actual_models.id')
+                ->select('vehicle_actual_models.id as model_id', 'vehicle_actual_models.name as model_name', DB::raw('count(vehicles.id) as rentable_count'))
                 ->groupBy('vehicle_actual_models.id', 'vehicle_actual_models.name')
                 ->orderBy('vehicle_actual_models.name')
                 ->get();
@@ -158,7 +158,7 @@ class VehiclesController extends Controller
 
             // --- Format Data for View ---
             Log::info("Formatting vehicle data for view for User [ID: {$userId}].");
-            $formattedVehicles = $vehicles->map(function (Motorbikes $vehicle) {
+            $formattedVehicles = $vehicles->map(function (Vehicles $vehicle) {
                 return [ /* ... mapping ... */
                     'id' => $vehicle->id,
                     'vehicle_no' => $vehicle->vehicle_no,
@@ -187,7 +187,7 @@ class VehiclesController extends Controller
                     'updated_at' => $vehicle->updated_at?->toISOString(), // Use nullsafe + format
                 ];
             });
-            $formattedVehiclesStock = $vehicles_stock->map(function (Motorbikes $vehicle) {
+            $formattedVehiclesStock = $vehicles_stock->map(function (Vehicles $vehicle) {
                  return [ /* ... mapping ... */
                     'id' => $vehicle->id,
                     'vehicle_no' => $vehicle->vehicle_no,
@@ -248,7 +248,7 @@ class VehiclesController extends Controller
     {
         Log::debug("Calculating total fleet size for month ending: " . $monthEnd->toDateString());
         try {
-            $count = Motorbikes::where('created_at', '<=', $monthEnd)
+            $count = Vehicles::where('created_at', '<=', $monthEnd)
                           ->where(function ($query) use ($monthEnd) {
                               $query->whereNull('deleted_at') // Not soft-deleted
                                     ->orWhere('deleted_at', '>', $monthEnd); // Or deleted after this month
@@ -273,12 +273,12 @@ class VehiclesController extends Controller
 
             // --- Define Validation Rules ---
             $rules = [
-                'vehicle_no' => ['required', 'string', 'max:255', Rule::unique('motorbikes', 'vehicle_no')], // Ensure unique vehicle_no
+                'vehicle_no' => ['required', 'string', 'max:255', Rule::unique('vehicles', 'vehicle_no')], // Ensure unique vehicle_no
                 'make' => ['required', 'string', Rule::exists('vehicle_makers', 'name')],
                 'model' => ['required', 'string', Rule::exists('vehicle_actual_models', 'name')],
                 'year' => 'required|integer|digits:4|min:1900|max:' . (date('Y') + 1), // Add max year
-                'license_plate' => ['required', 'string', 'max:20', Rule::unique('motorbikes', 'license_plate')], // Ensure unique license plate
-                'vin' => ['nullable', 'string', 'max:255', Rule::unique('motorbikes', 'vin')->whereNotNull('vin')], // Unique VIN if provided
+                'license_plate' => ['required', 'string', 'max:20', Rule::unique('vehicles', 'license_plate')], // Ensure unique license plate
+                'vin' => ['nullable', 'string', 'max:255', Rule::unique('vehicles', 'vin')->whereNotNull('vin')], // Unique VIN if provided
                 'color' => 'required|string|max:50',
                 'engine_cc' => 'required|integer|min:0',
                 'vehicle_class_id' => ['required', 'string', Rule::exists('vehicle_classes', 'name')], // Validate NAME exists
@@ -325,7 +325,7 @@ class VehiclesController extends Controller
 
             // --- Create the Vehicle ---
             Log::info("Attempting to create Vehicle in database by User [ID: {$userId}].", ['validated_data' => $validatedData]);
-            $vehicle = new Motorbikes();
+            $vehicle = new Vehicles();
             $vehicle->fill([ // Use fillable assignment if configured in model
                 'vehicle_no' => $validatedData['vehicle_no'],
                 'vehicle_make_id' => $vehicleMaker->id,
@@ -372,7 +372,7 @@ class VehiclesController extends Controller
         }
     }
 
-    public function update(Request $request, Motorbikes $vehicle): RedirectResponse
+    public function update(Request $request, Vehicles $vehicle): RedirectResponse
     {
         $userId = Auth::id();
         Log::info("User [ID: {$userId}] attempting to update Vehicle [ID: {$vehicle->id}].");
@@ -383,12 +383,12 @@ class VehiclesController extends Controller
 
             // --- Define Validation Rules ---
             $rules = [
-                'vehicle_no' => ['required', 'string', 'max:255', Rule::unique('motorbikes', 'vehicle_no')->ignore($vehicle->id)],
+                'vehicle_no' => ['required', 'string', 'max:255', Rule::unique('vehicles', 'vehicle_no')->ignore($vehicle->id)],
                 'make' => ['required', 'string', Rule::exists('vehicle_makers', 'name')],
                 'model' => ['required', 'string', Rule::exists('vehicle_actual_models', 'name')],
                 'year' => 'required|integer|digits:4|min:1900|max:' . (date('Y') + 1),
-                'license_plate' => ['required', 'string', 'max:20', Rule::unique('motorbikes', 'license_plate')->ignore($vehicle->id)],
-                'vin' => ['nullable', 'string', 'max:255', Rule::unique('motorbikes', 'vin')->ignore($vehicle->id)->whereNotNull('vin')],
+                'license_plate' => ['required', 'string', 'max:20', Rule::unique('vehicles', 'license_plate')->ignore($vehicle->id)],
+                'vin' => ['nullable', 'string', 'max:255', Rule::unique('vehicles', 'vin')->ignore($vehicle->id)->whereNotNull('vin')],
                 'color' => 'required|string|max:50',
                 'engine_cc' => 'required|integer|min:0',
                 'vehicle_class_id' => ['required', 'string', Rule::exists('vehicle_classes', 'id')],
@@ -479,7 +479,7 @@ class VehiclesController extends Controller
         }
     }
 
-    public function destroy(Request $request, Motorbikes $vehicle): RedirectResponse
+    public function destroy(Request $request, Vehicles $vehicle): RedirectResponse
     {
         $userId = Auth::id();
         $vehicleIdentifier = $vehicle->vehicle_no ?? $vehicle->license_plate ?? $vehicle->id;

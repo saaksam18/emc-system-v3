@@ -1,13 +1,5 @@
 'use client';
 
-import { VehicleStatusType } from '@/types'; // Assuming RoleObject is defined in types
-import { useForm } from '@inertiajs/react';
-import { ColumnDef } from '@tanstack/react-table';
-import { ArrowUpDown, MoreHorizontal, Trash2, UserRoundPen } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -29,20 +21,25 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DepositTypes } from '@/types';
+import { useForm } from '@inertiajs/react';
+import { ColumnDef } from '@tanstack/react-table';
+import { ArrowUpDown, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
-// Assume InputError component exists
 const InputError = ({ message }: { message?: string }) => (message ? <p className="mt-1 text-sm text-red-600 dark:text-red-400">{message}</p> : null);
 
-// --- Define Table Meta Interface (Updated) ---
-// Added globalFilter and onGlobalFilterChange for parent-controlled filtering
 export interface TableMeta {
-    edit: (status: VehicleStatusType) => void;
-    globalFilter?: string; // State for the global filter value
-    onGlobalFilterChange?: (value: string) => void; // Function to update the filter value
+    create: (depsoitType: DepositTypes) => void; // Function to show details sheet
+    edit: (depsoitType: DepositTypes) => void; // Renamed for clarity
+    show: (depsoitType: DepositTypes) => void; // Function to show details sheet
+    globalFilter?: string;
+    onGlobalFilterChange?: (value: string) => void;
 }
 
 // --- Column Definitions (No functional changes needed here for moving the filter) ---
-export const columns: ColumnDef<VehicleStatusType, TableMeta>[] = [
+export const columns: ColumnDef<DepositTypes, TableMeta>[] = [
     {
         accessorKey: 'id',
         header: ({ column }) => (
@@ -50,46 +47,28 @@ export const columns: ColumnDef<VehicleStatusType, TableMeta>[] = [
                 ID <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        enableGlobalFilter: false, // Explicitly disable global filtering for ID
+        cell: ({ row }) => <div>{row.getValue('id')}</div>,
     },
     {
-        accessorKey: 'status_name',
+        accessorKey: 'name',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
                 Name <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-    },
-    {
-        accessorKey: 'is_rentable_yn',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Rentable <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => {
-            // Get the specific value for guard_name from the row's original data
-            const is_rentable = row.original.is_rentable_yn;
-            // Return the Badge component to render it
-            return <Badge variant="secondary">{is_rentable}</Badge>;
-        },
+        cell: ({ row }) => row.original.name || 'N/A',
     },
     {
         accessorKey: 'description',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                description <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-    },
-    {
-        accessorKey: 'user_name',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Inputer <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.user_name || 'N/A',
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                    Description
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            );
+        },
+        cell: ({ row }) => row.original.description || 'N/A',
     },
     {
         accessorKey: 'created_at',
@@ -110,22 +89,36 @@ export const columns: ColumnDef<VehicleStatusType, TableMeta>[] = [
                     hour12: true,
                 });
             } catch (e) {
-                return row.original.created_at; // Fallback
+                return row.original.created_at;
             }
         },
-        // Consider enableGlobalFilter: false if searching dates isn't desired
     },
+    {
+        accessorKey: 'user_name',
+        header: ({ column }) => (
+            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                Inputer <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+        ),
+        cell: ({ row }) => row.original.user_name || 'N/A',
+    },
+    // --- Updated Actions Column ---
     {
         id: 'actions',
         enableHiding: false,
         enableSorting: false,
-        enableGlobalFilter: false, // Keep actions excluded from global filter
+        enableGlobalFilter: false,
         cell: ({ row, table }) => {
-            const vehicleStatus = row.original;
+            // Get the specific customer data for this row
+            const dataProps = row.original;
+            // State for the delete confirmation dialog
             const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+            // State to control the dropdown menu visibility
             const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+            // Ref for the password input in the delete dialog
             const passwordInput = React.useRef<HTMLInputElement>(null);
 
+            // Inertia form hook for handling the delete operation
             const {
                 data: deleteData,
                 setData: setDeleteData,
@@ -136,36 +129,47 @@ export const columns: ColumnDef<VehicleStatusType, TableMeta>[] = [
                 clearErrors: clearDeleteErrors,
             } = useForm({ password: '' });
 
+            // --- Handle Delete Submission ---
             const handleDeleteSubmit = (e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
-                clearDeleteErrors('password');
-                const toastId = toast.loading(`Deleting vehicle status ${vehicleStatus.status_name}...`);
-                destroy(route('vehicles.status.delete', vehicleStatus.id), {
-                    preserveScroll: true,
-                    preserveState: true,
-                    data: { password: deleteData.password },
+                clearDeleteErrors('password'); // Clear previous password errors
+                // Show loading toast
+                const toastId = toast.loading(`Deleting ${dataProps.name || dataProps.id}...`);
+                // Call the destroy route (ensure 'customers.destroy' matches your route name)
+                destroy(route('rentals.settings.deposit-type.delete', dataProps.id), {
+                    // Use customer.id
+                    preserveScroll: true, // Keep scroll position
+                    preserveState: true, // Keep component state if possible
+                    data: { password: deleteData.password }, // Send password
                     onSuccess: () => {
-                        toast.success(`Vehicle status ${vehicleStatus.status_name} deleted successfully.`, { id: toastId });
-                        closeDeleteModal();
+                        // Show success toast on successful deletion
+                        toast.success(`${dataProps.name || dataProps.id} deleted successfully.`, { id: toastId });
+                        closeDeleteModal(); // Close the dialog
                     },
                     onError: (errorResponse) => {
+                        // Log error and show error toast
                         console.error('Deletion error:', errorResponse);
                         if (errorResponse.password) {
+                            // Specific password error
                             toast.error(errorResponse.password, { id: toastId });
-                            passwordInput.current?.focus();
+                            passwordInput.current?.focus(); // Focus the password input
                         } else {
-                            toast.error(`Failed to delete vehicle status ${vehicleStatus.status_name}. Please try again.`, { id: toastId });
+                            // Generic error
+                            toast.error(`Failed to delete ${dataProps.name || dataProps.id}. Please try again.`, { id: toastId });
                         }
                     },
                 });
             };
 
+            // --- Close Delete Modal ---
             const closeDeleteModal = () => {
-                setIsDeleteDialogOpen(false);
-                resetDeleteForm('password');
-                clearDeleteErrors();
+                setIsDeleteDialogOpen(false); // Close the dialog
+                resetDeleteForm('password'); // Reset the password field
+                clearDeleteErrors(); // Clear any validation errors
             };
 
+            // --- Reset Form on Dialog Close ---
+            // Effect to reset the delete form when the dialog closes
             useEffect(() => {
                 if (!isDeleteDialogOpen) {
                     resetDeleteForm('password');
@@ -173,23 +177,42 @@ export const columns: ColumnDef<VehicleStatusType, TableMeta>[] = [
                 }
             }, [isDeleteDialogOpen, resetDeleteForm, clearDeleteErrors]);
 
-            const handleEdit = () => {
-                setIsDropdownOpen(false);
-                // --- Access meta via table.options.meta ---
+            // --- Handle Details Click ---
+            const handleDetailsClick = () => {
+                setIsDropdownOpen(false); // Close the dropdown
+                // Access meta from table options, ensuring it exists and has showDetails
+                const meta = table.options.meta as TableMeta | undefined;
+                if (meta?.show) {
+                    meta.show(dataProps); // Call the function passed from parent
+                } else {
+                    // Warn if the function is missing
+                    console.warn('showDetails function not found in table meta options.');
+                    toast.error('Could not show details.');
+                }
+            };
+
+            // --- Handle Edit Click ---
+            const handleEditClick = () => {
+                setIsDropdownOpen(false); // Close the dropdown
+                // Access meta from table options, ensuring it exists and has editCustomer
                 const meta = table.options.meta as TableMeta | undefined;
                 if (meta?.edit) {
-                    meta.edit(vehicleStatus);
+                    meta.edit(dataProps); // Call the function passed from parent
                 } else {
+                    // Warn if the function is missing
                     console.warn('edit function not found in table meta options.');
                     toast.error('Could not initiate edit action.');
                 }
             };
 
             return (
+                // Delete Confirmation Dialog
                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    {/* Actions Dropdown Menu */}
                     <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
+                            {/* Button to open the dropdown */}
+                            <Button variant="ghost" className="h-8 w-8 p-0 hover:cursor-pointer">
                                 <span className="sr-only">Open menu</span>
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
@@ -197,15 +220,25 @@ export const columns: ColumnDef<VehicleStatusType, TableMeta>[] = [
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={handleEdit} className="cursor-pointer">
-                                <UserRoundPen className="mr-2 h-4 w-4" />
+                            {/* Details Action Item */}
+                            {/* <DropdownMenuItem onSelect={handleDetailsClick} className="cursor-pointer">
+                                <Info className="mr-2 h-4 w-4" />
+                                <span>Details</span>
+                            </DropdownMenuItem> */}
+                            {/* Edit Action Item */}
+                            <DropdownMenuItem onSelect={handleEditClick} className="cursor-pointer">
+                                <Pencil className="mr-2 h-4 w-4" />
                                 <span>Edit</span>
                             </DropdownMenuItem>
+                            {/* Delete Action Item (Triggers Dialog) */}
                             <DialogTrigger asChild>
                                 <DropdownMenuItem
                                     onSelect={(e) => {
+                                        // Prevent default selection behavior which might close dropdown prematurely
                                         e.preventDefault();
+                                        // Manually close dropdown before opening dialog
                                         setIsDropdownOpen(false);
+                                        // Dialog opening is handled by DialogTrigger
                                     }}
                                     className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-500 dark:focus:bg-red-900/50 dark:focus:text-red-600"
                                 >
@@ -215,18 +248,20 @@ export const columns: ColumnDef<VehicleStatusType, TableMeta>[] = [
                             </DialogTrigger>
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    {/* Delete Dialog Content */}
                     <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
-                            <DialogTitle>Delete vehicle class: {vehicleStatus.status_name}</DialogTitle>
+                            <DialogTitle>Delete Contact Type: {dataProps.name || dataProps.id}</DialogTitle>
                             <DialogDescription>
                                 Are you sure? This action cannot be undone. Enter your administrator password to confirm.
                             </DialogDescription>
                         </DialogHeader>
+                        {/* Delete Form */}
                         <form onSubmit={handleDeleteSubmit} className="space-y-4 py-4">
                             <div className="grid gap-2">
-                                <Label htmlFor={`delete-password-${vehicleStatus.id}`}>Administrator Password</Label>
+                                <Label htmlFor={`delete-password-${dataProps.id}`}>Administrator Password</Label>
                                 <Input
-                                    id={`delete-password-${vehicleStatus.id}`}
+                                    id={`delete-password-${dataProps.id}`} // Unique ID for accessibility
                                     type="password"
                                     name="password"
                                     ref={passwordInput}
@@ -234,9 +269,9 @@ export const columns: ColumnDef<VehicleStatusType, TableMeta>[] = [
                                     onChange={(e) => setDeleteData('password', e.target.value)}
                                     placeholder="Enter your password"
                                     required
-                                    autoComplete="current-password"
-                                    className={deleteErrors.password ? 'border-red-500' : ''}
-                                    disabled={processingDelete}
+                                    autoComplete="current-password" // Help password managers
+                                    className={deleteErrors.password ? 'border-red-500' : ''} // Highlight if error
+                                    disabled={processingDelete} // Disable while deleting
                                 />
                                 <InputError message={deleteErrors.password} />
                             </div>
@@ -247,7 +282,7 @@ export const columns: ColumnDef<VehicleStatusType, TableMeta>[] = [
                                     </Button>
                                 </DialogClose>
                                 <Button type="submit" variant="destructive" disabled={processingDelete || !deleteData.password}>
-                                    {processingDelete ? 'Deleting...' : 'Delete Vehicle Status'}
+                                    {processingDelete ? 'Deleting...' : 'Delete'}
                                 </Button>
                             </DialogFooter>
                         </form>

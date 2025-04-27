@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 use App\Models\User;
-use App\Models\Motorbikes;
+use App\Models\vehicles;
 use App\Models\VehicleMaker;
 
 class VehicleActualModel extends Model
@@ -22,7 +22,7 @@ class VehicleActualModel extends Model
      *
      * @var string
      */
-    protected $table = 'vehicle_actual_models'; // Explicitly defining, though 'motorbikes' is the convention.
+    protected $table = 'vehicle_actual_models'; // Explicitly defining, though 'vehicles' is the convention.
 
     /**
      * The attributes that are mass assignable.
@@ -61,6 +61,6 @@ class VehicleActualModel extends Model
     {
         // We need to specify the foreign key column name used in the 'vehicles' table,
         // as it's 'current_status_id' and not the default 'vehicle_status_id'.
-        return $this->hasMany(Motorbikes::class, 'vehicle_model_id');
+        return $this->hasMany(vehicles::class, 'vehicle_model_id');
     }
 }

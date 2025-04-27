@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types'; // Assuming NavItem is defined here
 import { Link } from '@inertiajs/react';
-import { Bike, Edit3, ExternalLink, LayoutGrid, ReceiptCentIcon, Settings, User2 } from 'lucide-react'; // Added Settings icon
+import { Bike, Edit3, ExternalLink, LayoutGrid, NotebookTabs, ReceiptCentIcon, User2 } from 'lucide-react'; // Added Settings icon
 import AppLogo from './app-logo';
 
 // --- Updated Navigation Items with Groups ---
@@ -25,9 +25,9 @@ const mainNavGroups: NavGroup[] = [
         title: 'Management', // Title for the second group
         items: [
             {
-                title: 'Rental Management', // Renamed for clarity in this group
+                title: 'Rentals', // Renamed for clarity in this group
                 href: '/rentals',
-                icon: ReceiptCentIcon,
+                icon: NotebookTabs,
             },
             {
                 title: 'Vehicles', // Renamed for clarity in this group
@@ -38,11 +38,6 @@ const mainNavGroups: NavGroup[] = [
                 title: 'Customers', // Renamed for clarity in this group
                 href: '/customers',
                 icon: User2,
-            },
-            {
-                title: 'Settings', // Added a new item
-                href: '/settings',
-                icon: Settings,
             },
         ],
     },
@@ -59,11 +54,6 @@ const mainNavGroups: NavGroup[] = [
                 title: 'Rental Chart', // Renamed for clarity in this group
                 href: '/rentals-transaction',
                 icon: Bike,
-            },
-            {
-                title: 'Settings', // Added a new item
-                href: '/settings',
-                icon: Settings,
             },
         ],
     },
