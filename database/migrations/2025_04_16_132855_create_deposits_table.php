@@ -15,14 +15,18 @@ return new class extends Migration
             $table->id();
             // Foreign key relationship to the customers table
             $table->foreignId('customer_id')
-            ->constrained('customers') // Links to 'id' on 'customers' table
+            ->constrained('customers')
             ->cascadeOnDelete(); // If a customer is deleted, their contacts are also deleted
+            $table->foreignId('rental_id')
+            ->constrained('rentals')
+            ->cascadeOnDelete(); // If a rental is deleted, their contacts are also deleted
 
             // Identification (Optional - consider data privacy regulations)
-            $table->string('type'); // e.g., 'Email', 'Phone', 'WhatsApp', 'LINE'
+            $table->unsignedBigInteger('type_id');
+            $table->string('deposit_value');
             $table->string('registered_number')->unique()->nullable(); // Passport number. Optional, unique if provided.
             $table->date('expiry_date')->nullable();
-            $table->string('description')->nullable();
+            $table->text('description')->nullable();
 
             // Fields for tracking history (Soft Delete / Inactivation)
             $table->boolean('is_primary')->default(false);
@@ -36,6 +40,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index('customer_id');
+            $table->index('type_id');
             $table->index('user_id');
         });
     }

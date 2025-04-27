@@ -11,13 +11,13 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 
 // --- Table Components ---
 // UPDATED: Import columns and TableMeta specifically for models
-import { columns, TableMeta } from '@/components/vehicles/settings/makers copy/columns'; // Assuming path
-import { DataTable } from '@/components/vehicles/settings/makers copy/data-table'; // Assuming path
+import { columns, TableMeta } from '@/components/vehicles/settings/model/columns'; // Assuming path
+import { DataTable } from '@/components/vehicles/settings/model/data-table'; // Assuming path
 
 // --- Form Components ---
 // UPDATED: Import Create and Edit components specifically for models
-import Create from '@/components/vehicles/settings/makers copy/sheets/create'; // Assuming path
-import { Edit } from '@/components/vehicles/settings/makers copy/sheets/edit'; // Assuming path
+import Create from '@/components/vehicles/settings/model/sheets/create'; // Assuming path
+import { Edit } from '@/components/vehicles/settings/model/sheets/edit'; // Assuming path
 
 // --- Layouts ---
 import AppLayout from '@/layouts/app-layout'; // Assuming path

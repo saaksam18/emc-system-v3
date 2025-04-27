@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Rentals;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-use App\Models\User;
-use App\Models\Vehicles;
 
-class VehicleStatus extends Model
+use App\Models\User;
+use App\Models\Rentals;
+
+class Status extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -23,7 +24,7 @@ class VehicleStatus extends Model
      *
      * @var string
      */
-    protected $table = 'vehicle_statuses';
+    protected $table = 'rental_statuses';
 
     /**
      * The attributes that are mass assignable.
@@ -34,9 +35,8 @@ class VehicleStatus extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'status_name',
+        'name',
         'description',
-        'is_rentable',
         'user_id',
     ];
 
@@ -51,7 +51,6 @@ class VehicleStatus extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'is_rentable' => 'boolean', // Cast the database integer/boolean to a PHP boolean
         'created_at' => 'datetime', // Standard timestamp casting
         'updated_at' => 'datetime', // Standard timestamp casting
     ];
@@ -63,15 +62,29 @@ class VehicleStatus extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function vehicles(): HasMany
+    public function rentals(): HasMany
     {
         // We need to specify the foreign key column name used in the 'vehicles' table,
         // as it's 'current_status_id' and not the default 'vehicle_status_id'.
-        return $this->hasMany(Vehicles::class, 'current_status_id');
+        return $this->hasMany(Rentals::class, 'status_id');
     }
 
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
+
+    // You can add custom methods or scopes here if needed, for example:
+    /**
+     * Scope a query to only include rentable statuses.
+     *
+     * Example Usage: VehicleStatus::rentable()->get();
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    // public function scopeRentable($query)
+    // {
+    //     return $query->where('is_rentable', true);
+    // }
 }

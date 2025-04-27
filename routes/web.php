@@ -11,8 +11,15 @@ use App\Http\Controllers\Internals\UserController;
     use App\Http\Controllers\Internals\Vehicles\StatusController;
     use App\Http\Controllers\Internals\Vehicles\MakersController;
     use App\Http\Controllers\Internals\Vehicles\ModelsController;
+    // Rentals
+    use App\Http\Controllers\Internals\Deposits\DepositTypesController;
+
+// Customers
 use App\Http\Controllers\Internals\CustomersController;
 use App\Http\Controllers\Internals\Contacts\TypesController;
+
+// Rentals
+use App\Http\Controllers\Internals\RentalsController;
 
 Route::redirect('home', '/');
 Route::get('/', function () {
@@ -82,6 +89,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/customers/settings/types/register', [TypesController::class, 'store'])->name('customers.settings.types.register.store');
             Route::put('/customers/settings/types/{contactType}/update', [TypesController::class, 'update'])->name('customers.settings.types.update');
             Route::delete('/customers/settings/types/{contactType}', [TypesController::class, 'destroy'])->name('customers.settings.types.destroy');
+
+    // Rentals
+    Route::get('/rentals', [RentalsController::class, 'index'])->name('rentals.index');
+    Route::post('/rentals/register', [RentalsController::class, 'store'])->name('rentals.register.store');
+    Route::delete('/rentals/{rental}', [RentalsController::class, 'destroy'])->name('rentals.destroy');
+        // Settings
+            Route::redirect('/rentals/settings', '/rentals/settings/deposit-type');
+            // Class
+            Route::get('/rentals/settings/deposit-type', [DepositTypesController::class, 'index'])->name('rentals.settings.deposit-type.index');
+            Route::post('/rentals/settings/deposit-type/store', [DepositTypesController::class, 'store'])->name('rentals.settings.deposit-type.store');
+            Route::put('/rentals/settings/deposit-type/{type}/update', [DepositTypesController::class, 'update'])->name('rentals.settings.deposit-type.update');
+            Route::delete('/rentals/settings/deposit-type/{type}', [DepositTypesController::class, 'destroy'])->name('rentals.settings.deposit-type.delete');
 });
 
 require __DIR__.'/settings.php';

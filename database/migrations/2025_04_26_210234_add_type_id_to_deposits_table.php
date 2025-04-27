@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('vehicles', function (Blueprint $table) {
-            $table->foreign('current_rental_id')
+        Schema::table('deposits', function (Blueprint $table) {
+            $table->foreign('type_id')
                   ->references('id')
-                  ->on('rentals') // Reference the 'id' column on the 'rentals' table
-                  ->onDelete('restrict'); 
+                  ->on('deposit_types')
+                  ->onDelete('restrict');
         });
     }
 
@@ -24,8 +24,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('vehicles', function (Blueprint $table) {
-            $table->dropForeign(['current_rental_id']);
+        Schema::table('deposits', function (Blueprint $table) {
+            $table->dropForeign(['type_id']);
         });
     }
 };

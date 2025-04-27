@@ -579,61 +579,61 @@ class CustomersController extends Controller
     public function destroy(Request $request, Customers $customer): RedirectResponse
     {
         // 1. Authorize: Ensure the authenticated user has permission.
-    $this->authorize('customer-delete', $customer); // Pass $customer if policy needs it
+        $this->authorize('customer-delete', $customer); // Pass $customer if policy needs it
 
-    $validator = Validator::make($request->all(), [
-        'password' => 'required|string', // Ensure password is required
-    ]);
+        $validator = Validator::make($request->all(), [
+            'password' => 'required|string', // Ensure password is required
+        ]);
 
-    // Check if validation fails
-    if ($validator->fails()) {
-        Log::warning("Attempted to delete customer {$customer->id} without authenticated user.");
-        return back()->withErrors($validator)->withInput();
-    }
+        // Check if validation fails
+        if ($validator->fails()) {
+            Log::warning("Attempted to delete customer {$customer->id} without authenticated user.");
+            return back()->withErrors($validator)->withInput();
+        }
 
-    // 4. Verify Administrator Password: Check the submitted password against the logged-in admin's hash.
-    $admin = Auth::user();
+        // 4. Verify Administrator Password: Check the submitted password against the logged-in admin's hash.
+        $admin = Auth::user();
 
-    // Ensure we have an authenticated admin user
-    if (!$admin) {
-        Log::warning("Attempted to delete customer {$customer->id} without permissions.");
-         return back()->withErrors(['password' => 'Authentication error. Please log in again.']);
-    }
+        // Ensure we have an authenticated admin user
+        if (!$admin) {
+            Log::warning("Attempted to delete customer {$customer->id} without permissions.");
+            return back()->withErrors(['password' => 'Authentication error. Please log in again.']);
+        }
 
-    // Check the provided password against the admin's stored hashed password.
-    if (!Hash::check($request->input('password'), $admin->password)) {
-        return back()->withErrors(['password' => 'The provided administrator password does not match.'])->withInput();
-    }
-    
+        // Check the provided password against the admin's stored hashed password.
+        if (!Hash::check($request->input('password'), $admin->password)) {
+            return back()->withErrors(['password' => 'The provided administrator password does not match.'])->withInput();
+        }
+        
 
-    // Store identifier for success/error messages before potential deletion error
-    $customerIdentifier = $customer->first_name ?? $customer->last_name ?? $customer->id;
+        // Store identifier for success/error messages before potential deletion error
+        $customerIdentifier = $customer->first_name ?? $customer->last_name ?? $customer->id;
 
-    try {
-        // 2. Update the user_id field BEFORE deleting
-        $customer->user_id = Auth::id(); // Get the ID of the currently logged-in user
-        $customer->save(); // Save the change to the database
+        try {
+            // 2. Update the user_id field BEFORE deleting
+            $customer->user_id = Auth::id(); // Get the ID of the currently logged-in user
+            $customer->save(); // Save the change to the database
 
-        // 3. Delete Customer: Attempt to delete the customer record.
-        $customer->delete();
-        return to_route('customers.index');
+            // 3. Delete Customer: Attempt to delete the customer record.
+            $customer->delete();
+            return to_route('customers.index');
 
-    } catch (AuthorizationException $e) {
-        // Optional: Catch authorization exceptions separately if needed
-        Log::warning("Authorization failed for deleting customer {$customer->id}: " . $e->getMessage());
-        // You might want to redirect differently or show a specific message
-        return redirect()->back()->with('error', 'You do not have permission to delete this customer.');
+        } catch (AuthorizationException $e) {
+            // Optional: Catch authorization exceptions separately if needed
+            Log::warning("Authorization failed for deleting customer {$customer->id}: " . $e->getMessage());
+            // You might want to redirect differently or show a specific message
+            return redirect()->back()->with('error', 'You do not have permission to delete this customer.');
 
-    } catch (Exception $e) {
-        // 5. Handle Update/Deletion Errors:
-        // Log the specific exception.
-        Log::error("Error processing customer {$customer->id} (update or delete): " . $e->getMessage());
+        } catch (Exception $e) {
+            // 5. Handle Update/Deletion Errors:
+            // Log the specific exception.
+            Log::error("Error processing customer {$customer->id} (update or delete): " . $e->getMessage());
 
-        // Redirect back with a generic error message.
-        // Corrected the error message context from 'vehicle' to 'customer'
-        return redirect()->back()
-               ->with('error', 'Could not delete the customer due to a server error. Please try again later.');
-        // Alternative: return to_route('customers.index')->with('error', 'Could not delete the customer...');
-    }
+            // Redirect back with a generic error message.
+            // Corrected the error message context from 'vehicle' to 'customer'
+            return redirect()->back()
+                ->with('error', 'Could not delete the customer due to a server error. Please try again later.');
+            // Alternative: return to_route('customers.index')->with('error', 'Could not delete the customer...');
+        }
     }
 }

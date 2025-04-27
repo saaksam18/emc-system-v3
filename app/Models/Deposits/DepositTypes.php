@@ -1,19 +1,18 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Deposits;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 
 // Modle
 use App\Models\User;
-use App\Models\Deposits\DepositTypes;
-use App\Models\Customers;
+use App\Models\Deposits;
 
-class Deposits extends Model
+class DepositTypes extends Model
 {
     use HasFactory;
 
@@ -23,14 +22,12 @@ class Deposits extends Model
          * @var array<int, string>
          */
         protected $fillable = [
-            'customer_id', // Important: Ensure foreign key is fillable if creating contacts via mass assignment
-            'type_id',
-            'deposit_value',
-            'is_primary',
+            'name',
             'description',
             'is_active',
             'start_date',
             'end_date',
+            'user_id',
         ];
 
         /**
@@ -41,7 +38,6 @@ class Deposits extends Model
          * @var array<string, string>
          */
         protected $casts = [
-            'is_primary' => 'boolean',
             'is_active' => 'boolean',
             'start_date' => 'datetime',
             'end_date' => 'datetime',
@@ -56,9 +52,9 @@ class Deposits extends Model
         {
             return $this->belongsTo(User::class, 'user_id', 'id');
         }
-        public function customer(): BelongsTo
+        public function deposits(): BelongsTo
         {
-            return $this->belongsTo(Customers::class);
+            return $this->belongsTo(Deposits::class, 'id');
         }
 
         /**
@@ -85,9 +81,5 @@ class Deposits extends Model
         public function scopeInactive(Builder $query): Builder
         {
             return $query->where('is_active', false);
-        }
-        public function depositType(): BelongsTo
-        {
-            return $this->belongsTo(DepositTypes::class, 'type_id', 'id');
         }
 }

@@ -61,7 +61,8 @@ class StatusController extends Controller
                 return [
                     'id' => $vehicleStatus->id,
                     'status_name' => $vehicleStatus->status_name ?: 'N/A',
-                    'is_rentable' => $vehicleStatus->is_rentable ? 'Yes' : 'No',
+                    'is_rentable' => $vehicleStatus->is_rentable ?: 'N/A',
+                    'is_rentable_yn' => $vehicleStatus->is_rentable ? 'Yes' : 'No',
                     'description' => $vehicleStatus->description ?? 'N/A',
                     'user_name' => $vehicleStatus->creator?->name ?? 'Initial', // Use nullsafe operator consistently
                     'created_at' => $vehicleStatus->created_at?->toISOString(), // Format for JS, add nullsafe

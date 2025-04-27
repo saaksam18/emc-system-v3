@@ -123,7 +123,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 // --- Component Props Interface ---
 interface PageProps {
     // UPDATED: Prop name for status data
-    vehicleStatus: VehicleStatusType[];
+    vehicleStatus: VehicleStatusType[] | null;
     flash?: {
         success?: string;
         error?: string;
@@ -255,7 +255,7 @@ const VehiclesSettingStatus: React.FC<PageProps> = ({ vehicleStatus: initialVehi
                                     <SheetDescription>Enter the details for the new vehicle status.</SheetDescription>
                                 </SheetHeader>
                                 {/* Use the Create component for status */}
-                                <Create onSubmitSuccess={handleFormSubmitSuccess} />
+                                <Create vehicleMakers={pageProps.vehicleStatus} onSubmitSuccess={handleFormSubmitSuccess} />
                             </>
                         )}
 

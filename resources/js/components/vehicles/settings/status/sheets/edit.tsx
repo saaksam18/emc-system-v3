@@ -5,15 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { VehicleStatusType } from '@/types'; // Assuming VehicleStatusType includes 'id'
+import { VehicleStatusType } from '@/types'; // Assuming VehicleStatusType includes 'id' and 'is_rentable' (potentially boolean or number 0/1)
 import { useForm } from '@inertiajs/react';
 import type { CheckedState } from '@radix-ui/react-checkbox';
 import React, { ChangeEvent, FormEventHandler, useEffect } from 'react';
 import { toast } from 'sonner';
 
-// Define the expected structure for the form data, including the 'id'
-// Omit 'id' from initial values but include it in the type definition for useForm
-type VehicleStatusFormData = Omit<VehicleStatusType, 'id'> & { is_rentable: boolean };
+// Define the expected structure for the form data
+// Ensure is_rentable is treated as boolean within the form state
+type VehicleStatusFormData = Omit<VehicleStatusType, 'id' | 'is_rentable'> & {
+    is_rentable: boolean;
+};
 
 // --- Reusable Form Section Component (No changes needed) ---
 interface FormSectionProps {
@@ -51,7 +53,6 @@ const FormField: React.FC<FormFieldProps> = ({ label, htmlFor, error, required, 
         <div className={cn('col-span-1 md:col-span-3', contentClassName)}>
             {children}
             {error && (
-                // Use the htmlFor to link the error message to the input for accessibility
                 <p id={`${htmlFor}-error`} className="mt-1 text-sm text-red-500">
                     {error}
                 </p>
@@ -67,30 +68,45 @@ interface EditProps {
 }
 
 export function Edit({ vehicleStatus, onSubmitSuccess }: EditProps) {
-    // Initialize the form with data from the vehicleStatus prop
-    // Ensure is_rentable is treated as a boolean
+    // Helper function to determine the boolean state for is_rentable
+    // Handles boolean true/false and number 1/0 commonly used
+    const getIsRentableBoolean = (value: any): boolean => {
+        return value === true || value === 1;
+    };
+
+    // Initialize the form state
     const { data, setData, put, processing, errors, reset, clearErrors } = useForm<VehicleStatusFormData>({
         status_name: vehicleStatus?.status_name || '',
-        is_rentable: !!vehicleStatus?.is_rentable, // Convert to boolean explicitly
+        // Explicitly check for true or 1 for the initial value
+        is_rentable: vehicleStatus ? getIsRentableBoolean(vehicleStatus.is_rentable) : false,
         description: vehicleStatus?.description || '',
     });
 
     // Effect to update the form state if the vehicleStatus prop changes
-    // This is useful if the same form instance is reused for different items
     useEffect(() => {
-        // Use setData to update form fields when the prop changes
-        setData({
-            status_name: vehicleStatus?.status_name || '',
-            is_rentable: !!vehicleStatus?.is_rentable,
-            description: vehicleStatus?.description || '',
-        });
-        clearErrors(); // Clear any previous errors when loading new data
-        // Add setData to dependency array as per React hooks lint rules (optional but good practice)
+        if (vehicleStatus) {
+            const isRentableValue = getIsRentableBoolean(vehicleStatus.is_rentable);
+            setData({
+                status_name: vehicleStatus.status_name || '',
+                is_rentable: isRentableValue,
+                description: vehicleStatus.description || '',
+            });
+        } else {
+            // Optionally reset form if vehicleStatus becomes null
+            console.log('vehicleStatus prop is null, resetting form data.');
+            setData({
+                status_name: '',
+                is_rentable: false,
+                description: '',
+            });
+        }
+        // Clear errors when loading new data or resetting
+        clearErrors();
+        // Dependencies: trigger effect if prop or setData/clearErrors references change
     }, [vehicleStatus, setData, clearErrors]);
 
     /**
      * Handles input changes for standard text inputs and textareas.
-     * @param e - The change event from the input/textarea element.
      */
     const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -99,39 +115,49 @@ export function Edit({ vehicleStatus, onSubmitSuccess }: EditProps) {
 
     /**
      * Handles changes specifically for the checkbox.
-     * @param checked - The new checked state (true, false, or "indeterminate").
      */
     const handleCheckboxChange = (checked: CheckedState) => {
+        // checked can be true, false, or 'indeterminate'. We only care about true/false.
         const isChecked = checked === true;
         setData('is_rentable', isChecked);
     };
 
     /**
      * Handles the form submission for updating the vehicle status.
-     * @param e - The form event.
      */
     const handleSubmit: FormEventHandler<HTMLFormElement> = (e) => {
         e.preventDefault();
-        put(`/vehicles/settings/status/${vehicleStatus?.id}/update`, {
+        if (!vehicleStatus?.id) {
+            toast.error('Cannot update: Vehicle Status ID is missing.');
+            console.error('Missing vehicleStatus.id for update');
+            return; // Prevent submission if ID is missing
+        }
+        // PUT request to the update endpoint
+        put(route('vehicles.settings.status.update', { id: vehicleStatus.id }), {
+            // Ensure route generation is correct
             onSuccess: () => {
-                clearErrors();
-                onSubmitSuccess();
+                toast.success('Vehicle status updated successfully!');
+                onSubmitSuccess(); // Call the success callback (e.g., close sheet)
+                // No need to clearErrors here, onSuccess implies no errors
             },
             onError: (errorResponse) => {
                 console.error('Error updating vehicle status:', errorResponse);
-                toast.error('Failed to update vehicle status. Please check errors.');
+                // Errors are automatically populated into the `errors` object by Inertia
+                toast.error('Failed to update vehicle status. Please review errors.');
             },
-            preserveState: true,
-            preserveScroll: true,
+            // preserveState: true, // Keep state unless redirecting
+            preserveScroll: true, // Keep scroll position
         });
     };
 
-    // Cleanup effect to clear errors when the component unmounts
+    // Cleanup effect (optional but good practice)
     useEffect(() => {
         return () => {
-            clearErrors();
+            // Clear errors when the component unmounts
+            // clearErrors(); // Might be redundant if errors are cleared elsewhere appropriately
         };
     }, [clearErrors]);
+
     return (
         <div className="px-4">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -153,10 +179,10 @@ export function Edit({ vehicleStatus, onSubmitSuccess }: EditProps) {
 
                     {/* --- Description Field --- */}
                     <FormField label="Description" htmlFor="description" error={errors.description}>
-                        <Input // Or use <Textarea rows={3} />
+                        <Input // Consider using <Textarea rows={3} /> if description can be long
                             id="description"
                             name="description"
-                            value={data.description}
+                            value={data.description ?? ''} // Ensure value is not null/undefined for input
                             onChange={handleInputChange}
                             autoComplete="off"
                             className={cn(errors.description && 'border-red-500')}
@@ -169,52 +195,57 @@ export function Edit({ vehicleStatus, onSubmitSuccess }: EditProps) {
                     <FormField
                         label="Rentable"
                         htmlFor="is_rentable"
-                        error={errors.is_rentable}
+                        error={errors.is_rentable} // Error message for the boolean field
                         contentClassName="flex items-center pt-1"
-                        required // Keep required for validation logic if needed backend-side
+                        // `required` attribute isn't standard for checkbox groups,
+                        // rely on backend validation and error display.
                     >
                         <div className="flex items-center space-x-2">
                             <Checkbox
                                 id="is_rentable"
                                 name="is_rentable"
-                                checked={data.is_rentable}
-                                onCheckedChange={handleCheckboxChange}
-                                className={cn(errors.is_rentable && 'border-red-500')}
+                                checked={data.is_rentable} // Bind checked state to form data
+                                onCheckedChange={handleCheckboxChange} // Update form data on change
+                                className={cn(errors.is_rentable && 'border-red-500')} // Style if error
                                 aria-invalid={!!errors.is_rentable}
                                 aria-describedby={errors.is_rentable ? 'is_rentable-error' : undefined}
                             />
-                            {/* Optional label next to checkbox */}
-                            {/* <label htmlFor="is_rentable" className="text-sm font-medium">Mark as rentable</label> */}
+                            {/* Optional: Add a label right next to the checkbox if needed */}
+                            {/* <label htmlFor="is_rentable" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"> */}
+                            {/* Mark as rentable */}
+                            {/* </label> */}
                         </div>
-                        {/* Error message moved to FormField component */}
+                        {/* Error message is now handled by the FormField component */}
                     </FormField>
                 </FormSection>
 
                 <SheetFooter>
                     <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                        {/* Cancel Button */}
                         <SheetClose asChild>
                             <Button type="button" variant="outline">
                                 Cancel
                             </Button>
                         </SheetClose>
+
                         {/* Reset Button - Resets to original loaded values */}
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => {
-                                // Reset now correctly resets to the initial values set by useForm
-                                // which were derived from the *original* vehicleStatus prop
-                                // or the last values set by setData in the useEffect hook if the prop changed.
+                                // reset() reverts to the initial values passed to useForm
                                 reset();
-                                clearErrors();
+                                clearErrors(); // Clear any validation errors shown
+                                toast.info('Changes reset to original values.');
                             }}
                             disabled={processing}
                         >
                             Reset Changes
                         </Button>
-                        {/* Submit Button --- */}
+
+                        {/* Submit Button */}
                         <Button type="submit" disabled={processing} className="w-full sm:w-auto">
-                            {processing ? 'Updating...' : 'Update'} {/* Updated text */}
+                            {processing ? 'Updating...' : 'Update Status'}
                         </Button>
                     </div>
                 </SheetFooter>
