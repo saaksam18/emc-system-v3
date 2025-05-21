@@ -111,6 +111,30 @@ export const columns: ColumnDef<Customers, TableMeta>[] = [
             );
         },
     },
+    {
+        // Combine Phone and Contact Count
+        id: 'primary_deposit_and_count', // Give a unique ID
+        accessorKey: 'primary_deposit_type', // Still allows sorting by primary_contact_type if needed
+        header: ({ column }) => (
+            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                Primary Contact <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+        ),
+        cell: ({ row }) => {
+            const type = row.original.primary_deposit_type;
+            const contact = row.original.primary_deposit;
+            const count = row.original.active_deposits_count;
+            return (
+                // Use flex to position phone and badge
+                <div className="flex items-center space-x-2">
+                    <span className="font-bold">{type}:</span>
+                    <span>{contact}</span>
+                    {/* Conditionally render badge only if count > 0 */}
+                    {count > 0 && <Badge variant="secondary">Total: {count}</Badge>}
+                </div>
+            );
+        },
+    },
     // Daily Rental Price Column
     {
         accessorKey: 'address',
@@ -123,24 +147,6 @@ export const columns: ColumnDef<Customers, TableMeta>[] = [
             );
         },
         cell: ({ row }) => row.original.address || 'N/A',
-    },
-    {
-        accessorKey: 'passport_number',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Passport Number <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.passport_number || 'N/A',
-    },
-    {
-        accessorKey: 'passport_expiry',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Passport Expiry <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.passport_expiry || 'N/A',
     },
     {
         accessorKey: 'notes',

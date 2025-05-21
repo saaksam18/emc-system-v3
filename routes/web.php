@@ -21,6 +21,12 @@ use App\Http\Controllers\Internals\Contacts\TypesController;
 // Rentals
 use App\Http\Controllers\Internals\RentalsController;
 
+// Report
+    // Full Details
+    use App\Http\Controllers\Reports\FullDetails\RentalController;
+    use App\Http\Controllers\Reports\FullDetails\VisaController;
+    use App\Http\Controllers\Reports\FullDetails\WorkPermitController;
+
 Route::redirect('home', '/');
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -53,6 +59,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/vehicles', [VehiclesController::class, 'index'])->name('vehicles.index');
         Route::post('/vehicles/register', [VehiclesController::class, 'store'])->name('vehicles.register.store');
         Route::put('/vehicles/{vehicle}/update', [VehiclesController::class, 'update'])->name('vehicles.update');
+        Route::put('/vehicles/{vehicle}/update/sold-or-stolen', [VehiclesController::class, 'soldOrStolen'])->name('vehicles.update.sold-or-stolen');
         Route::delete('/vehicles/{vehicle}', [VehiclesController::class, 'destroy'])->name('vehicles.destroy');
         // Setting
             Route::redirect('/vehicles/settings', '/vehicles/settings/classes');
@@ -93,7 +100,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Rentals
     Route::get('/rentals', [RentalsController::class, 'index'])->name('rentals.index');
     Route::post('/rentals/register', [RentalsController::class, 'store'])->name('rentals.register.store');
-    Route::delete('/rentals/{rental}', [RentalsController::class, 'destroy'])->name('rentals.destroy');
+    Route::put('/rentals/{rental}/return', [RentalsController::class, 'destroy'])->name('rentals.return');
+    Route::put('/rentals/{rental}/update/temp-return', [RentalsController::class, 'tempReturn'])->name('rentals.status.temp-return.update');
+    Route::put('/rentals/{rental}/update/pick-up', [RentalsController::class, 'pickUp'])->name('rentals.status.pick-up.update');
+    Route::put('/rentals/{rental}/update/extend-contract', [RentalsController::class, 'ExtendContract'])->name('rentals.status.extend-contract.update');
+    Route::put('/rentals/{rental}/update/change-vehicle-contract', [RentalsController::class, 'ChangeVehicle'])->name('rentals.status.change-vehicle-contract.update');
+    Route::put('/rentals/{rental}/update/change-deposit-contract', [RentalsController::class, 'ChangeDeposit'])->name('rentals.status.change-deposit-contract.update');
         // Settings
             Route::redirect('/rentals/settings', '/rentals/settings/deposit-type');
             // Class
@@ -101,6 +113,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/rentals/settings/deposit-type/store', [DepositTypesController::class, 'store'])->name('rentals.settings.deposit-type.store');
             Route::put('/rentals/settings/deposit-type/{type}/update', [DepositTypesController::class, 'update'])->name('rentals.settings.deposit-type.update');
             Route::delete('/rentals/settings/deposit-type/{type}', [DepositTypesController::class, 'destroy'])->name('rentals.settings.deposit-type.delete');
+
+    // Report
+        // Histories
+        Route::get('/reports/full-details/rentals/{rental}', [RentalController::class, 'index'])->name('reports.full-details.rentals.index');
+        Route::get('/reports/full-details/visas/{visa}', [VisaController::class, 'index'])->name('reports.full-details.visas.index');
+        Route::get('/reports/full-details/work-permits/{wp}', [WorkPermitController::class, 'index'])->name('reports.full-details.work-permits.index');
 });
 
 require __DIR__.'/settings.php';

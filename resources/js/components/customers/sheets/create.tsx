@@ -115,7 +115,7 @@ const FormField: React.FC<FormFieldProps> = ({ label, htmlFor, error, required, 
     <div className={cn('grid grid-cols-1 items-start gap-4 md:grid-cols-4 md:items-center', className)}>
         <Label htmlFor={htmlFor} className={cn('text-left md:text-right', labelClassName)}>
             {label}
-            {required && '*'}
+            {required && <span className="text-red-500">*</span>}
         </Label>
         <div className={cn('col-span-1 md:col-span-3', contentClassName)}>
             {children}
@@ -284,8 +284,6 @@ export function Create({ contactTypes, onSubmitSuccess }: CreateProps) {
             toast.error('Please fill in the primary contact type and value.');
             return; // Stop submission
         }
-
-        console.log('Submitting data:', data); // Log data before sending
 
         post(url, {
             preserveScroll: true,

@@ -102,7 +102,6 @@ export function Create({ onSubmitSuccess }: CreateProps) {
             clearErrors();
         };
     }, [clearErrors]);
-    console.log(data);
     return (
         <div className="px-4">
             {/* --- Form Submission Handler --- */}

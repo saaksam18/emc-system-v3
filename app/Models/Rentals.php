@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes; // Import SoftDeletes
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use App\Models\Vehicles;
 use App\Models\Customers;
+use App\Models\Deposits;
 use App\Models\Rentals\Status;
 use App\Models\User;
 
@@ -44,6 +46,8 @@ class Rentals extends Model
         'status',
         'notes',
         'user_id',
+        'created_at',
+        'updated_at',
     ];
 
     /**
@@ -151,4 +155,8 @@ class Rentals extends Model
     {
         return $this->belongsTo(Status::class, 'status_id', 'id');
     }
+    public function deposits(): HasMany
+        {
+            return $this->hasMany(Deposits::class, 'rental_id');
+        }
 }

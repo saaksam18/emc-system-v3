@@ -28,5 +28,7 @@ class AdminSeeder extends Seeder
         $role->syncPermissions($permissions);
        
         $user->assignRole([$role->id]);
+
+        $this->command->info('Admin user seeded successfully!');
     }
 }

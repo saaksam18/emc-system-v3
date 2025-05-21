@@ -36,12 +36,12 @@ export function DataTable<TData, TValue>({ columns, data, meta }: DataTableProps
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
         id: false,
-        start_date: false,
-        total_cost: false,
+        primary_contact_and_count: false,
+        primary_deposit_and_count: false,
         period: false,
+        total_cost: false,
         notes: false,
         created_at: false,
-        incharger_name: false,
         user_name: false,
     });
 

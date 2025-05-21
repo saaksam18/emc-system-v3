@@ -39,7 +39,7 @@ return new class extends Migration
             $table->dateTime('actual_return_date')->nullable(); // Actual date and time the vehicle was returned. Nullable until returned.
 
             // Financials & Status
-            $table->decimal('total_cost', 10, 2)->unsigned()->nullable(); // Total calculated cost for the rental. Nullable, might be set upon completion. Unsigned.
+            $table->integer('total_cost')->nullable(); // Total calculated cost for the rental. Nullable, might be set upon completion. Unsigned.
             $table->boolean('is_active')->default(false);
             $table->string('status');
 

@@ -26,11 +26,14 @@ class Deposits extends Model
             'customer_id', // Important: Ensure foreign key is fillable if creating contacts via mass assignment
             'type_id',
             'deposit_value',
+            'registered_number',
+            'expiry_date',
             'is_primary',
             'description',
             'is_active',
             'start_date',
             'end_date',
+            'user_id',
         ];
 
         /**
@@ -43,6 +46,7 @@ class Deposits extends Model
         protected $casts = [
             'is_primary' => 'boolean',
             'is_active' => 'boolean',
+            'expiry_date' => 'datetime',
             'start_date' => 'datetime',
             'end_date' => 'datetime',
         ];

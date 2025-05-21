@@ -95,7 +95,6 @@ export function Edit({ contactType, onSubmitSuccess }: EditProps) {
 
         // Construct the URL for the update request using the contactType's ID
         const updateUrl = `/customers/settings/types/${contactType?.id}/update`;
-        console.log(updateUrl);
         put(updateUrl, {
             onSuccess: () => {
                 clearErrors();

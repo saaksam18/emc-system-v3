@@ -129,8 +129,8 @@ export interface VehicleModelType {
 export interface VehicleStatusType {
     id: number;
     status_name: string;
-    description: string;
-    is_rentable: boolean;
+    description?: string;
+    is_rentable?: boolean;
     is_rentable_yn?: boolean;
     user_name?: string;
     created_at?: any;
