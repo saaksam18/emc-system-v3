@@ -37,6 +37,7 @@ export function DataTable<TData, TValue>({ columns, data, meta }: DataTableProps
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
         date_of_birth: false,
         address: false,
+        primary_deposit_and_count: false,
         passport_number: false,
         passport_expiry: false,
         notes: false,

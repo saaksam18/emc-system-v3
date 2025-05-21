@@ -101,8 +101,8 @@ class CustomersController extends Controller
                                ?? $activeDeposits->firstWhere('is_primary', false) // Fallback
                                ?? null; // Final fallback
 
-                $primaryDepositType = $primaryDeposit?->type ?? 'N/A';
-                $primaryDepositValue = $primaryDeposit?->registered_number ?? 'N/A';
+                $primaryDepositType = $primaryDeposit?->depositType?->name ?? 'N/A';
+                $primaryDepositValue = $primaryDeposit?->deposit_value ?? 'N/A';
                 $activeDepositsCount = $activeDeposits->count();
 
                 // --- Format Active Contacts with Type Name ---
@@ -126,13 +126,17 @@ class CustomersController extends Controller
                  $formattedActiveDeposits = $activeDeposits->map(function ($deposit) {
                      return [
                          'id' => $deposit->id,
-                         'customer_id' => $deposit->customer_id,
-                         'type' => $deposit->type,
-                         'registered_number' => $deposit->registered_number,
-                         'balance' => $deposit->balance, // Example field
+                         'customer_id' => $deposit->customer_id ?? "N/A",
+                         'rental_id' => $deposit->rental_id ?? "N/A",
+                         'type_name' => $deposit->depositType?->name ?? "N/A",
+                         'deposit_value' => $deposit->deposit_value ?? "N/A",
+                         'registered_number' => $deposit->registered_number ?? "N/A",
+                         'expiry_date' => $deposit->expiry_date?->toISOString() ?? "N/A",
+                         'description' => $deposit->description ?? "N/A",
                          'is_primary' => $deposit->is_primary,
                          'is_active' => $deposit->is_active,
-                         // Add any other deposit fields you need on the frontend
+                         'start_date' => $deposit->start_date?->toISOString(),
+                         'end_date' => $deposit->end_date?->toISOString(),
                          'created_at' => $deposit->created_at?->toISOString(),
                          'updated_at' => $deposit->updated_at?->toISOString(),
                      ];

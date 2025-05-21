@@ -84,5 +84,7 @@ class UserRolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'type-create']);
         Permission::create(['name' => 'type-edit']);
         Permission::create(['name' => 'type-delete']);
+        
+        $this->command->info('User roles and permissions seeded successfully!');
     }
 }

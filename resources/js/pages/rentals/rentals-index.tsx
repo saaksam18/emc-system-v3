@@ -23,6 +23,13 @@ import type { BreadcrumbItem, Customers, Deposits, RentalsType, User, Vehicle, V
 
 // --- Utility Imports ---
 import { DataTable } from '@/components/rentals/data-table';
+import { ChangeDeposit } from '@/components/rentals/sheets/change-deposit';
+import { ChangeVehicle } from '@/components/rentals/sheets/change-vehicle';
+import { ExtendContract } from '@/components/rentals/sheets/extend-contract';
+import { Pickup } from '@/components/rentals/sheets/pick-up';
+import { Return } from '@/components/rentals/sheets/return';
+import { Show } from '@/components/rentals/sheets/show';
+import { TemporaryReturn } from '@/components/rentals/sheets/temporary-return';
 import { cn } from '@/lib/utils'; // For Tailwind class merging (Ensure this path is correct)
 import { NotebookTabs, Settings } from 'lucide-react'; // Icons
 
@@ -94,7 +101,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface PageProps {
     rentals: RentalsType[];
     availableVehicles: Vehicle[] | null;
-    vehicleStatuses: VehicleStatusType | null;
+    vehicleStatuses: VehicleStatusType[] | null;
     customers: Customers[] | null;
     depositTypes: Deposits[] | null;
     users: User[] | null;
@@ -115,7 +122,9 @@ const RentalsIndex: React.FC<PageProps> = ({ rentals: initialRentals, availableV
     // Sheet State
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [selectedRow, setSelectedRow] = useState<RentalsType | null>(null); // For showing details
-    const [sheetMode, setSheetMode] = useState<'show' | 'create' | 'edit'>('create');
+    const [sheetMode, setSheetMode] = useState<
+        'show' | 'create' | 'edit' | 'temporary' | 'extend' | 'exVehicle' | 'exDeposit' | 'pick-up' | 'return'
+    >('create');
     const [edit, setEdit] = useState<RentalsType | null>(null); // For editing
 
     // Filter State
@@ -163,6 +172,48 @@ const RentalsIndex: React.FC<PageProps> = ({ rentals: initialRentals, availableV
         setIsSheetOpen(true);
     }, []);
 
+    const handleTemporary = useCallback((rentalToEdit: RentalsType) => {
+        setSheetMode('temporary');
+        setSelectedRow(rentalToEdit);
+        setEdit(rentalToEdit);
+        setIsSheetOpen(true);
+    }, []);
+
+    const handleExtend = useCallback((rentalToEdit: RentalsType) => {
+        setSheetMode('extend');
+        setSelectedRow(rentalToEdit);
+        setEdit(rentalToEdit);
+        setIsSheetOpen(true);
+    }, []);
+
+    const handleExchangeVehicle = useCallback((rentalToEdit: RentalsType) => {
+        setSheetMode('exVehicle');
+        setSelectedRow(rentalToEdit);
+        setEdit(rentalToEdit);
+        setIsSheetOpen(true);
+    }, []);
+
+    const handleExchangeDeposit = useCallback((rentalToEdit: RentalsType) => {
+        setSheetMode('exDeposit');
+        setSelectedRow(rentalToEdit);
+        setEdit(rentalToEdit);
+        setIsSheetOpen(true);
+    }, []);
+
+    const handlePickUp = useCallback((rentalToEdit: RentalsType) => {
+        setSheetMode('pick-up');
+        setSelectedRow(rentalToEdit);
+        setEdit(rentalToEdit);
+        setIsSheetOpen(true);
+    }, []);
+
+    const handleReturn = useCallback((rentalToEdit: RentalsType) => {
+        setSheetMode('return');
+        setSelectedRow(rentalToEdit);
+        setEdit(rentalToEdit);
+        setIsSheetOpen(true);
+    }, []);
+
     const handleFormSubmitSuccess = () => {
         setIsSheetOpen(false);
         // Reload only the customers data after submit
@@ -180,6 +231,12 @@ const RentalsIndex: React.FC<PageProps> = ({ rentals: initialRentals, availableV
             create: handleCreate,
             show: handleShow,
             edit: handleEdit,
+            extend: handleExtend,
+            exVehicle: handleExchangeVehicle,
+            exDeposit: handleExchangeDeposit,
+            pickUp: handlePickUp,
+            temporaryReturn: handleTemporary,
+            return: handleReturn,
         }),
         // Dependencies remain the same
         [vehicleStatuses, globalFilter, handleCreate, handleShow, handleEdit],
@@ -265,7 +322,7 @@ const RentalsIndex: React.FC<PageProps> = ({ rentals: initialRentals, availableV
                                     <SheetTitle>{selectedRow?.name || 'N/A'} Details:</SheetTitle>
                                     <SheetDescription>Viewing details for rental: {selectedRow?.name || 'N/A'}</SheetDescription>
                                 </SheetHeader>
-                                {/* <Show selectedRow={selectedRow} /> */}
+                                <Show selectedRow={selectedRow} />
                                 <SheetFooter>
                                     <SheetClose asChild>
                                         <Button type="button" variant="outline">
@@ -286,7 +343,7 @@ const RentalsIndex: React.FC<PageProps> = ({ rentals: initialRentals, availableV
                                 <Create
                                     customers={customers}
                                     availableVehicles={availableVehicles}
-                                    vehicleStatuses={vehicleStatuses}
+                                    vehicleStatuses={pageProps.vehicleStatuses || vehicleStatuses || []}
                                     depositTypes={depositTypes}
                                     users={users}
                                     onSubmitSuccess={handleFormSubmitSuccess}
@@ -294,20 +351,101 @@ const RentalsIndex: React.FC<PageProps> = ({ rentals: initialRentals, availableV
                             </>
                         )}
 
-                        {/* Edit Form View */}
-                        {sheetMode === 'edit' && edit && (
+                        {/* Extend Form View */}
+                        {sheetMode === 'extend' && edit && (
                             <>
                                 <SheetHeader>
-                                    <SheetTitle>Edit Customer: {edit.full_name}</SheetTitle>
-                                    <SheetDescription>Update the customer's details.</SheetDescription>
+                                    <SheetTitle>Edit Rental Status for customer: {edit.full_name}</SheetTitle>
+                                    <SheetDescription>Update the rental's details.</SheetDescription>
                                 </SheetHeader>
-                                {/* <Edit
-                                    // Pass the customer data being edited
-                                    selectedRow={edit} // Pass editCustomer data here
-                                    // Pass latest contactTypes from usePage if available
-                                    contactTypes={pageProps.contactTypes || contactTypes || []}
+                                <ExtendContract
+                                    selectedRow={selectedRow}
+                                    vehicleStatuses={pageProps.vehicleStatuses || vehicleStatuses || []}
+                                    users={users}
                                     onSubmitSuccess={handleFormSubmitSuccess}
-                                /> */}
+                                />
+                            </>
+                        )}
+
+                        {/* Change vehicle Form View */}
+                        {sheetMode === 'exVehicle' && edit && (
+                            <>
+                                <SheetHeader>
+                                    <SheetTitle>Edit Rental Status for customer: {edit.full_name}</SheetTitle>
+                                    <SheetDescription>Update the rental's details.</SheetDescription>
+                                </SheetHeader>
+                                <ChangeVehicle
+                                    availableVehicles={availableVehicles}
+                                    selectedRow={selectedRow}
+                                    vehicleStatuses={pageProps.vehicleStatuses || vehicleStatuses || []}
+                                    users={users}
+                                    onSubmitSuccess={handleFormSubmitSuccess}
+                                />
+                            </>
+                        )}
+
+                        {/* Change deposit Form View */}
+                        {sheetMode === 'exDeposit' && edit && (
+                            <>
+                                <SheetHeader>
+                                    <SheetTitle>Edit Rental Status for customer: {edit.full_name}</SheetTitle>
+                                    <SheetDescription>Update the rental's details.</SheetDescription>
+                                </SheetHeader>
+                                <ChangeDeposit
+                                    selectedRow={selectedRow}
+                                    depositTypes={pageProps.depositTypes || depositTypes || []}
+                                    users={users}
+                                    onSubmitSuccess={handleFormSubmitSuccess}
+                                />
+                            </>
+                        )}
+
+                        {/* Pick up Form View */}
+                        {sheetMode === 'pick-up' && edit && (
+                            <>
+                                <SheetHeader>
+                                    <SheetTitle>Edit Rental Status for customer: {edit.full_name}</SheetTitle>
+                                    <SheetDescription>Update the rental's details.</SheetDescription>
+                                </SheetHeader>
+                                <Pickup
+                                    selectedRow={selectedRow}
+                                    vehicleStatuses={pageProps.vehicleStatuses || vehicleStatuses || []}
+                                    depositTypes={depositTypes}
+                                    users={users}
+                                    onSubmitSuccess={handleFormSubmitSuccess}
+                                />
+                            </>
+                        )}
+
+                        {/* Temporary Form View */}
+                        {sheetMode === 'temporary' && edit && (
+                            <>
+                                <SheetHeader>
+                                    <SheetTitle>Edit Rental Status for customer: {edit.full_name}</SheetTitle>
+                                    <SheetDescription>Update the rental's details.</SheetDescription>
+                                </SheetHeader>
+                                <TemporaryReturn
+                                    selectedRow={selectedRow}
+                                    vehicleStatuses={pageProps.vehicleStatuses || vehicleStatuses || []}
+                                    users={users}
+                                    onSubmitSuccess={handleFormSubmitSuccess}
+                                />
+                            </>
+                        )}
+
+                        {/* Return Form View */}
+                        {sheetMode === 'return' && edit && (
+                            <>
+                                <SheetHeader>
+                                    <SheetTitle>Edit Rental Status for customer: {edit.full_name}</SheetTitle>
+                                    <SheetDescription>Update the rental's details.</SheetDescription>
+                                </SheetHeader>
+                                <Return
+                                    selectedRow={selectedRow}
+                                    vehicleStatuses={pageProps.vehicleStatuses || vehicleStatuses || []}
+                                    users={users}
+                                    onSubmitSuccess={handleFormSubmitSuccess}
+                                />
                             </>
                         )}
                     </SheetContent>

@@ -92,8 +92,6 @@ export function Edit({ vehicleStatus, onSubmitSuccess }: EditProps) {
                 description: vehicleStatus.description || '',
             });
         } else {
-            // Optionally reset form if vehicleStatus becomes null
-            console.log('vehicleStatus prop is null, resetting form data.');
             setData({
                 status_name: '',
                 is_rentable: false,

@@ -36,6 +36,7 @@ import { DataTable as StockDataTable } from '@/components/vehicles/stock-data-ta
 // Make sure these types are correctly defined in '@/types'
 import type {
     BreadcrumbItem,
+    Customers,
     User,
     Vehicle,
     VehicleClass,
@@ -49,6 +50,7 @@ import type {
 // --- Utility Imports ---
 import { cn } from '@/lib/utils'; // For Tailwind class merging
 // Import necessary date-fns functions
+import { SoldOrStolen } from '@/components/vehicles/sheets/sold-or-stolen';
 import { endOfDay, format, isValid, isWithinInterval, parse, startOfDay, startOfMonth } from 'date-fns';
 import { Bike, CalendarIcon, Printer, Settings } from 'lucide-react'; // Icons
 import type { DateRange } from 'react-day-picker'; // Type for date range picker, added 'type' keyword
@@ -130,6 +132,7 @@ interface PageProps {
     vehicles_stock_cbm?: VehicleCountByModel[];
     chartData?: any[]; // Define a more specific type if possible { date: string; totalMoto: number; [key: string]: any }
     vehicleClasses?: { id: number | string; name: string; color: string }[];
+    customers: Customers[] | null;
     auth: { user: User };
     flash?: {
         success?: string;
@@ -154,7 +157,7 @@ const VehiclesIndex: React.FC<PageProps> = () => {
     // Other UI State
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-    const [sheetMode, setSheetMode] = useState<'show' | 'create' | 'edit'>('create');
+    const [sheetMode, setSheetMode] = useState<'show' | 'create' | 'edit' | 'sold-or-stolen'>('create');
     const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
     const [globalFilter, setGlobalFilter] = useState('');
 
@@ -251,7 +254,14 @@ const VehiclesIndex: React.FC<PageProps> = () => {
 
     const handleEditVehicle = useCallback((vehicleToEdit: Vehicle) => {
         setSheetMode('edit');
-        setSelectedVehicle(null); // Keep selectedVehicle null when editing? Or set it? Decide based on <Edit> component needs.
+        setSelectedVehicle(null);
+        setEditingVehicle(vehicleToEdit);
+        setIsSheetOpen(true);
+    }, []);
+
+    const handleSoldOrStolen = useCallback((vehicleToEdit: Vehicle) => {
+        setSheetMode('sold-or-stolen');
+        setSelectedVehicle(vehicleToEdit);
         setEditingVehicle(vehicleToEdit);
         setIsSheetOpen(true);
     }, []);
@@ -270,6 +280,7 @@ const VehiclesIndex: React.FC<PageProps> = () => {
             onGlobalFilterChange: setGlobalFilter,
             showDetails: handleShowDetails,
             editVehicle: handleEditVehicle,
+            soldOrStolen: handleSoldOrStolen,
         }),
         [globalFilter, handleShowDetails, handleEditVehicle],
     ); // Dependencies
@@ -435,6 +446,21 @@ const VehiclesIndex: React.FC<PageProps> = () => {
                                             vehicle_status={pageProps.vehicle_status || []}
                                             vehicle_models={pageProps.vehicle_models || []}
                                             vehicle_makers={pageProps.vehicle_makers || []}
+                                        />
+                                    </>
+                                )}
+                                {sheetMode === 'sold-or-stolen' && editingVehicle && (
+                                    <>
+                                        <SheetHeader>
+                                            {/* UPDATED: More accurate title */}
+                                            <SheetTitle>Edit Vehicle: {editingVehicle.vehicle_no}</SheetTitle>
+                                            <SheetDescription>Update the vehicle's details.</SheetDescription>
+                                        </SheetHeader>
+                                        <SoldOrStolen
+                                            vehicle={selectedVehicle}
+                                            customers={pageProps.customers}
+                                            users={pageProps.users}
+                                            onSubmitSuccess={handleFormSubmitSuccess}
                                         />
                                     </>
                                 )}

@@ -24,7 +24,7 @@ import { Label } from '@/components/ui/label';
 import { Vehicle } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { ArrowUpDown, Info, MoreHorizontal, Trash2, UserRoundPen } from 'lucide-react';
+import { ArrowUpDown, Info, MoreHorizontal, PencilOff, PencilRuler, Trash2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -36,6 +36,7 @@ const InputError = ({ message }: { message?: string }) => (message ? <p classNam
 export interface TableMeta {
     showDetails: (vehicle: Vehicle) => void;
     editVehicle: (vehicle: Vehicle) => void;
+    soldOrStolen: (vehicle: Vehicle) => void;
     globalFilter?: string; // State for the global filter value
     onGlobalFilterChange?: (value: string) => void; // Function to update the filter value
 }
@@ -397,6 +398,18 @@ export const columns: ColumnDef<Vehicle, TableMeta>[] = [
                 }
             };
 
+            const handleSoldOrStolen = () => {
+                setIsDropdownOpen(false);
+                // --- Access meta via table.options.meta ---
+                const meta = table.options.meta as TableMeta | undefined;
+                if (meta?.soldOrStolen) {
+                    meta.soldOrStolen(vehicle);
+                } else {
+                    console.warn('editVehicle function not found in table meta options.');
+                    toast.error('Could not initiate edit action.');
+                }
+            };
+
             return (
                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
@@ -414,8 +427,12 @@ export const columns: ColumnDef<Vehicle, TableMeta>[] = [
                                 <span>Details</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={handleEditClick} className="cursor-pointer">
-                                <UserRoundPen className="mr-2 h-4 w-4" />
+                                <PencilRuler className="mr-2 h-4 w-4" />
                                 <span>Edit</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={handleSoldOrStolen} className="cursor-pointer">
+                                <PencilOff className="mr-2 h-4 w-4" />
+                                <span>Sold / Stolen</span>
                             </DropdownMenuItem>
                             <DialogTrigger asChild>
                                 <DropdownMenuItem

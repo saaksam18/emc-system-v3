@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 // Assuming Contact and Deposits types are correctly defined in @/types
 // Make sure the definitions in @/types match the actual data structure
-import { Customers } from '@/types';
+import { RentalsType } from '@/types';
 import { Link } from '@inertiajs/react';
 import { ExternalLink } from 'lucide-react';
 
@@ -24,11 +24,11 @@ interface DepositType {
 }
 // --- Component Props Interface ---
 interface Props {
-    selectedCustomer: Customers;
+    selectedRow: RentalsType;
 }
 
 // --- Component Implementation ---
-export function Show({ selectedCustomer }: Props) {
+export function Show({ selectedRow }: Props) {
     // Function to safely render contact type
     const renderContactType = (contactType: string | ContactTypeObject | null): string => {
         if (typeof contactType === 'object' && contactType !== null) {
@@ -39,33 +39,67 @@ export function Show({ selectedCustomer }: Props) {
         return contactType || 'N/A';
     };
 
+    // Function to format date to "DD Month YYYY" (e.g., 21 May 2025)
+    const formatDate = (dateString: string | undefined): string => {
+        if (!dateString) {
+            return 'N/A';
+        }
+        try {
+            const date = new Date(dateString);
+            // Options for toLocaleDateString to get "DD Month YYYY" format
+            const options: Intl.DateTimeFormatOptions = {
+                day: '2-digit',
+                month: 'short', // 'short' for 'May', 'long' for 'May'
+                year: 'numeric',
+            };
+            return date.toLocaleDateString('en-GB', options); // 'en-GB' for day-month-year order
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return 'Invalid Date';
+        }
+    };
+    console.log(selectedRow);
     return (
         <div className="px-4 py-4 md:px-4 lg:px-4">
             <div className="flex flex-col gap-4">
                 {/* --- Basic Information Card --- */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Basic Information</CardTitle>
+                        <CardTitle>Basic Rental Information</CardTitle>
                         <CardDescription>Basic information about the customer.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         <p>
-                            <strong>ID:</strong> {selectedCustomer.id}
+                            <strong>Rental ID:</strong> {selectedRow.id}
                         </p>
                         <p>
-                            <strong>Full Name:</strong> {selectedCustomer.full_name || 'N/A'}
+                            <strong>Customer Name:</strong> {selectedRow.full_name || 'N/A'}
                         </p>
                         <p>
-                            <strong>Date of Birth:</strong> {selectedCustomer.date_of_birth || 'N/A'}
+                            <strong>Vehicle No:</strong> {selectedRow.vehicle_no || 'N/A'}
                         </p>
                         <p>
-                            <strong>Gender:</strong> {selectedCustomer.gender || 'N/A'}
+                            <strong>Status:</strong> {selectedRow.status_name || 'N/A'}
                         </p>
                         <p>
-                            <strong>Nationality:</strong> {selectedCustomer.nationality || 'N/A'}
+                            <strong>Pre. Return Date:</strong> {formatDate(selectedRow.start_date) || 'N/A'}
                         </p>
                         <p>
-                            <strong>Address:</strong> {selectedCustomer.address || 'N/A'}
+                            <strong>Current Return Date:</strong> {formatDate(selectedRow.end_date) || 'N/A'}
+                        </p>
+                        <p>
+                            <strong>Period: </strong>
+                            {selectedRow.period ? (
+                                (() => {
+                                    if (selectedRow.period > 0) {
+                                        return <span>{selectedRow.period} days</span>;
+                                    } else {
+                                        return <span>N/A</span>;
+                                    }
+                                })()
+                            ) : (
+                                <span>N/A</span>
+                            )}
                         </p>
                     </CardContent>
                 </Card>
@@ -79,23 +113,21 @@ export function Show({ selectedCustomer }: Props) {
                     <CardContent className="space-y-4">
                         <div>
                             <p>
-                                <strong>Primary Contact Type:</strong> {selectedCustomer.primary_contact_type || 'N/A'}
+                                <strong>Primary Contact Type:</strong> {selectedRow.primary_contact_type || 'N/A'}
                             </p>
                             <p>
-                                <strong>Primary Contact:</strong> {selectedCustomer.primary_contact || 'N/A'}
+                                <strong>Primary Contact:</strong> {selectedRow.primary_contact || 'N/A'}
                             </p>
                             <p>
-                                <strong>Total Active Contacts:</strong> {selectedCustomer.active_contacts_count ?? 'N/A'}
+                                <strong>Total Related Contacts:</strong> {selectedRow.active_contact_count ?? 'N/A'}
                             </p>
                         </div>
 
                         <div className="pt-2">
-                            <h4 className="mb-3 text-base font-semibold">All Active Contacts</h4>
+                            <h4 className="mb-3 text-base font-semibold">All Related Contacts</h4>
                             <div className="space-y-3">
-                                {selectedCustomer.activeContacts &&
-                                Array.isArray(selectedCustomer.activeContacts) &&
-                                selectedCustomer.activeContacts.length > 0 ? (
-                                    selectedCustomer.activeContacts.map((contact, index) => (
+                                {selectedRow.activeContacts && Array.isArray(selectedRow.activeContacts) && selectedRow.activeContacts.length > 0 ? (
+                                    selectedRow.activeContacts.map((contact, index) => (
                                         <div
                                             key={contact.id} // Use the number ID as key
                                             className="bg-muted/50 hover:bg-muted/70 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border p-3 transition-colors"
@@ -133,7 +165,7 @@ export function Show({ selectedCustomer }: Props) {
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-muted-foreground text-sm">No active contacts found.</p>
+                                    <p className="text-muted-foreground text-sm">No related contacts found.</p>
                                 )}
                             </div>
                         </div>
@@ -149,23 +181,21 @@ export function Show({ selectedCustomer }: Props) {
                     <CardContent className="space-y-4">
                         <div>
                             <p>
-                                <strong>Primary Identification Type:</strong> {selectedCustomer.primary_deposit_type || 'N/A'}
+                                <strong>Primary Identification Type:</strong> {selectedRow.primary_deposit_type || 'N/A'}
                             </p>
                             <p>
-                                <strong>Primary Identification:</strong> {selectedCustomer.primary_deposit || 'N/A'}
+                                <strong>Primary Identification:</strong> {selectedRow.primary_deposit || 'N/A'}
                             </p>
                             <p>
-                                <strong>Total Active Identifications:</strong> {selectedCustomer.active_deposits_count ?? 'N/A'}
+                                <strong>Total Related Identifications:</strong> {selectedRow.active_deposits_count ?? 'N/A'}
                             </p>
                         </div>
 
                         <div className="pt-2">
-                            <h4 className="mb-3 text-base font-semibold">All Active Identifications</h4>
-                            {selectedCustomer.activeDeposits &&
-                            Array.isArray(selectedCustomer.activeDeposits) &&
-                            selectedCustomer.activeDeposits.length > 0 ? (
+                            <h4 className="mb-3 text-base font-semibold">All Related Identifications</h4>
+                            {selectedRow.activeDeposits && Array.isArray(selectedRow.activeDeposits) && selectedRow.activeDeposits.length > 0 ? (
                                 <div className="space-y-3">
-                                    {selectedCustomer.activeDeposits.map((deposit) => (
+                                    {selectedRow.activeDeposits.map((deposit) => (
                                         <div
                                             key={deposit.id}
                                             className="bg-muted/50 hover:bg-muted/70 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border p-3 transition-colors"
@@ -177,7 +207,7 @@ export function Show({ selectedCustomer }: Props) {
                                             </div>
                                             {/* Deposit Value */}
                                             <div className="min-w-[100px] flex-1">
-                                                <Label className="text-muted-foreground text-xs">Type</Label>
+                                                <Label className="text-muted-foreground text-xs">Value</Label>
                                                 <p className="font-medium">{deposit.deposit_value || 'N/A'}</p>
                                             </div>
                                             {/* Registered Number */}
@@ -188,7 +218,7 @@ export function Show({ selectedCustomer }: Props) {
                                             {/* Expiry Date */}
                                             <div className="min-w-[100px] flex-1">
                                                 <Label className="text-muted-foreground text-xs">Expiry Date</Label>
-                                                <p className="font-medium">{deposit.expiry_date || 'N/A'}</p>
+                                                <p className="font-medium">{formatDate(deposit.expiry_date) || 'N/A'}</p>
                                             </div>
                                             {/* Deposit Description (Optional) */}
                                             {deposit.description && (
@@ -201,7 +231,7 @@ export function Show({ selectedCustomer }: Props) {
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-muted-foreground text-sm">No active identifications found.</p>
+                                <p className="text-muted-foreground text-sm">No related identifications found.</p>
                             )}
                         </div>
                     </CardContent>
@@ -215,28 +245,41 @@ export function Show({ selectedCustomer }: Props) {
                     </CardHeader>
                     <CardContent className="space-y-3">
                         <p>
-                            <strong>Registered At:</strong>{' '}
-                            {selectedCustomer.created_at ? new Date(selectedCustomer.created_at).toLocaleString('en-GB') : 'N/A'}
+                            <strong>Registered At:</strong>
+                            {selectedRow.created_at ? new Date(selectedRow.created_at).toLocaleString('en-GB') : 'N/A'}
                         </p>
                         <p>
-                            <strong>Notes:</strong> {selectedCustomer.notes || 'N/A'}
+                            <strong>Notes:</strong> {selectedRow.notes || 'N/A'}
                         </p>
                         <p>
-                            <strong>Inputer:</strong> {selectedCustomer.user_name || 'N/A'}
+                            <strong>Inputer:</strong> {selectedRow.user_name || 'N/A'}
                         </p>
                         {/* Links Section */}
                         <div className="mt-6 border-t pt-4">
                             <h5 className="text-muted-foreground mb-3 text-center text-sm font-semibold">Related Histories</h5>
                             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                                <Link href={'#'} prefetch={false} className="text-primary flex items-center gap-1 text-sm hover:underline">
+                                <Link
+                                    href={`/reports/full-details/rentals/${selectedRow.id}`}
+                                    prefetch={true}
+                                    method="get"
+                                    className="text-primary flex items-center gap-1 text-sm hover:underline"
+                                >
                                     <span>Rental Histories</span>
                                     <ExternalLink className="h-4 w-4" />
                                 </Link>
-                                <Link href={'#'} prefetch={false} className="text-primary flex items-center gap-1 text-sm hover:underline">
+                                <Link
+                                    href={`/reports/full-details/visas/${selectedRow.id}`}
+                                    prefetch={false}
+                                    className="text-primary flex items-center gap-1 text-sm hover:underline"
+                                >
                                     <span>Visa Extension Histories</span>
                                     <ExternalLink className="h-4 w-4" />
                                 </Link>
-                                <Link href={'#'} prefetch={false} className="text-primary flex items-center gap-1 text-sm hover:underline">
+                                <Link
+                                    href={`/reports/full-details/work-permits/${selectedRow.id}`}
+                                    prefetch={false}
+                                    className="text-primary flex items-center gap-1 text-sm hover:underline"
+                                >
                                     <span>Work Permit Histories</span>
                                     <ExternalLink className="h-4 w-4" />
                                 </Link>
@@ -248,5 +291,3 @@ export function Show({ selectedCustomer }: Props) {
         </div>
     );
 }
-
-// export default Show; // Uncomment if needed

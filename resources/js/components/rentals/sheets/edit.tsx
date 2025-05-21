@@ -188,7 +188,6 @@ export function Edit({ selectedCustomer, contactTypes = [], onSubmitSuccess }: E
     // --- Effect to Reset Form and Populate DoB Fields on Customer Change ---
     useEffect(() => {
         if (selectedCustomer) {
-            console.log('Selected customer changed:', selectedCustomer);
             // Reset Inertia form state FIRST using the calculated initial values
             reset(); // This should now reset to the values including the correct contact_type name
 
@@ -212,7 +211,6 @@ export function Edit({ selectedCustomer, contactTypes = [], onSubmitSuccess }: E
                         }
                     }
                 }
-                console.log(`Parsed DoB (inside timeout): Y=${initialYear}, M=${initialMonth}, D=${initialDay}`);
                 setDobYear(initialYear);
                 setDobMonth(initialMonth);
                 setDobDay(initialDay);
@@ -459,7 +457,6 @@ export function Edit({ selectedCustomer, contactTypes = [], onSubmitSuccess }: E
             // @ts-ignore - Inertia's setData type might not perfectly match FormErrors structure, but this is how errors are typically set.
             setData('errors', newErrors);
             toast.error('Please fix the errors in the form.');
-            console.log('Frontend Validation Errors:', newErrors);
             return;
         }
         // --- End Frontend Validation ---
@@ -500,9 +497,6 @@ export function Edit({ selectedCustomer, contactTypes = [], onSubmitSuccess }: E
                     toast.error('Failed to update customer. An unknown error occurred.');
                 }
                 // Inertia automatically sets errors state via the hook
-            },
-            onFinish: () => {
-                console.log('Submission finished.');
             },
         });
     };
