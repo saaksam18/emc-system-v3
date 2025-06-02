@@ -43,6 +43,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         compensation_price: false,
         purchase_price: false,
         notes: false,
+        vehicle_class_id: false,
         purchase_date: false,
         user_name: false,
         created_at: false,

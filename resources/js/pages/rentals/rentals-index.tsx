@@ -30,6 +30,8 @@ import { Pickup } from '@/components/rentals/sheets/pick-up';
 import { Return } from '@/components/rentals/sheets/return';
 import { Show } from '@/components/rentals/sheets/show';
 import { TemporaryReturn } from '@/components/rentals/sheets/temporary-return';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils'; // For Tailwind class merging (Ensure this path is correct)
 import { NotebookTabs, Settings } from 'lucide-react'; // Icons
 
@@ -104,6 +106,9 @@ interface PageProps {
     vehicleStatuses: VehicleStatusType[] | null;
     customers: Customers[] | null;
     depositTypes: Deposits[] | null;
+    numericDepositSum: any;
+    textDepositCount: any;
+    overdueRentalsCount: any;
     users: User[] | null;
     auth: { user: User };
     flash?: {
@@ -115,7 +120,17 @@ interface PageProps {
 }
 
 // --- CustomersIndex Component ---
-const RentalsIndex: React.FC<PageProps> = ({ rentals: initialRentals, availableVehicles, vehicleStatuses, customers, depositTypes, users }) => {
+const RentalsIndex: React.FC<PageProps> = ({
+    rentals: initialRentals,
+    availableVehicles,
+    vehicleStatuses,
+    customers,
+    depositTypes,
+    numericDepositSum,
+    textDepositCount,
+    overdueRentalsCount,
+    users,
+}) => {
     // Destructure initial props
     const { props: pageProps } = usePage<PageProps>();
 
@@ -250,24 +265,29 @@ const RentalsIndex: React.FC<PageProps> = ({ rentals: initialRentals, availableV
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Money Deposit</CardTitle>
-                            <CardDescription>Overview of scooter rental deposit.</CardDescription>
+                            <CardTitle>Rental Deposits & Overdue</CardTitle>
+                            <CardDescription>
+                                Overview of scooter rental deposits. Included any currencies other than USD, Passport, etc...
+                            </CardDescription>
                         </CardHeader>
-                        {/* Add CardContent with actual data/stats if available */}
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Hard Deposit</CardTitle>
-                            <CardDescription>Overview of scooter rental hard deposit (Passport, etc...).</CardDescription>
-                        </CardHeader>
-                        {/* Add CardContent with actual data/stats if available */}
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Overdue Rentors</CardTitle>
-                            <CardDescription>Overview of customers late payments.</CardDescription>
-                        </CardHeader>
-                        {/* Add CardContent with actual data/stats if available */}
+                        <CardContent>
+                            <Separator />
+                            <div className="mt-4 flex h-5 items-center justify-between space-x-4 text-sm">
+                                <div>Overdue Rentors</div>
+                                <Separator orientation="vertical" />
+                                <Badge variant="secondary">{overdueRentalsCount} Customers</Badge>
+                            </div>
+                            <div className="mt-4 flex h-5 items-center justify-between space-x-4 text-sm">
+                                <div>Money Deposit</div>
+                                <Separator orientation="vertical" />
+                                <Badge variant="secondary">$ {numericDepositSum}</Badge>
+                            </div>
+                            <div className="mt-4 flex h-5 items-center justify-between space-x-4 text-sm">
+                                <div>Other Deposit</div>
+                                <Separator orientation="vertical" />
+                                <Badge variant="secondary">{textDepositCount}</Badge>
+                            </div>
+                        </CardContent>
                     </Card>
                 </div>
 

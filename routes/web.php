@@ -27,6 +27,9 @@ use App\Http\Controllers\Internals\RentalsController;
     use App\Http\Controllers\Reports\FullDetails\VisaController;
     use App\Http\Controllers\Reports\FullDetails\WorkPermitController;
 
+    // Rentals
+    use App\Http\Controllers\Reports\Rentals\RentalTransactoinsController;
+
 Route::redirect('home', '/');
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -119,6 +122,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports/full-details/rentals/{rental}', [RentalController::class, 'index'])->name('reports.full-details.rentals.index');
         Route::get('/reports/full-details/visas/{visa}', [VisaController::class, 'index'])->name('reports.full-details.visas.index');
         Route::get('/reports/full-details/work-permits/{wp}', [WorkPermitController::class, 'index'])->name('reports.full-details.work-permits.index');
+
+        // Rentals
+        Route::get('/reports/rentals-transaction', [RentalTransactoinsController::class, 'index'])->name('reports.rentals-transaction.index');
 });
 
 require __DIR__.'/settings.php';

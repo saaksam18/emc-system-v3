@@ -132,6 +132,51 @@ class RentalsController extends Controller
 
             Log::info("Retrieved {$rentals->count()} rentals.");
 
+            // Count Deposit
+            $deposits = Deposits::where('is_active', true)->get();
+
+            $numericDepositSum = 0;
+            $textDepositCount = 0;
+            $textDepositValues = [];
+            $overdueRentalsCount = Rentals::overdue()->count();
+
+            // Retrieve the actual overdue rental records
+            /* $overdueRentals = Rentals::overdue()->get();
+
+            // Calculate how long each rental is overdue
+            foreach ($overdueRentals as $rental) {
+                // Ensure end_date is a Carbon instance (it should be due to $casts in model)
+                if ($rental->end_date instanceof Carbon) {
+                    // Calculate the difference in days from the end_date to now
+                    $overdueDays = $rental->end_date->diffInDays(Carbon::now());
+                    // You can also get a human-readable format, e.g., "3 days ago"
+                    $overdueHuman = $rental->end_date->diffForHumans(Carbon::now(), true); // 'true' for absolute difference
+
+                    $rental->overdue_duration_days = $overdueDays;
+                    $rental->overdue_duration_human = $overdueHuman;
+                } else {
+                    // Handle cases where end_date might not be a Carbon instance (though it should be)
+                    $rental->overdue_duration_days = null;
+                    $rental->overdue_duration_human = 'N/A';
+                }
+            }
+
+            dd($overdueRentals); */
+
+            // Iterate through each deposit to categorize and aggregate deposit_value
+            foreach ($deposits as $deposit) {
+                $value = $deposit->deposit_value;
+
+                // Check if the value is numeric.
+                // is_numeric() handles both integer and float strings.
+                if (is_numeric($value)) {
+                    $numericDepositSum += (float) $value; // Cast to float to handle decimal numbers
+                } else {
+                    $textDepositCount++;
+                    $textDepositValues[] = $value; // Store the text value if needed
+                }
+            }
+
             // Map the customer data for the frontend
             $formattedRentals = $rentals->map(function (Rentals $rental) {
                 // --- Correctly concatenate first and last names with a space ---
@@ -205,6 +250,30 @@ class RentalsController extends Controller
                          'updated_at' => $deposit->updated_at?->toISOString(),
                     ];
                 });
+
+                // Calculate how long each rental is overdue
+                $overdueRentals = Rentals::overdue()
+                ->where('id', $rental->id)
+                ->whereNull('actual_return_date')
+                ->where('end_date', '<', now())
+                ->get();
+                // Calculate how long each rental is overdue
+                    foreach ($overdueRentals as $rental) {
+                        // Ensure end_date is a Carbon instance (it should be due to $casts in model)
+                        if ($rental->end_date instanceof Carbon) {
+                            // Calculate the difference in days from the end_date to now
+                            $overdueDays = $rental->end_date->diffInDays(Carbon::now());
+                            // You can also get a human-readable format, e.g., "3 days ago"
+                            $overdueHuman = $rental->end_date->diffForHumans(Carbon::now(), true); // 'true' for absolute difference
+
+                            $rental->overdue_duration_days = $overdueDays;
+                            $rental->overdue_duration_human = $overdueHuman;
+                        } else {
+                            // Handle cases where end_date might not be a Carbon instance (though it should be)
+                            $rental->overdue_duration_days = null;
+                            $rental->overdue_duration_human = 'N/A';
+                        }
+                    }
             
                 // --- Return the formatted array ---
                 return [
@@ -239,6 +308,7 @@ class RentalsController extends Controller
                     'start_date' => $rental->start_date,
                     'end_date' => $rental->end_date,
                     'period' => $rental->period,
+                    'overdue' => $rental->overdue_duration_human,
 
                     // Additional Info
                     'notes' => $rental->notes ?? 'N/A', // Null coalescing for notes
@@ -257,6 +327,9 @@ class RentalsController extends Controller
                 'vehicleStatuses' => Inertia::defer(fn () => $formattedVehicleStatuses),
                 'customers' => Inertia::defer(fn () => $formattedCustomers),
                 'depositTypes' => Inertia::defer(fn () => $formattedDepositTypes),
+                'numericDepositSum' => Inertia::defer(fn () => $numericDepositSum),
+                'textDepositCount' => Inertia::defer(fn () => $textDepositCount),
+                'overdueRentalsCount' => Inertia::defer(fn () => $overdueRentalsCount),
                 'users' => Inertia::defer(fn () => $formattedUsers),
             ]);
 
@@ -1842,8 +1915,8 @@ class RentalsController extends Controller
             $archivedRental->updated_at = now();
             $archivedRental->save();
 
-            $rental->is_latest_version = true;
-            $rental->is_active = true;
+            $rental->is_latest_version = false;
+            $rental->is_active = false;
             $rental->updated_at = now();
 
             $rental->save(); // Save the updates BEFORE soft deleting
