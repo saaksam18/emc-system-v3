@@ -33,15 +33,6 @@ export const columns: ColumnDef<Vehicle>[] = [
         ),
         cell: ({ row }) => <div>{row.getValue('vehicle_no')}</div>,
     },
-    {
-        accessorKey: 'make',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Maker <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => <div>{row.getValue('make')}</div>,
-    },
     // Model Column
     {
         accessorKey: 'model',
@@ -50,7 +41,15 @@ export const columns: ColumnDef<Vehicle>[] = [
                 Model <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => <div>{row.getValue('model')}</div>,
+        cell: ({ row }) => {
+            const maker = row.original.make;
+            const model = row.original.model;
+            return (
+                <div className="text-center font-medium">
+                    {maker} {model}
+                </div>
+            );
+        },
     },
     // Year Column
     {

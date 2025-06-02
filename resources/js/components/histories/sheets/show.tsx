@@ -245,7 +245,7 @@ export function Show({ selectedRow }: Props) {
                     </CardHeader>
                     <CardContent className="space-y-3">
                         <p>
-                            <strong>Registered At:</strong>
+                            <strong>Registered At: </strong>
                             {selectedRow.created_at ? new Date(selectedRow.created_at).toLocaleString('en-GB') : 'N/A'}
                         </p>
                         <p>

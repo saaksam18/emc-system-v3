@@ -470,58 +470,51 @@ const VehiclesIndex: React.FC<PageProps> = () => {
                 </Card>
 
                 {/* Hidden Section for Printing */}
-                <div className="hidden">
+                <div className="mt-4 hidden">
                     {/* Use the ref here */}
-                    <div ref={contentRef} className="p-4">
-                        {/* Added padding for print layout */}
-                        <Card>
-                            {' '}
-                            {/* Wrap content in Card for consistent styling (optional) */}
-                            <CardHeader>
-                                <CardTitle>Stock Check List</CardTitle>
-                                <CardDescription>Check the checkbox and make sure the vehicles location.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid gap-4 md:grid-cols-3">
-                                    <div className="col-span-2">
-                                        {' '}
+                    <div ref={contentRef}>
+                        {/* Wrap content in Card for consistent styling (optional) */}
+                        <CardHeader>
+                            <CardTitle>Stock Check List</CardTitle>
+                            <CardDescription>Check the checkbox and make sure the vehicles location.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid md:grid-cols-3">
+                                <div className="col-span-2">
+                                    {/* Removed border/overflow styles */}
+                                    <Label className="mb-2 block">Vehicle Stock List</Label> {/* Added label */}
+                                    <Deferred
+                                        data="vehicles_stock"
+                                        fallback={<SkeletonTable rowCount={10} columnCount={stockColumn.length} minWidth="450px" />}
+                                    >
+                                        <StockDataTable columns={stockColumn} data={pageProps.vehicles_stock || []} />
+                                    </Deferred>
+                                </div>
+                                <div>
+                                    <div>
+                                        <Label className="mb-2 block">Count by Classes</Label>
                                         {/* Removed border/overflow styles */}
-                                        <Label className="mb-2 block">Vehicle Stock List</Label> {/* Added label */}
                                         <Deferred
-                                            data="vehicles_stock"
-                                            fallback={<SkeletonTable rowCount={10} columnCount={stockColumn.length} minWidth="450px" />}
+                                            data="vehicles_stock_cbc"
+                                            fallback={<SkeletonTable rowCount={3} columnCount={stockCBCColumn.length} minWidth="200px" />}
                                         >
-                                            <StockDataTable columns={stockColumn} data={pageProps.vehicles_stock || []} />
+                                            <StockCBCDataTable columns={stockCBCColumn} data={pageProps.vehicles_stock_cbc || []} />
                                         </Deferred>
                                     </div>
-                                    <div className="space-y-4">
-                                        {' '}
-                                        {/* Added space-y */}
-                                        <div>
-                                            <Label className="mb-2 block">Count by Classes</Label>
-                                            {/* Removed border/overflow styles */}
-                                            <Deferred
-                                                data="vehicles_stock_cbc"
-                                                fallback={<SkeletonTable rowCount={3} columnCount={stockCBCColumn.length} minWidth="200px" />}
-                                            >
-                                                <StockCBCDataTable columns={stockCBCColumn} data={pageProps.vehicles_stock_cbc || []} />
-                                            </Deferred>
-                                        </div>
-                                        <div>
-                                            <Label className="mb-2 block">Count by Models</Label>
-                                            {/* Removed border/overflow styles */}
-                                            <Deferred
-                                                data="vehicles_stock_cbm"
-                                                fallback={<SkeletonTable rowCount={5} columnCount={stockCBMColumn.length} minWidth="200px" />}
-                                            >
-                                                {/* Assuming StockCBCDataTable can handle CBM columns, otherwise use StockCBMDataTable */}
-                                                <StockCBCDataTable columns={stockCBMColumn} data={pageProps.vehicles_stock_cbm || []} />
-                                            </Deferred>
-                                        </div>
+                                    <div>
+                                        <Label className="mb-2 block">Count by Models</Label>
+                                        {/* Removed border/overflow styles */}
+                                        <Deferred
+                                            data="vehicles_stock_cbm"
+                                            fallback={<SkeletonTable rowCount={5} columnCount={stockCBMColumn.length} minWidth="200px" />}
+                                        >
+                                            {/* Assuming StockCBCDataTable can handle CBM columns, otherwise use StockCBMDataTable */}
+                                            <StockCBCDataTable columns={stockCBMColumn} data={pageProps.vehicles_stock_cbm || []} />
+                                        </Deferred>
                                     </div>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </CardContent>
                     </div>
                 </div>
             </div>

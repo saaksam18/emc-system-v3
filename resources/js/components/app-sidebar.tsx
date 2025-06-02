@@ -47,14 +47,14 @@ const mainNavGroups: NavGroup[] = [
         items: [
             {
                 title: 'Rental Transaction', // Renamed for clarity in this group
-                href: '/rentals-transaction',
+                href: '/reports/rentals-transaction',
                 icon: ReceiptCentIcon,
             },
-            {
+            /* {
                 title: 'Rental Chart', // Renamed for clarity in this group
-                href: '/rentals-transaction',
+                href: '/reports/rentals-transaction/chart',
                 icon: Bike,
-            },
+            }, */
         ],
     },
     {
