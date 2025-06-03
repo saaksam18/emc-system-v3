@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 use App\Models\User;
-use App\Models\vehicles;
+use App\Models\Vehicles;
 
 class VehicleClasses extends Model
 {
@@ -53,6 +53,6 @@ class VehicleClasses extends Model
     {
         // We need to specify the foreign key column name used in the 'vehicles' table,
         // as it's 'current_status_id' and not the default 'vehicle_status_id'.
-        return $this->hasMany(vehicles::class, 'vehicle_class_id');
+        return $this->hasMany(Vehicles::class, 'vehicle_class_id');
     }
 }
