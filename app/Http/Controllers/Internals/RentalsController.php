@@ -1482,6 +1482,34 @@ class RentalsController extends Controller
                      ->with('error', 'Associated vehicle could not be found. Cannot process return.');
             }
 
+            // --- ** MODIFIED: Process All Active Deposits for the Original Rental ** ---
+            // Fetch all active deposits for the original rental
+            $activeDeposits = Deposits::where('rental_id', $rental->id)
+                                    ->where('is_active', true) // Corrected typo: where instead of whare
+                                    ->get(); // Get a collection of deposits
+
+            if ($activeDeposits->isNotEmpty()) {
+                foreach ($activeDeposits as $originalDeposit) {
+                    // Replicate the original deposit for the archived rental
+                    $archivedDeposit = $originalDeposit->replicate();
+                    $archivedDeposit->rental_id = $archivedRental->id; // Link to the new archived rental
+                    $archivedDeposit->created_at = now(); // Set new timestamps
+                    $archivedDeposit->updated_at = now();
+                    // Ensure is_active is true for the new deposit record, or set as per your business logic
+                    $archivedDeposit->is_active = true; 
+                    $archivedDeposit->save();
+
+                    // Deactivate the original deposit
+                    $originalDeposit->is_active = false;
+                    $originalDeposit->updated_at = now();
+                    $originalDeposit->save();
+                }
+            } else {
+                // Log if no active deposits were found for the original rental
+                Log::info("No active deposits were found for Rental [ID: {$rental->id}] during vehicle change process by User [ID: {$userId}]. No deposits were archived or updated.");
+            }
+            // --- ** End Deposit Processing Logic ** ---
+
             // 5. Update the *Original* Rental Record with Return Details
             $rental->is_latest_version = false;
             $rental->is_active = false;

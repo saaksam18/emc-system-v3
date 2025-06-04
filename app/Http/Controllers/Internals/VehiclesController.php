@@ -79,6 +79,7 @@ class VehiclesController extends Controller
                 Log::debug("Calculating chart data for month: {$monthLabel}");
 
                 $rentedvehicleIdsInMonth = Rentals::where('start_date', '<=', $monthEnd)
+                    ->withTrashed()
                     ->where(function ($query) use ($monthStart) {
                         $query->where('end_date', '>=', $monthStart)->orWhereNull('end_date');
                     })
