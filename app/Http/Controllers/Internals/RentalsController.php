@@ -753,17 +753,33 @@ class RentalsController extends Controller
             $archivedRental->save();
             // --- ** End Replication Logic ** ---
 
-
             // 3. Update related Deposits (if applicable)
-            // Assuming Deposits have a foreign key 'rental_id' and 'user_id' for tracking
-            Deposits::where('rental_id', $rental->id)
-                ->where('is_active', true) // Only update active deposits associated with this rental
-                ->update([
-                    'is_active' => false,
-                    'end_date' => $validatedData['actual_end_date'], // Use actual return date
-                    'user_id' => $userId, // Track who processed the return
-                    'updated_at' => now(),
-                ]);
+            $activeDeposits = Deposits::where('rental_id', $rental->id)
+                                    ->where('is_active', true) // Corrected typo: where instead of whare
+                                    ->get(); // Get a collection of deposits
+
+            if ($activeDeposits->isNotEmpty()) {
+                foreach ($activeDeposits as $originalDeposit) {
+                    // Replicate the original deposit for the archived rental
+                    $archivedDeposit = $originalDeposit->replicate();
+                    $archivedDeposit->rental_id = $archivedRental->id; // Link to the new archived rental
+                    $archivedDeposit->is_active = false;
+                    $archivedDeposit->end_date = $validatedData['actual_end_date'];
+                    $archivedDeposit->created_at = now(); // Set new timestamps
+                    $archivedDeposit->updated_at = now();
+                    // Ensure is_active is true for the new deposit record, or set as per your business logic
+                    $archivedDeposit->user_id = $userId;
+                    $archivedDeposit->save();
+
+                    // Deactivate the original deposit
+                    $originalDeposit->is_active = false;
+                    $originalDeposit->updated_at = now();
+                    $originalDeposit->save();
+                }
+            } else {
+                // Log if no active deposits were found for the original rental
+                Log::info("No active deposits were found for Rental [ID: {$rental->id}] during vehicle change process by User [ID: {$userId}]. No deposits were archived or updated.");
+            }
 
             // 4. Update related Vehicle
             if ($vehicle) {
@@ -1498,6 +1514,7 @@ class RentalsController extends Controller
                     $archivedDeposit->updated_at = now();
                     // Ensure is_active is true for the new deposit record, or set as per your business logic
                     $archivedDeposit->is_active = true; 
+                    $archivedDeposit->user_id = $userId;
                     $archivedDeposit->save();
 
                     // Deactivate the original deposit

@@ -132,6 +132,7 @@ const RentalsReportIndex: React.FC<PageProps> = ({ rentals: initialRentals, tran
         // Dependencies remain the same
         [globalFilter],
     );
+    console.log(initialRentals);
 
     // --- Render ---
     return (
