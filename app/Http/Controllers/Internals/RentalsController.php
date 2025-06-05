@@ -742,6 +742,7 @@ class RentalsController extends Controller
             $archivedRental->incharger_id = $incharger->id; // Track who processed the return
             $archivedRental->user_id = $userId; // Track the user performing the action
             $archivedRental->period = $validatedData['period_difference']; // Store the calculated period
+            $archivedRental->total_cost = $validatedData['total_cost'];
             $archivedRental->created_at = now();
             $archivedRental->updated_at = now();
             // Remove the soft delete timestamp if replicating a non-deleted record
