@@ -1,3 +1,5 @@
+// parent component:
+import DashboardChartsSection from '@/components/dashboards/dashboard-charts-section';
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -10,7 +12,17 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+/* interface DashboardProps {
+    flash?: {
+        success?: string;
+        error?: string;
+        errors?: Record<string, string | string[]>;
+    };
+    [key: string]: any;
+} */
+
 export default function Dashboard() {
+    // You no longer need to pass chartData here, DashboardChartsSection will fetch it
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
@@ -26,9 +38,8 @@ export default function Dashboard() {
                         <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
                     </div>
                 </div>
-                <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border md:min-h-min">
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                </div>
+                {/* DashboardChartsSection will now fetch its own data */}
+                <DashboardChartsSection />
             </div>
         </AppLayout>
     );

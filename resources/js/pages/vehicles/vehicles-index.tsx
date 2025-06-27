@@ -9,11 +9,9 @@ import AppLayout from '@/layouts/app-layout'; // Adjust path if needed
 
 // --- UI Component Imports (shadcn/ui) ---
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label'; // Added Label import
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { toast } from 'sonner'; // For notifications
 
@@ -28,7 +26,6 @@ import { columns as stockCBMColumn } from '@/components/vehicles/stock-cbm-colum
 import { Create } from '@/components/vehicles/sheets/create'; // Adjust path
 import { Edit } from '@/components/vehicles/sheets/edit'; // Adjust path
 import { Show } from '@/components/vehicles/sheets/show'; // Adjust path
-import { VehicleStockChart } from '@/components/vehicles/stock-chart'; // Adjust path
 import { columns as stockColumn } from '@/components/vehicles/stock-columns'; // Adjust path
 import { DataTable as StockDataTable } from '@/components/vehicles/stock-data-table'; // Adjust path
 
@@ -50,9 +47,10 @@ import type {
 // --- Utility Imports ---
 import { cn } from '@/lib/utils'; // For Tailwind class merging
 // Import necessary date-fns functions
+import DashboardChartsSection from '@/components/dashboards/dashboard-charts-section';
 import { SoldOrStolen } from '@/components/vehicles/sheets/sold-or-stolen';
-import { endOfDay, format, isValid, isWithinInterval, parse, startOfDay, startOfMonth } from 'date-fns';
-import { Bike, CalendarIcon, Printer, Settings } from 'lucide-react'; // Icons
+import { endOfDay, isValid, isWithinInterval, parse, startOfDay, startOfMonth } from 'date-fns';
+import { Bike, Printer, Settings } from 'lucide-react'; // Icons
 import type { DateRange } from 'react-day-picker'; // Type for date range picker, added 'type' keyword
 
 // --- Skeleton Loader Components ---
@@ -297,58 +295,8 @@ const VehiclesIndex: React.FC<PageProps> = () => {
 
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Top Section: Chart Card */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Vehicles Stock Over Time</CardTitle>
-                        <CardDescription>Showing historical rental data. Use the date picker to filter the chart.</CardDescription>
-                        <div className="flex w-full flex-col flex-wrap items-center gap-2 pt-4 sm:w-auto sm:flex-row">
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        id="date"
-                                        variant={'outline'}
-                                        className={cn('w-full justify-start text-left font-normal sm:w-[260px]', !date && 'text-muted-foreground')}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {date?.from ? (
-                                            date.to ? (
-                                                <>
-                                                    {format(date.from, 'LLL dd, y')} - {format(date.to, 'LLL dd, y')}
-                                                </>
-                                            ) : (
-                                                format(date.from, 'LLL dd, y')
-                                            )
-                                        ) : (
-                                            <span>Pick a date range</span>
-                                        )}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="end">
-                                    <Calendar
-                                        initialFocus
-                                        mode="range"
-                                        defaultMonth={date?.from}
-                                        selected={date}
-                                        onSelect={setDate}
-                                        numberOfMonths={2}
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-[250px]">
-                            {isChartLoading ? (
-                                <div className="flex h-full items-center justify-center">
-                                    {/* You could use a Skeleton component here too for better UX */}
-                                    <p className="text-muted-foreground">Loading Chart Data...</p>
-                                </div>
-                            ) : (
-                                <VehicleStockChart chartData={filteredChartData} vehicleClasses={pageProps.vehicleClasses || []} />
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
+
+                <DashboardChartsSection />
 
                 {/* Bottom Section: Data Table Card */}
                 <Card>

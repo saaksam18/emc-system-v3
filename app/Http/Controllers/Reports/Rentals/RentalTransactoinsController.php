@@ -46,7 +46,7 @@ class RentalTransactoinsController extends Controller
      *
      * @return \Inertia\Response
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $userId = Auth::id() ?? 'guest';
         Log::info("User [ID: {$userId}] attempting to access Rentals index.");
@@ -55,9 +55,21 @@ class RentalTransactoinsController extends Controller
             $this->authorize('rental-list');
             Log::info("User [ID: {$userId}] authorized for rental-list.");
 
-            // --- Fetch Customers ---
-            Log::info("Fetching rentals, and creator for User [ID: {$userId}].");
-            $rentals = Rentals::with([
+            $selectedDate = $request->input('date');
+            $selectedDate = $request->input('date');
+
+            // Parse the incoming date string. If it's an ISO string, Carbon will handle it.
+            $carbonDate = Carbon::parse($selectedDate);
+
+            // Convert to the application's timezone (or a specific timezone like 'Asia/Phnom_Penh')
+            // This is crucial if your frontend sends UTC and you want to interpret it locally.
+            $dateToFilter = $carbonDate->setTimezone(config('app.timezone'))->startOfDay(); // Or a specific timezone 'Asia/Phnom_Penh'
+
+            Log::info("Date to filter after timezone adjustment: " . $dateToFilter->toDateString());
+
+            // --- Fetch Rentals (Apply the date filter) ---
+            Log::info("Fetching rentals, and creator for User [ID: {$userId}] on date: {$dateToFilter->toDateString()}.");
+            $rentalsQuery = Rentals::with([
                 'vehicle:id,vehicle_no',
                 'customer:id,first_name,last_name',
                 'incharger:id,name',
@@ -65,9 +77,10 @@ class RentalTransactoinsController extends Controller
                 'status'
             ])
             ->withTrashed()
-            ->whereDate('created_at', now())
-            ->orderBy('id', 'desc')
-            ->get();
+            ->whereDate('created_at', $dateToFilter) // <--- APPLY DATE FILTER HERE
+            ->orderBy('id', 'desc');
+
+            $rentals = $rentalsQuery->get();
             Log::info("Retrieved {$rentals->count()} rentals.");
 
             // Map the customer data for the frontend
@@ -85,14 +98,14 @@ class RentalTransactoinsController extends Controller
 
                 $deposits = Deposits::where('rental_id', $rental->id)
                 ->get();
-                
+
                 // Get the loaded active deposits collection
                 $activeDeposits = Deposits::where('rental_id', $rental->id)
                 ->get();
 
 
                 $contacts = Contacts::where('customer_id', $rental->customer_id)
-                
+
                 ->where('is_active', true)
                 ->get();
 
@@ -142,7 +155,7 @@ class RentalTransactoinsController extends Controller
                          'updated_at' => $deposit->updated_at?->toISOString(),
                     ];
                 });
-            
+
                 // --- Return the formatted array ---
                 return [
                     // Basic
@@ -150,7 +163,7 @@ class RentalTransactoinsController extends Controller
 
                     // Vehicle - Use null coalescing operator correctly
                     'vehicle_no' => $rental->vehicle?->vehicle_no ?? 'N/A', // Optional chaining for related object property
-            
+
                     // --- Use the calculated $full_name variable directly ---
                     'full_name' => $full_name, // Already handled 'N/A' case above
 
@@ -171,7 +184,7 @@ class RentalTransactoinsController extends Controller
                     // Status and Pricing
                     'status_name' => $rental->status,
                     'total_cost' => $rental->total_cost,
-                    
+
                     // Date
                     'start_date' => $rental->start_date,
                     'end_date' => $rental->end_date,
@@ -185,18 +198,18 @@ class RentalTransactoinsController extends Controller
                     'updated_at' => $rental->updated_at?->toISOString() ?? 'N/A', // Optional chaining for dates
                 ];
             });
-            
-            // Get transaction counts by status
+
+            // Get transaction counts by status (Apply the date filter here)
             $transactionCounts = Rentals::select('status', DB::raw('count(*) as total'))
                                         ->withTrashed()
-                                        ->whereDate('created_at', now())
+                                        ->whereDate('created_at', $dateToFilter) // <--- APPLY DATE FILTER HERE
                                         ->groupBy('status')
                                         ->pluck('total', 'status'); // Pluck status as key and total as value
-            $totalTransactionCounts = Rentals::select('status', DB::raw('count(*) as total'))
-                                        ->withTrashed()
-                                        ->whereDate('created_at', now())
-                                        ->groupBy('status')
-                                        ->count();
+
+            // Total transaction counts for the selected date (Apply the date filter here)
+            $totalTransactionCounts = Rentals::withTrashed()
+                                        ->whereDate('created_at', $dateToFilter) // <--- APPLY DATE FILTER HERE
+                                        ->count(); // Corrected to count all for the date
 
             Log::info("Fetching vehicle counts per class.");
 
@@ -213,7 +226,6 @@ class RentalTransactoinsController extends Controller
             // Call the new function to get vehicle class counts and overall status percentages
             $vehicleReportData = $this->getVehicleReportData($grandTotalVehicles);
             //dd($vehicleReportData);
-
             Log::info("Retrieved vehicle class counts: " . json_encode($vehicleClassCounts));
 
             Log::info("Finished formatting data. Rendering view for User [ID: {$userId}].");
@@ -224,6 +236,7 @@ class RentalTransactoinsController extends Controller
                 'totalTransactionCounts' => Inertia::defer(fn () => $totalTransactionCounts),
                 'vehicleClassCounts' => Inertia::defer(fn () => $vehicleClassCounts),
                 'vehicleReportData' => Inertia::defer(fn () => $vehicleReportData),
+                'date' => $dateToFilter->toDateString(), // Pass the actual date used for filtering
             ]);
 
         } catch (AuthorizationException $e) {
@@ -232,6 +245,7 @@ class RentalTransactoinsController extends Controller
         }
     }
 
+    // ... (rest of your getVehicleClassCounts and getVehicleReportData methods remain unchanged)
     /**
      * Get the count of vehicles for each vehicle class, separated by vehicle status.
      *

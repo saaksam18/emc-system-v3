@@ -299,14 +299,14 @@ const RentalsIndex: React.FC<PageProps> = ({
                     </CardHeader>
                     <CardContent>
                         {/* Filter and Action Buttons */}
-                        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <Input
                                 placeholder="Filter rentals..." // Updated placeholder
                                 value={globalFilter}
                                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => setGlobalFilter(event.target.value)}
                                 className="w-full sm:max-w-xs"
                             />
-                            <div className="flex gap-2">
+                            <div className="flex flex-col gap-4 md:flex-row">
                                 <Button variant="default" onClick={handleCreate} className="w-full shrink-0 sm:w-auto">
                                     {/* Changed variant to default */}
                                     <NotebookTabs className="mr-2 h-4 w-4" /> Create
