@@ -4,7 +4,10 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 // Controller
-use App\Http\Controllers\Internals\UserController;
+    // Dashboard
+    use App\Http\Controllers\Internals\DashboardController;
+    // User
+    use App\Http\Controllers\Internals\UserController;
     // Vehicles
     use App\Http\Controllers\Internals\VehiclesController;
     use App\Http\Controllers\Internals\Vehicles\ClassesController;
@@ -30,16 +33,17 @@ use App\Http\Controllers\Internals\RentalsController;
     // Rentals
     use App\Http\Controllers\Reports\Rentals\RentalTransactoinsController;
 
-Route::redirect('home', '/');
-Route::get('/', function () {
-    return Inertia::render('welcome');
-})->name('home');
+// API
+use App\Http\Controllers\Api\ChartController;
+
+Route::redirect('/', 'login')->name('home');
 
 //Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
+    /* Route::get('dashboard', function () {
         return Inertia::render('dashboard');
-    })->name('dashboard');
+    })->name('dashboard'); */
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::redirect('administrator', '/administrator/users');
 
@@ -125,6 +129,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Rentals
         Route::get('/reports/rentals-transaction', [RentalTransactoinsController::class, 'index'])->name('reports.rentals-transaction.index');
+
+    // Chart
+    Route::get('rental-chart', [ChartController::class, 'getChartData'])->name('rental-chart');
 });
 
 require __DIR__.'/settings.php';

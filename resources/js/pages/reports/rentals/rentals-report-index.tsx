@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 
 // --- Inertia Imports ---
-import { Deferred, Head, usePage } from '@inertiajs/react';
+import { Deferred, Head, useForm, usePage } from '@inertiajs/react';
 
 // --- Layout Imports ---
 import AppLayout from '@/layouts/app-layout';
@@ -13,9 +13,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { columns, TableMeta } from '@/components/reports/rental-transactions/columns';
 import { DataTable } from '@/components/reports/rental-transactions/data-table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import type { BreadcrumbItem, User } from '@/types';
+import { format } from 'date-fns';
+import { CalendarIcon, Search } from 'lucide-react';
 
 // --- Utility Imports ---
 const Skeleton = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
@@ -113,15 +118,21 @@ interface PageProps {
         errors?: Record<string, string | string[]>;
     };
     rentals?: any[]; // Added rentals as optional
+    date?: string;
     [key: string]: any;
 }
 
 // --- VehiclesIndex Component ---
-const RentalsReportIndex: React.FC<PageProps> = ({ rentals: initialRentals, transactionCounts, vehicleReportData, grandTotalVehicles }) => {
+const RentalsReportIndex: React.FC<PageProps> = ({ rentals: initialRentals, transactionCounts, vehicleReportData, date: initialDateFromProps }) => {
     const { props: pageProps } = usePage<PageProps>();
+
     // Ensure classBreakdown and overallStatusPercentages are always objects/arrays
     const { classBreakdown = {}, overallStatusPercentages = [] } = vehicleReportData ?? {};
 
+    // Initialize Inertia form
+    const { data, setData, get, processing } = useForm({
+        date: initialDateFromProps ? new Date(initialDateFromProps + 'T00:00:00') : new Date(),
+    });
     const [globalFilter, setGlobalFilter] = useState('');
 
     const tableMeta: TableMeta = useMemo(
@@ -129,17 +140,81 @@ const RentalsReportIndex: React.FC<PageProps> = ({ rentals: initialRentals, tran
             globalFilter: globalFilter,
             onGlobalFilterChange: setGlobalFilter,
         }),
-        // Dependencies remain the same
         [globalFilter],
     );
-    console.log(initialRentals);
+
+    // Handler for the submit button
+    const handleSubmitDate = () => {
+        if (data.date) {
+            const formattedDate = format(data.date, 'yyyy-MM-dd');
+
+            // --- NEW DEBUGGING LOGS ---
+            console.log('Date string to send:', formattedDate);
+
+            // Manually construct the URL to see what Inertia might do
+            const params = new URLSearchParams();
+            params.append('date', formattedDate);
+            const fullUrl = route('reports.rentals-transaction.index') + '?' + params.toString();
+
+            console.log('Full URL being prepared:', fullUrl);
+            // --- END NEW DEBUGGING LOGS ---
+
+            get(route('reports.rentals-transaction.index', { date: formattedDate }), {
+                preserveScroll: true,
+                preserveState: false,
+            });
+        } else {
+            alert('Please select a date before submitting.');
+        }
+    };
+
+    //console.log('initialRentals', initialRentals);
 
     // --- Render ---
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Vehicle Dashboard" />
+            <Head title="Rental Transaction" />
 
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Filter Rental Transactions</CardTitle>
+                        <CardDescription>Filter scooter rental transaction of each days.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="items-center gap-2 md:flex">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        data-empty={!data.date} // Check data.date
+                                        className="data-[empty=true]:text-muted-foreground mb-2 w-full justify-start text-left font-normal md:mb-0 md:w-[280px]"
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {data.date ? format(data.date, 'PPP') : <span>Pick a date</span>} {/* Display data.date */}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={data.date || undefined} // Use data.date or undefined
+                                        onSelect={(selectedDate) => setData('date', selectedDate || null)} // Update form data
+                                        className="rounded-md border shadow-sm"
+                                        captionLayout="dropdown"
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                            <Button
+                                variant="default"
+                                onClick={handleSubmitDate}
+                                className="w-full shrink-0 sm:w-auto"
+                                disabled={processing || !data.date}
+                            >
+                                <Search className="mr-1 h-4 w-4" /> {processing ? 'Searching...' : 'Search'}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
                 <div className="grid auto-rows-min gap-4 md:grid-cols-5">
                     {/* Card for Rental Transactions (Existing) */}
                     <Card>
@@ -186,7 +261,7 @@ const RentalsReportIndex: React.FC<PageProps> = ({ rentals: initialRentals, tran
                                             <p>No vehicle class data available.</p>
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-4 gap-4">
+                                        <div className="flex h-full flex-1 flex-col gap-4 md:grid md:grid-cols-4">
                                             {/* Removed md:grid-cols-2 lg:grid-cols-4 to make it a single column within this card */}
                                             {/* Iterate over each vehicle class */}
                                             {Object.entries(classBreakdown ?? {}).map(([className, classData]) => {

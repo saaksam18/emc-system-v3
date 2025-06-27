@@ -42,89 +42,23 @@ class VehiclesController extends Controller
     public function index(): Response
     {
         $userId = Auth::id() ?? 'guest';
-        Log::info("User [ID: {$userId}] attempting to access Vehicles index.");
 
         try {
             $this->authorize('vehicle-list');
-            Log::info("User [ID: {$userId}] authorized for vehicle-list.");
+            Log::info("User [ID: {$userId}] authorized to view Vehicle.");
 
-            // --- Fetch Vehicle Classes ---
-            Log::info("Fetching vehicle classes for User [ID: {$userId}].");
+            // --- Fetch Vehicle Classes (for color assignment if needed elsewhere) ---
             $vehicleClasses = VehicleClasses::select('id', 'name')->get();
-            Log::info("Retrieved {$vehicleClasses->count()} vehicle classes.");
-
-            // --- Assign Colors & Create Map ---
-            $defaultColors = ['#04a96d', '#1c3151', '#2463eb', '#ff7f0e', '#ffbb78', '#d62728', '#ff9896', '#9467bd', '#c5b0d5', '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#7f7f7f', '#c7c7c7', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5'];
-            $vehicleClassesWithColors = $vehicleClasses->map(function ($class, $index) use ($defaultColors) {
-                return [
-                    'id' => $class->id,
-                    'name' => $class->name,
-                    'color' => $defaultColors[$index % count($defaultColors)],
-                ];
-            });
-            $vehicleClassMap = $vehicleClassesWithColors->keyBy('id');
-            Log::info("Assigned colors and created map for vehicle classes.");
-
-            // --- Prepare Chart Data ---
-            Log::info("Starting chart data calculation for User [ID: {$userId}].");
-            $startDate = Carbon::create(2023, 1, 1)->startOfMonth();
-            $endDate = Carbon::now()->startOfMonth();
-            $period = CarbonPeriod::create($startDate, '1 month', $endDate);
-            $chartData = [];
-
-            foreach ($period as $date) {
-                $monthStart = $date->copy()->startOfMonth();
-                $monthEnd = $date->copy()->endOfMonth();
-                $monthLabel = $date->format('M \'y');
-                Log::debug("Calculating chart data for month: {$monthLabel}");
-
-                $rentedvehicleIdsInMonth = Rentals::where('start_date', '<=', $monthEnd)
-                    ->withTrashed()
-                    ->where(function ($query) use ($monthStart) {
-                        $query->where('end_date', '>=', $monthStart)->orWhereNull('end_date');
-                    })
-                    ->distinct()
-                    ->pluck('vehicle_id');
-                Log::debug("Found {$rentedvehicleIdsInMonth->count()} distinct rented vehicles in {$monthLabel}.");
-
-                $totalMotoCount = $this->getTotalFleetSizeForMonth($monthEnd); // Uses helper with logging
-                Log::debug("Total fleet size for {$monthLabel}: {$totalMotoCount}.");
-
-                $monthlyEntry = ['date' => $monthLabel, 'totalMoto' => $totalMotoCount];
-                foreach ($vehicleClassMap as $id => $class) {
-                    $monthlyEntry[(string)$id] = 0;
-                }
-
-                if ($rentedvehicleIdsInMonth->isNotEmpty()) {
-                    $countsByClassId = Vehicles::whereIn('vehicles.id', $rentedvehicleIdsInMonth)
-                        ->select('vehicles.vehicle_class_id', DB::raw('COUNT(vehicles.id) as count'))
-                        ->groupBy('vehicles.vehicle_class_id')
-                        ->pluck('count', 'vehicle_class_id');
-                    Log::debug("Counts by class for {$monthLabel}: ", $countsByClassId->toArray());
-
-                    foreach ($countsByClassId as $classId => $count) {
-                        if (isset($monthlyEntry[(string)$classId])) {
-                            $monthlyEntry[(string)$classId] = $count;
-                        }
-                    }
-                }
-                $chartData[] = $monthlyEntry;
-            }
-            Log::info("Finished chart data calculation. Generated data for " . count($chartData) . " months.");
 
             // --- Fetch Other Data ---
-            Log::info("Fetching users, all vehicles, stock vehicles, and related data for User [ID: {$userId}].");
-
             // Get all customers
-            $customers = Customers::all();
+            $customers = Customers::select('id', 'first_name', 'last_name')->get();
 
-            // --- Format Data for View ---
-            $formattedCustomers = $customers->map(function (Customers $customer) { // Changed variable name for clarity
+            // --- Format Customer Data for View ---
+            $formattedCustomers = $customers->map(function (Customers $customer) {
                 $firstName = $customer->first_name ?? '';
                 $lastName = $customer->last_name ?? '';
-                // Concatenate with a space, handle cases where one or both might be empty
                 $full_name = trim($firstName . ' ' . $lastName);
-                // If the result is an empty string after trimming, set to 'N/A'
                 if (empty($full_name)) {
                     $full_name = 'N/A';
                 }
@@ -133,18 +67,16 @@ class VehiclesController extends Controller
                     'name' => $customer->full_name,
                 ];
             });
-            $users = User::select('id', 'name')->get(); // Select only needed columns
+            $users = User::select('id', 'name')->get();
 
             $vehicles = Vehicles::orderBy('vehicle_no', 'asc')
                               ->with(['vehicleMaker:id,name', 'vehicleModel:id,name', 'vehicleClasses:id,name', 'vehicleStatus:id,status_name', 'creator:id,name'])
                               ->get();
-            Log::info("Retrieved {$vehicles->count()} total vehicles.");
 
             $vehicles_stock = Vehicles::orderBy('vehicle_no', 'asc')
                 ->whereHas('vehicleStatus', fn ($query) => $query->where('is_rentable', 1))
                 ->with(['vehicleMaker:id,name', 'vehicleModel:id,name', 'vehicleClasses:id,name', 'vehicleStatus:id,status_name,is_rentable', 'creator:id,name'])
                 ->get();
-            Log::info("Retrieved {$vehicles_stock->count()} stock (rentable) vehicles.");
 
             // Rentable counts by class
             $rentableCountsByClass = Vehicles::query()
@@ -154,8 +86,7 @@ class VehiclesController extends Controller
                 ->groupBy('vehicle_classes.id', 'vehicle_classes.name')
                 ->orderBy('vehicle_classes.name')
                 ->get();
-            $mappedCounts = $rentableCountsByClass->toArray(); // Simpler conversion
-            Log::info("Calculated rentable counts for {$rentableCountsByClass->count()} classes.");
+            $mappedCounts = $rentableCountsByClass->toArray();
 
             // Rentable counts by model
             $rentableCountsByModel = Vehicles::query()
@@ -165,52 +96,49 @@ class VehiclesController extends Controller
                 ->groupBy('vehicle_actual_models.id', 'vehicle_actual_models.name')
                 ->orderBy('vehicle_actual_models.name')
                 ->get();
-            $mappedCountsByModel = $rentableCountsByModel->toArray(); // Simpler conversion
-            Log::info("Calculated rentable counts for {$rentableCountsByModel->count()} models.");
+            $mappedCountsByModel = $rentableCountsByModel->toArray();
 
-            $vehicle_class = VehicleClasses::select('id', 'name')->get(); // Reuse fetched data if possible or select needed
+            $vehicle_class = VehicleClasses::select('id', 'name')->get();
             $vehicle_status = VehicleStatus::select('id', 'status_name', 'is_rentable')->get();
             $vehicle_models = VehicleActualModel::select('id', 'name', 'maker_id')->get();
             $vehicle_makers = VehicleMaker::with('vehiclesModel:id,name,maker_id')->select('id', 'name')->get();
-            Log::info("Fetched related vehicle data (classes, statuses, models, makers).");
 
             $vehicleMakerData = $vehicle_makers->pluck('vehiclesModel', 'name')
                                  ->map(fn ($modelsCollection) => $modelsCollection->pluck('name')->toArray())
                                  ->toArray();
 
-            // --- Format Data for View ---
-            Log::info("Formatting vehicle data for view for User [ID: {$userId}].");
+            // --- Format Vehicle Data for View ---
             $formattedVehicles = $vehicles->map(function (Vehicles $vehicle) {
-                return [ /* ... mapping ... */
+                return [
                     'id' => $vehicle->id,
                     'vehicle_no' => $vehicle->vehicle_no,
-                    'make' => $vehicle->vehicleMaker?->name ?? 'N/A', // Use nullsafe
-                    'model' => $vehicle->vehicleModel?->name ?? 'N/A', // Use nullsafe
+                    'make' => $vehicle->vehicleMaker?->name ?? 'N/A',
+                    'model' => $vehicle->vehicleModel?->name ?? 'N/A',
                     'year' => $vehicle->year,
                     'license_plate' => $vehicle->license_plate,
                     'vin' => $vehicle->vin ?? 'N/A',
                     'color' => $vehicle->color ?? 'N/A',
                     'engine_cc' => $vehicle->engine_cc ?? 'N/A',
-                    'vehicle_class_name' => $vehicle->vehicleClasses?->name ?? 'N/A', // Use nullsafe
+                    'vehicle_class_name' => $vehicle->vehicleClasses?->name ?? 'N/A',
                     'vehicle_class_id' => $vehicle->vehicle_class_id ?? 'N/A',
                     'compensation_price' => $vehicle->compensation_price ?? 'N/A',
                     'purchase_price' => $vehicle->purchase_price ?? 'N/A',
-                    'purchase_date' => $vehicle->purchase_date ? Carbon::parse($vehicle->purchase_date)->toDateString() : 'N/A', // Format date
+                    'purchase_date' => $vehicle->purchase_date ? Carbon::parse($vehicle->purchase_date)->toDateString() : 'N/A',
                     'daily_rental_price' => $vehicle->daily_rental_price ?? 'N/A',
                     'weekly_rental_price' => $vehicle->weekly_rental_price ?? 'N/A',
                     'monthly_rental_price' => $vehicle->monthly_rental_price ?? 'N/A',
-                    'current_status_name' => $vehicle->vehicleStatus?->status_name ?? 'N/A', // Use nullsafe
+                    'current_status_name' => $vehicle->vehicleStatus?->status_name ?? 'N/A',
                     'current_status_id' => $vehicle->current_status_id ?? 'N/A',
                     'current_location' => $vehicle->current_location ?? 'N/A',
                     'current_Rentals_id' => $vehicle->current_Rentals_id,
                     'notes' => $vehicle->notes ?? 'N/A',
-                    'user_name' => $vehicle->creator?->name ?? 'Initial', // Use nullsafe
-                    'created_at' => $vehicle->created_at?->toISOString(), // Use nullsafe + format
-                    'updated_at' => $vehicle->updated_at?->toISOString(), // Use nullsafe + format
+                    'user_name' => $vehicle->creator?->name ?? 'Initial',
+                    'created_at' => $vehicle->created_at?->toISOString(),
+                    'updated_at' => $vehicle->updated_at?->toISOString(),
                 ];
             });
             $formattedVehiclesStock = $vehicles_stock->map(function (Vehicles $vehicle) {
-                 return [ /* ... mapping ... */
+                 return [
                     'id' => $vehicle->id,
                     'vehicle_no' => $vehicle->vehicle_no,
                     'make' => $vehicle->vehicleMaker?->name ?? 'N/A',
@@ -236,7 +164,6 @@ class VehiclesController extends Controller
                     'updated_at' => $vehicle->updated_at?->toISOString(),
                 ];
             });
-            Log::info("Finished formatting data. Rendering view for User [ID: {$userId}].");
             // --- Render View ---
             return Inertia::render('vehicles/vehicles-index', [
                 // Use defer for potentially large datasets
@@ -244,14 +171,12 @@ class VehiclesController extends Controller
                 'vehicles_stock' => Inertia::defer(fn () => $formattedVehiclesStock),
                 'vehicles_stock_cbc' => Inertia::defer(fn () => $mappedCounts),
                 'vehicles_stock_cbm' => Inertia::defer(fn () => $mappedCountsByModel),
-                'users' => Inertia::defer(fn () => $users->toArray()), // Send as array
-                'vehicle_class' => Inertia::defer(fn () => $vehicle_class->toArray()), // Send as array
-                'vehicle_status' => Inertia::defer(fn () => $vehicle_status->toArray()), // Send as array
-                'vehicle_models' => Inertia::defer(fn () => $vehicle_models->toArray()), // Send as array
-                'vehicle_makers' => Inertia::defer(fn () => $vehicle_makers->toArray()), // Send as array
-                'chartData' => Inertia::defer(fn () => $chartData),
-                'vehicleClasses' => Inertia::defer(fn () => $vehicleClassesWithColors->toArray()), // Send as array
-                'vehicleMakerData' => Inertia::defer(fn () => $vehicleMakerData), // For dropdowns etc.
+                'users' => Inertia::defer(fn () => $users->toArray()),
+                'vehicle_class' => Inertia::defer(fn () => $vehicle_class->toArray()),
+                'vehicle_status' => Inertia::defer(fn () => $vehicle_status->toArray()),
+                'vehicle_models' => Inertia::defer(fn () => $vehicle_models->toArray()),
+                'vehicle_makers' => Inertia::defer(fn () => $vehicle_makers->toArray()),
+                'vehicleMakerData' => Inertia::defer(fn () => $vehicleMakerData),
                 'customers' => Inertia::defer(fn () => $formattedCustomers),
             ]);
 
@@ -260,39 +185,17 @@ class VehiclesController extends Controller
             abort(403, 'Unauthorized action.');
         } catch (Exception $e) {
             Log::error("Error accessing Vehicles index for User [ID: {$userId}]: " . $e->getMessage(), ['exception' => $e]);
-            // Consider returning an error view or message via Inertia
-            // return Inertia::render('Error/ServerError', ['message' => 'Could not load vehicle data.'])->toResponse($request)->setStatusCode(500);
             abort(500, 'Could not load vehicle data.');
-        }
-    }
-
-    // Helper function to calculate fleet size for a given month end date
-    private function getTotalFleetSizeForMonth(Carbon $monthEnd): int
-    {
-        Log::debug("Calculating total fleet size for month ending: " . $monthEnd->toDateString());
-        try {
-            $count = Vehicles::where('created_at', '<=', $monthEnd)
-                          ->where(function ($query) use ($monthEnd) {
-                              $query->whereNull('deleted_at') // Not soft-deleted
-                                    ->orWhere('deleted_at', '>', $monthEnd); // Or deleted after this month
-                          })
-                          ->count();
-            Log::debug("Total fleet size calculated: {$count}");
-            return $count;
-        } catch (Exception $e) {
-            Log::error("Error calculating total fleet size for month ending " . $monthEnd->toDateString() . ": " . $e->getMessage(), ['exception' => $e]);
-            return 0; // Return 0 or handle error as appropriate
         }
     }
 
     public function store(Request $request): RedirectResponse
     {
         $userId = Auth::id();
-        Log::info("User [ID: {$userId}] attempting to store a new Vehicle.");
 
         try {
             $this->authorize('vehicle-create');
-            Log::info("User [ID: {$userId}] authorized for vehicle-create.");
+            Log::info("User [ID: {$userId}] authorized to create Vehicle [ID: {$request->vehicle_no}].");
 
             // --- Define Validation Rules ---
             $rules = [
@@ -330,12 +233,9 @@ class VehiclesController extends Controller
             ];
 
             // --- Validate the request data ---
-            Log::info("Validating request data for new Vehicle by User [ID: {$userId}].", ['data' => $request->except(['_token'])]); // Avoid logging token
             $validatedData = $request->validate($rules, $messages);
-            Log::info("Validation successful for new Vehicle by User [ID: {$userId}].");
 
             // --- Find Foreign Key IDs ---
-            Log::info("Looking up foreign key IDs based on names provided by User [ID: {$userId}].");
             $vehicleClass = VehicleClasses::where('name', $validatedData['vehicle_class_id'])->firstOrFail();
             $vehicleStatus = VehicleStatus::where('status_name', $validatedData['current_status_id'])->firstOrFail();
             $vehicleMaker = VehicleMaker::where('name', $validatedData['make'])->firstOrFail();
@@ -343,11 +243,9 @@ class VehiclesController extends Controller
             $vehicleModel = VehicleActualModel::where('name', $validatedData['model'])
                                             ->where('maker_id', $vehicleMaker->id)
                                             ->firstOrFail();
-            Log::info("Successfully found foreign key IDs: Class={$vehicleClass->id}, Status={$vehicleStatus->id}, Maker={$vehicleMaker->id}, Model={$vehicleModel->id}.");
 
 
             // --- Create the Vehicle ---
-            Log::info("Attempting to create Vehicle in database by User [ID: {$userId}].", ['validated_data' => $validatedData]);
             $vehicle = new Vehicles();
             $vehicle->fill([ // Use fillable assignment if configured in model
                 'vehicle_no' => $validatedData['vehicle_no'],
@@ -371,7 +269,6 @@ class VehiclesController extends Controller
                 'user_id' => $userId, // Assign creator ID
             ]);
             $vehicle->save();
-            Log::info("Successfully created Vehicle [ID: {$vehicle->id}, No: {$vehicle->vehicle_no}] by User [ID: {$userId}].");
 
             // --- Success Response ---
             $successMessage = 'Vehicle no. ' . $validatedData['vehicle_no'] . ' successfully registered.';
