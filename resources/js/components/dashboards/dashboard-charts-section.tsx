@@ -256,7 +256,6 @@ export default function DashboardChartsSection({} /* no props needed if everythi
                             <div className="flex h-full flex-col items-center justify-center text-center text-red-500">
                                 <p>Error: {error}</p>
                                 <Button onClick={fetchChartData} className="mt-4">
-                                    {' '}
                                     {/* Call store's fetch action */}
                                     Retry Load Chart
                                 </Button>

@@ -8,9 +8,9 @@ import { Label } from '@/components/ui/label';
 import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 // Assuming types are correctly defined
-import { Customers, RentalsType, User, VehicleStatusType } from '@/types';
+import { Customers, RentalsType, User } from '@/types';
 import { useForm } from '@inertiajs/react';
-import { differenceInDays, format, isValid, parse } from 'date-fns';
+import { format, isValid, parse } from 'date-fns';
 import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import React, { FormEventHandler, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -30,53 +30,6 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
     }
 };
 
-const calculatePeriod = (startDateStr: string, endDateStr: string): number => {
-    if (!startDateStr || !endDateStr) {
-        return 0;
-    }
-    try {
-        const startDate = new Date(startDateStr + 'T00:00:00');
-        const endDate = new Date(endDateStr + 'T00:00:00');
-
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || endDate < startDate) {
-            return 0;
-        }
-        const diffDays = differenceInDays(endDate, startDate);
-        return diffDays >= 0 ? diffDays : 0;
-    } catch (error) {
-        console.error('Error calculating period:', error);
-        return 0;
-    }
-};
-
-const formatPeriod = (totalDays: number | string | null | undefined): string => {
-    const numDays = Number(totalDays);
-
-    if (isNaN(numDays) || numDays < 0) {
-        return '';
-    }
-    if (numDays === 0) return '0 days';
-    if (numDays === 1) return '1 day';
-
-    const approxYears = Math.floor(numDays / 365);
-    const daysAfterYears = numDays % 365;
-    const approxMonths = Math.floor(daysAfterYears / 30);
-    const remainingDays = daysAfterYears % 30;
-
-    let periodString = '';
-    if (approxYears > 0) periodString += `${approxYears} year${approxYears > 1 ? 's' : ''}`;
-    if (approxMonths > 0) {
-        if (periodString) periodString += ', ';
-        periodString += `${approxMonths} month${approxMonths > 1 ? 's' : ''}`;
-    }
-    if (remainingDays > 0) {
-        if (periodString) periodString += ', ';
-        periodString += `${remainingDays} day${remainingDays > 1 ? 's' : ''}`;
-    }
-
-    return periodString || `${numDays} days`;
-};
-
 const parseDateString = (dateStr: string | null | undefined): Date | undefined => {
     if (!dateStr) return undefined;
     try {
@@ -93,11 +46,9 @@ type PickupFormValues = Omit<Customers, 'id' | 'created_at' | 'updated_at' | 'no
     customer_name: string; // Readonly
     vehicle_no: string;
     user_name: string;
-    start_date: string;
-    end_date: string;
     coming_date: string;
-    period: number | string;
-    total_cost: string;
+    // Add start_date here
+    start_date: string; // Assuming it will be a string in 'yyyy-MM-dd' format
     notes: string;
 };
 
@@ -109,13 +60,10 @@ const initialFormValues: PickupFormValues = {
     rental_id: '',
     customer_name: '',
     vehicle_no: '',
-    start_date: '',
-    end_date: '',
-    period: 0,
     coming_date: '',
-    total_cost: '',
     notes: '',
     user_name: '',
+    start_date: formatDateForInput(new Date()), // Initialize with today's date
 };
 
 // --- Reusable Components (Unchanged) ---
@@ -160,45 +108,17 @@ const FormField: React.FC<FormFieldProps> = ({ label, htmlFor, error, required, 
 // --- Main Pickup Component ---
 interface PickupProps {
     selectedRow: RentalsType | null;
-    vehicleStatuses: VehicleStatusType[] | null;
     users: User[] | null;
     onSubmitSuccess: () => void;
 }
 
-export function ExtendContract({ selectedRow, vehicleStatuses, users, onSubmitSuccess }: PickupProps) {
+export function Edit({ selectedRow, users, onSubmitSuccess }: PickupProps) {
     const { data, setData, put, processing, errors, reset, clearErrors } = useForm<PickupFormValues>(initialFormValues);
     const formErrors = errors as FormErrors;
 
-    console.log(selectedRow);
-
     // State for Dialogs
     const [userDialogOpen, setUserDialogOpen] = useState(false);
-    const [startDateDialogOpen, setStartDateDialogOpen] = useState(false);
-    const [endDateDialogOpen, setEndDateDialogOpen] = useState(false);
     const [comingDateDialogOpen, setComingDateDialogOpen] = useState(false);
-
-    // Set Initial Start Date
-    useEffect(() => {
-        const today = formatDateForInput(new Date());
-        if (!data.start_date) {
-            setData('start_date', today);
-        }
-    }, []);
-
-    // Calculate Period Effect
-    useEffect(() => {
-        const calculatedDays = calculatePeriod(data.start_date, data.end_date);
-        if (calculatedDays !== data.period) {
-            setData('period', calculatedDays);
-        }
-        if (data.coming_date && data.start_date) {
-            const comingDate = parseDateString(data.coming_date);
-            const startDate = parseDateString(data.start_date);
-            if (comingDate && startDate && comingDate < startDate) {
-                setData('coming_date', '');
-            }
-        }
-    }, [data.start_date, data.end_date, data.coming_date, data.period, setData]);
 
     // Effect to populate form when selectedRow changes
     useEffect(() => {
@@ -209,19 +129,16 @@ export function ExtendContract({ selectedRow, vehicleStatuses, users, onSubmitSu
                 customer_name: selectedRow.customer?.name || selectedRow.full_name || '',
                 vehicle_no: selectedRow.vehicle?.vehicle_no || selectedRow.vehicle_no || '',
                 user_name: '',
-                start_date: today,
-                end_date: '',
                 coming_date: '',
-                period: 0,
-                total_cost: '',
+                // Populate start_date with a relevant date from selectedRow, or today if not available
+                start_date: formatDateForInput(selectedRow.start_date || new Date()),
                 notes: selectedRow.notes || '',
             };
             setData(populatedData);
             clearErrors();
         } else {
-            // Reset to initial state which includes one empty deposit
+            // When selectedRow is null, reset to initial state (which now includes start_date)
             reset();
-            setData('start_date', formatDateForInput(new Date()));
             clearErrors();
         }
     }, [selectedRow, reset, clearErrors, setData]);
@@ -246,30 +163,14 @@ export function ExtendContract({ selectedRow, vehicleStatuses, users, onSubmitSu
     };
 
     // --- Date Picker Handler (for Start/End/Coming Date - unchanged) ---
-    const handleDateChange = (field: 'start_date' | 'end_date' | 'coming_date', date: Date | undefined) => {
+    const handleDateChange = (field: 'coming_date', date: Date | undefined) => {
         const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
         setData(field, formattedDate);
         if (formErrors[field]) {
             clearErrors(field);
         }
 
-        if (field === 'start_date') setStartDateDialogOpen(false);
-        if (field === 'end_date') setEndDateDialogOpen(false);
         if (field === 'coming_date') setComingDateDialogOpen(false);
-
-        if (field === 'start_date') {
-            const newStartDate = parseDateString(formattedDate);
-            if (newStartDate) {
-                const endDate = parseDateString(data.end_date);
-                const comingDate = parseDateString(data.coming_date);
-                if (endDate && endDate < newStartDate) {
-                    setData('end_date', '');
-                }
-                if (comingDate && comingDate < newStartDate) {
-                    setData('coming_date', '');
-                }
-            }
-        }
     };
 
     const validUsers = useMemo(
@@ -285,24 +186,12 @@ export function ExtendContract({ selectedRow, vehicleStatuses, users, onSubmitSu
             toast.error('Cannot submit: Rental ID is missing.');
             return;
         }
-        const url = `/rentals/${data.rental_id}/update/extend-contract`;
+        const url = `/rentals/${data.rental_id}/update/add-coming-date`;
 
         let hasValidationError = false;
         const validationErrors: Partial<FormErrors> = {};
 
         // --- Basic Field Validation ---
-        if (!data.start_date) {
-            validationErrors.start_date = 'Start date is required.';
-            hasValidationError = true;
-        }
-        if (!data.end_date) {
-            validationErrors.end_date = 'End date is required.';
-            hasValidationError = true;
-        }
-        if (!data.total_cost || isNaN(parseFloat(data.total_cost)) || parseFloat(data.total_cost) < 0) {
-            validationErrors.total_cost = 'Valid rental cost is required.';
-            hasValidationError = true;
-        }
         if (!data.user_name) {
             validationErrors.user_name = 'Incharge user is required.';
             hasValidationError = true;
@@ -314,12 +203,8 @@ export function ExtendContract({ selectedRow, vehicleStatuses, users, onSubmitSu
             return;
         }
 
-        // --- Prepare Data for Submission (No changes needed here, backend expects array) ---
-        const submissionData = { ...data };
-
         // --- Post Data ---
         put(url, {
-            data: submissionData,
             preserveScroll: true,
             onSuccess: () => {
                 const today = formatDateForInput(new Date());
@@ -341,10 +226,6 @@ export function ExtendContract({ selectedRow, vehicleStatuses, users, onSubmitSu
                                 if (/^\d+$/.test(part)) return `Item ${parseInt(part) + 1}`;
                                 if (part === 'vehicle_no') return 'Vehicle No';
                                 if (part === 'user_name') return 'Incharge By';
-                                if (part === 'start_date') return 'Start Date';
-                                if (part === 'end_date') return 'End Date';
-                                if (part === 'total_cost') return 'Rental Cost';
-                                if (part === 'period') return 'Period';
                                 return part.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
                             })
                             .join(' - ');
@@ -387,89 +268,6 @@ export function ExtendContract({ selectedRow, vehicleStatuses, users, onSubmitSu
 
                 {/* Rental Details Section */}
                 <FormSection title="Rental Details" description="Update the dates, period, cost, status, and responsible user.">
-                    {/* Start Date Field */}
-                    <FormField label="Start Date" htmlFor="start_date" error={formErrors.start_date} required>
-                        <Dialog open={startDateDialogOpen} onOpenChange={setStartDateDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button
-                                    variant={'outline'}
-                                    id="start_date"
-                                    className={cn(
-                                        'w-full justify-start text-left font-normal',
-                                        !data.start_date && 'text-muted-foreground',
-                                        formErrors.start_date && 'border-red-500',
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {data.start_date && isValid(parseDateString(data.start_date)) ? (
-                                        format(parseDateString(data.start_date)!, 'PPP')
-                                    ) : (
-                                        <span>Pick a date</span>
-                                    )}
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="w-auto py-6">
-                                <Calendar
-                                    mode="single"
-                                    selected={parseDateString(data.start_date)}
-                                    onSelect={(date) => handleDateChange('start_date', date)}
-                                    initialFocus
-                                />
-                            </DialogContent>
-                        </Dialog>
-                    </FormField>
-
-                    {/* End Date Field */}
-                    <FormField label="End Date" htmlFor="end_date" error={formErrors.end_date} required>
-                        <Dialog open={endDateDialogOpen} onOpenChange={setEndDateDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button
-                                    variant={'outline'}
-                                    id="end_date"
-                                    className={cn(
-                                        'w-full justify-start text-left font-normal',
-                                        !data.end_date && 'text-muted-foreground',
-                                        formErrors.end_date && 'border-red-500',
-                                    )}
-                                    disabled={!data.start_date || !isValid(parseDateString(data.start_date))}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {data.end_date && isValid(parseDateString(data.end_date)) ? (
-                                        format(parseDateString(data.end_date)!, 'PPP')
-                                    ) : (
-                                        <span>Pick a date</span>
-                                    )}
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="w-auto py-6">
-                                <Calendar
-                                    mode="single"
-                                    selected={parseDateString(data.end_date)}
-                                    onSelect={(date) => handleDateChange('end_date', date)}
-                                    disabled={(date) => {
-                                        const startDate = parseDateString(data.start_date);
-                                        return startDate ? date < startDate : false;
-                                    }}
-                                    initialFocus
-                                />
-                            </DialogContent>
-                        </Dialog>
-                    </FormField>
-
-                    {/* Period Display (Read-Only) */}
-                    <FormField label="Period" htmlFor="period-display" error={formErrors.period}>
-                        <Input
-                            id="period-display"
-                            name="period-display"
-                            value={formatPeriod(data.period)}
-                            readOnly
-                            disabled
-                            placeholder="Calculated duration"
-                            className={cn('bg-muted/50', formErrors.period && 'border-red-500')}
-                            aria-label="Calculated rental period"
-                        />
-                    </FormField>
-
                     {/* Coming Date Field (Optional) */}
                     <FormField label="Coming Date" htmlFor="coming_date" error={formErrors.coming_date}>
                         <Dialog open={comingDateDialogOpen} onOpenChange={setComingDateDialogOpen}>
@@ -501,26 +299,9 @@ export function ExtendContract({ selectedRow, vehicleStatuses, users, onSubmitSu
                                         const startDate = parseDateString(data.start_date);
                                         return startDate ? date < startDate : false;
                                     }}
-                                    initialFocus
                                 />
                             </DialogContent>
                         </Dialog>
-                    </FormField>
-
-                    {/* Rental Cost Field */}
-                    <FormField label="Rental Cost" htmlFor="total_cost" error={formErrors.total_cost} required>
-                        <Input
-                            id="total_cost"
-                            name="total_cost"
-                            type="number"
-                            step="any"
-                            min="0"
-                            value={data.total_cost}
-                            onChange={handleInputChange}
-                            placeholder="e.g., 1200.50"
-                            className={cn(formErrors.total_cost && 'border-red-500')}
-                            required
-                        />
                     </FormField>
 
                     {/* User (Incharge By) Combobox */}

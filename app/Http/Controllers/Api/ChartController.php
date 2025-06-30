@@ -34,11 +34,38 @@ class ChartController extends Controller // You can make it extend Controller
             $this->authorize('rental-list');
             Log::info("User [ID: {$userId}] authorized for fetching rental chart data.");
 
-            $data = $this->chartDataService->getHistoricalChartData();
+            $data = $this->chartDataService->getHistoricalChartDataService();
 
             return response()->json([
                 'chartData' => $data['chartData'],
                 'vehicleClasses' => $data['vehicleClasses'],
+            ]);
+
+        } catch (AuthorizationException $e) {
+            Log::warning("Authorization failed for User [ID: {$userId}] fetching chart data: " . $e->getMessage());
+            return response()->json(['error' => 'Unauthorized'], 403);
+        } catch (\Exception $e) { // Catch generic Exception
+            Log::error("Error fetching chart data for User [ID: {$userId}]: " . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['error' => 'Could not load chart data.'], 500);
+        }
+    }
+
+    public function getVehicleStockChartData(Request $request) // Or just 'index' if it's the main method for this resource
+    {
+        $userId = Auth::id() ?? 'guest';
+        Log::info("User [ID: {$userId}] attempting to fetch chart data from API ChartController.");
+
+        try {
+            // Assuming 'dashboard-list' is the permission needed for this data
+            $this->authorize('rental-list');
+            Log::info("User [ID: {$userId}] authorized for fetching rental chart data.");
+
+            $data = $this->chartDataService->getVehicleStockChartDataService();
+            //dd($data['chartData']);
+            return response()->json([
+                'chartData' => $data['chartData'],
+                'vehicleClassIdToKeyName' => $data['vehicleClassIdToKeyName'],
+                'grandTotalAvailableVehicles' => $data['grandTotalAvailableVehicles'],
             ]);
 
         } catch (AuthorizationException $e) {

@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types'; // Assuming NavItem is defined here
 import { Link } from '@inertiajs/react';
-import { Bike, Edit3, ExternalLink, LayoutGrid, NotebookTabs, ReceiptCentIcon, User2 } from 'lucide-react'; // Added Settings icon
+import { Bike, BookCheck, Dock, Edit3, ExternalLink, House, NotebookTabs, ReceiptCentIcon, User2 } from 'lucide-react'; // Added Settings icon
 import AppLogo from './app-logo';
 
 // --- Updated Navigation Items with Groups ---
@@ -15,29 +15,56 @@ const mainNavGroups: NavGroup[] = [
             {
                 title: 'Dashboard',
                 href: '/dashboard',
-                icon: LayoutGrid,
+                icon: House,
                 prefetch: true, // Example: Keep prefetch if needed
             },
         ],
     },
     {
-        // Group 2: Management
-        title: 'Management', // Title for the second group
+        // Group 2: Rental
+        title: 'Scooter Rental', // Title for the second group
         items: [
             {
                 title: 'Rentals', // Renamed for clarity in this group
                 href: '/rentals',
                 icon: NotebookTabs,
+                prefetch: true,
             },
             {
                 title: 'Vehicles', // Renamed for clarity in this group
                 href: '/vehicles',
                 icon: Bike,
+                prefetch: true,
             },
+        ],
+    },
+    {
+        // Group 3: Visa & WP
+        title: 'Visa / Work Permit', // Title for the second group
+        items: [
+            {
+                title: 'Visa', // Renamed for clarity in this group
+                href: '/vehicles',
+                icon: BookCheck,
+                prefetch: true,
+            },
+            {
+                title: 'Work Permit', // Renamed for clarity in this group
+                href: '/vehicles',
+                icon: Dock,
+                prefetch: true,
+            },
+        ],
+    },
+    {
+        // Group 4: Basic Data
+        title: 'Visa Work Permit', // Title for the second group
+        items: [
             {
                 title: 'Customers', // Renamed for clarity in this group
                 href: '/customers',
                 icon: User2,
+                prefetch: true,
             },
         ],
     },
@@ -49,6 +76,7 @@ const mainNavGroups: NavGroup[] = [
                 title: 'Rental Transaction', // Renamed for clarity in this group
                 href: '/reports/rentals-transaction',
                 icon: ReceiptCentIcon,
+                prefetch: true,
             },
             /* {
                 title: 'Rental Chart', // Renamed for clarity in this group
@@ -65,6 +93,7 @@ const mainNavGroups: NavGroup[] = [
                 title: 'Top', // Renamed for clarity in this group
                 href: '/web-editor/top',
                 icon: Edit3,
+                prefetch: true,
             },
         ],
     },
@@ -83,6 +112,7 @@ const footerNavItems: NavItem[] = [
         title: 'Administration',
         href: '/administrator',
         icon: User2,
+        prefetch: true,
     },
 ];
 

@@ -292,10 +292,8 @@ const VehiclesIndex: React.FC<PageProps> = () => {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Vehicle Dashboard" />
-
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Top Section: Chart Card */}
-
                 <DashboardChartsSection />
 
                 {/* Bottom Section: Data Table Card */}
@@ -315,14 +313,12 @@ const VehiclesIndex: React.FC<PageProps> = () => {
                                     className="w-full sm:max-w-xs"
                                 />
                                 <Button variant="outline" onClick={() => reactToPrintFn()} className="w-full shrink-0 sm:w-auto">
-                                    {' '}
                                     {/* Added shrink-0 */}
                                     <Printer className="mr-2 h-4 w-4" /> Print Stock
                                 </Button>
                             </div>
                             <div className="flex gap-2">
                                 <Button variant="default" onClick={handleCreateClick} className="w-full shrink-0 sm:w-auto">
-                                    {' '}
                                     {/* Added shrink-0 */}
                                     <Bike className="mr-2 h-4 w-4" /> Create Vehicle
                                 </Button>
