@@ -111,6 +111,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/rentals/{rental}/update/temp-return', [RentalsController::class, 'tempReturn'])->name('rentals.status.temp-return.update');
     Route::put('/rentals/{rental}/update/pick-up', [RentalsController::class, 'pickUp'])->name('rentals.status.pick-up.update');
     Route::put('/rentals/{rental}/update/extend-contract', [RentalsController::class, 'ExtendContract'])->name('rentals.status.extend-contract.update');
+    Route::put('/rentals/{rental}/update/add-coming-date', [DashboardController::class, 'addComingDate'])->name('rentals.add-coming-date.update');
     Route::put('/rentals/{rental}/update/change-vehicle-contract', [RentalsController::class, 'ChangeVehicle'])->name('rentals.status.change-vehicle-contract.update');
     Route::put('/rentals/{rental}/update/change-deposit-contract', [RentalsController::class, 'ChangeDeposit'])->name('rentals.status.change-deposit-contract.update');
         // Settings
@@ -132,6 +133,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Chart
     Route::get('rental-chart', [ChartController::class, 'getChartData'])->name('rental-chart');
+    Route::get('vehicle-stock-chart', [ChartController::class, 'getVehicleStockChartData'])->name('vehicle-stock-chart');
 });
 
 require __DIR__.'/settings.php';

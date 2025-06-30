@@ -21,7 +21,7 @@ class ChartDataService
      * @return array An array containing chartData and vehicleClassesWithColors.
      * @throws Exception If there's an error during data calculation.
      */
-    public function getHistoricalChartData(): array
+    public function getHistoricalChartDataService(): array
     {
         Log::info("Starting historical chart data calculation via ChartDataService.");
 
@@ -145,5 +145,57 @@ class ChartDataService
             Log::error("Error calculating total fleet size for date ending " . $endDate->toDateString() . ": " . $e->getMessage(), ['exception' => $e]);
             return 0;
         }
+    }
+
+    public function getVehicleStockChartDataService(): array
+    {
+        Log::info("Starting vehicle stock chart data calculation via ChartDataService.");
+
+        $defaultColors = [
+            '#1c3151', '#ff7f0e', '#2463eb', '#04a96d', '#ffbb78', '#d62728', '#ff9896',
+            '#9467bd', '#c5b0d5', '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#7f7f7f',
+            '#c7c7c7', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5'
+        ];
+
+        // Eager load counts for total and unavailable vehicles in a single query per relationship
+        $vehicleClassesData = VehicleClasses::query()
+            ->select('id', 'name')
+            ->withCount([
+                'vehicles as total_vehicles_count', // Counts all vehicles for the class
+                'vehicles as unavailable_vehicles_count' => function ($query) {
+                    $query->unavailable(); // Applies your unavailable scope
+                }
+            ])
+            ->get();
+
+        $chartData = $vehicleClassesData->map(function ($class, $index) use ($defaultColors) {
+            $cleanName = str_replace(' ', '', $class->name);
+            $totalVehicles = $class->total_vehicles_count;
+            $unavailableVehicles = $class->unavailable_vehicles_count;
+            $availableVehicles = $totalVehicles - $unavailableVehicles;
+
+            return [
+                'id' => $class->id,
+                'label' => $class->name,
+                'total' => $totalVehicles, // Total vehicles in this class
+                'available' => $availableVehicles, // Available vehicles (calculated)
+                'unavailable' => $unavailableVehicles, // Unavailable vehicles
+                'vehicle_class_key' => 'class_' . strtolower($cleanName), // Consistent key naming
+                'fill' => $defaultColors[$index % count($defaultColors)],
+            ];
+        });
+
+        // Calculate the grand total of available vehicles
+        $grandTotalAvailableVehicles = $chartData->sum('available');
+
+        // Create a mapping from vehicle_class_id to your desired key name (e.g., 'class_sedan')
+        $vehicleClassIdToKeyName = $chartData->pluck('vehicle_class_key', 'id')->toArray();
+        
+        return [
+            'chartData' => $chartData,
+            'vehicleClassIdToKeyName' => $vehicleClassIdToKeyName,
+            'grandTotalAvailableVehicles' => $grandTotalAvailableVehicles, // Add the new data point
+
+        ];
     }
 }

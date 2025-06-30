@@ -62,7 +62,6 @@ export const useChartStore = create<ChartState>((set, get) => ({
 
         try {
             const chartDataUrl = getRoute('rental-chart');
-            console.log('Fetching chart data from URL:', chartDataUrl);
 
             const response = await fetch(chartDataUrl);
 
@@ -82,7 +81,6 @@ export const useChartStore = create<ChartState>((set, get) => ({
             }
 
             const data = await response.json();
-            console.log('Received data in store:', data);
 
             set({
                 allHistoricalChartData: data.chartData,
