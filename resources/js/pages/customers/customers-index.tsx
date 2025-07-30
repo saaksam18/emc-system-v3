@@ -229,12 +229,11 @@ const CustomersIndex: React.FC<PageProps> = ({ customers: initialCustomers, cont
                             />
                             <div className="flex gap-2">
                                 <Button variant="default" onClick={handleCreateClick} className="w-full shrink-0 sm:w-auto">
-                                    {' '}
                                     {/* Changed variant to default */}
                                     <User2 className="mr-2 h-4 w-4" /> Create Customer
                                 </Button>
                                 {/* Removed Settings button for now, add back if needed */}
-                                <Link href={'/customers/settings'}>
+                                <Link href={'/settings/customers'}>
                                     <Button variant="outline" className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
                                         <Settings className="mr-2 h-4 w-4" /> Setting
                                     </Button>

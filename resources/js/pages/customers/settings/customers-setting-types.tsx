@@ -26,9 +26,9 @@ import { DataTable } from '@/components/customers/sheets/settings/tables/data-ta
 import type { BreadcrumbItem, ContactTypes, User } from '@/types'; // Added 'type' keyword
 
 // --- Utility Imports ---
+import SettingsLayout from '@/layouts/settings/layout';
 import { cn } from '@/lib/utils'; // For Tailwind class merging (Ensure this path is correct)
 import { BookUser } from 'lucide-react'; // Icons
-import CustomersSettingsLayout from './customers-settings-layout';
 
 // --- Skeleton Loader Components ---
 
@@ -194,7 +194,7 @@ const SettingsIndex: React.FC<PageProps> = ({ contactTypes: initialContactTypes 
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <CustomersSettingsLayout>
+            <SettingsLayout>
                 <Head title="Contact Type Settings" />
                 <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                     <Card>
@@ -277,7 +277,7 @@ const SettingsIndex: React.FC<PageProps> = ({ contactTypes: initialContactTypes 
                         </SheetContent>
                     </Sheet>
                 </div>
-            </CustomersSettingsLayout>
+            </SettingsLayout>
         </AppLayout>
     );
 };

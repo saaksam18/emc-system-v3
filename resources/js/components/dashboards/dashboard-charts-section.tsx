@@ -68,7 +68,7 @@ export default function DashboardChartsSection({} /* no props needed if everythi
             dataWithinRange.forEach((item) => {
                 let key: string;
                 let label: string;
-                let itemDate = new Date(item.date_key);
+                const itemDate = new Date(item.date_key);
 
                 if (granularity === 'year') {
                     key = format(itemDate, 'yyyy');

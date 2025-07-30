@@ -21,10 +21,10 @@ import { Edit } from '@/components/vehicles/settings/model/sheets/edit'; // Assu
 
 // --- Layouts ---
 import AppLayout from '@/layouts/app-layout'; // Assuming path
-import VehiclesSettingsLayout from './vehicles-settings-layout'; // Assuming path
 
 // --- Types ---
 // UPDATED: Import VehicleModelType and VehicleMakerType
+import SettingsLayout from '@/layouts/settings/layout';
 import type { BreadcrumbItem, VehicleMakerType, VehicleModelType } from '@/types'; // Assuming path
 
 // --- Utility Function for Class Names (like shadcn/ui uses) ---
@@ -111,8 +111,8 @@ function SkeletonTable({ rowCount = 5, columnCount = 4 }: SkeletonTableProps) {
 // UPDATED: Breadcrumbs for Models
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Vehicle',
-        href: '/vehicles',
+        title: 'Settings',
+        href: '/settings',
     },
     {
         title: 'Models', // Changed
@@ -212,7 +212,7 @@ const VehiclesSettingModels: React.FC<PageProps> = ({
         <AppLayout breadcrumbs={breadcrumbs}>
             {/* UPDATED: Head title */}
             <Head title="Vehicle Models Settings" />
-            <VehiclesSettingsLayout>
+            <SettingsLayout>
                 {/* Header Section */}
                 <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     {/* Page Title and Description */}
@@ -286,7 +286,7 @@ const VehiclesSettingModels: React.FC<PageProps> = ({
                         )}
                     </SheetContent>
                 </Sheet>
-            </VehiclesSettingsLayout>
+            </SettingsLayout>
         </AppLayout>
     );
 };

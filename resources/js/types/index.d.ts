@@ -234,3 +234,96 @@ export interface DepositTypes {
     updated_at?: any;
     [key: string]: any;
 }
+
+// Accounting
+export interface ChartOfAccountTypes {
+    id: number;
+    name: string;
+    type: 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
+    created_at?: string;
+    updated_at?: string;
+}
+export interface Transaction {
+    id: number;
+    transaction_no: string;
+    transaction_date: string;
+    item_description: string;
+    memo_ref_no?: string;
+    debit_account: ChartOfAccountTypes;
+    credit_account: ChartOfAccountTypes;
+    debit_account_id?: ChartOfAccountTypes;
+    credit_account_id: ChartOfAccountTypes;
+    amount: number;
+    user_name?: string;
+    created_at?: any;
+    updated_at?: any;
+}
+export interface SaleTransaction {
+    id: number;
+    sale_no: string;
+    sale_date: string;
+    customer_name: string;
+    item_description: string;
+    memo_ref_no?: string;
+    amount: number;
+    payment_type: 'cash' | 'bank' | 'credit' | 'Cash' | 'Bank Transfer' | 'On Credit';
+    gl_debit_account_name?: string;
+    gl_credit_account_name?: string;
+}
+
+export interface Vendor {
+    id: number;
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    user_name?: string;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ExpenseTransaction {
+    id: number;
+    expense_no: string;
+    expense_date: string;
+    vendor_name: string;
+    item_description: string;
+    memo_ref_no?: string;
+    amount: number;
+    payment_type: 'cash' | 'bank' | 'Cash' | 'Bank Transfer';
+    gl_debit_account_name?: string;
+    gl_credit_account_name?: string;
+}
+
+export interface ExpenseEntryProps {
+    expenses: ExpenseTransaction[];
+    chartOfAccounts: ChartOfAccountTypes[];
+    vendors: Vendor[];
+    flash?: {
+        success?: string;
+        error?: string;
+        errors?: Record<string, string | string[]>;
+    };
+}
+
+// NEW: Trial Balance Account Interface
+export interface TrialBalanceAccount {
+    id: number;
+    name: string;
+    type: string; // e.g., 'Asset', 'Liability', 'Equity', 'Revenue', 'Expense'
+    debit_balance: number; // Balance if it's a debit
+    credit_balance: number; // Balance if it's a credit
+}
+
+// NEW: Trial Balance Page Props Interface
+export interface TrialBalanceProps {
+    trialBalance: TrialBalanceAccount[];
+    asOfDate?: string; // The date for which the trial balance was generated
+    flash?: {
+        success?: string;
+        error?: string;
+        errors?: Record<string, string | string[]>;
+    };
+    [key: string]: any;
+}

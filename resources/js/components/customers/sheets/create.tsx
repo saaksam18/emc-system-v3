@@ -302,7 +302,7 @@ export function Create({ contactTypes, onSubmitSuccess }: CreateProps) {
                     Object.entries(currentErrors).forEach(([field, errorMessage]) => {
                         // Improved error message formatting
                         const fieldNameParts = field.split('.');
-                        let userFriendlyFieldName = fieldNameParts
+                        const userFriendlyFieldName = fieldNameParts
                             .map((part) => {
                                 if (part === 'activeContacts') return 'Contacts';
                                 if (/^\d+$/.test(part)) return `Item ${parseInt(part) + 1}`; // 1-based index

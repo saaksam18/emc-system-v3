@@ -26,10 +26,8 @@ interface VehicleStockChartProps {
 export default function VehicleStockChart({ data, chartConfig, activeMonth, activeIndex, grandTotalAvailable }: VehicleStockChartProps) {
     const id = 'pie-interactive';
 
-    const currentActiveDataItem = activeIndex !== -1 ? data[activeIndex] : null;
-    console.log(data);
     return (
-        <ChartContainer id={id} config={chartConfig} className="mx-auto aspect-square w-full max-w-[300px]">
+        <ChartContainer id={id} config={chartConfig} className="mx-auto aspect-square w-full max-w-[200px]">
             <PieChart>
                 <ChartTooltip
                     cursor={false}
@@ -53,12 +51,12 @@ export default function VehicleStockChart({ data, chartConfig, activeMonth, acti
                     data={data}
                     dataKey="available"
                     nameKey="label"
-                    innerRadius={60}
+                    innerRadius={40}
                     activeIndex={activeIndex}
                     activeShape={({ outerRadius = 0, ...props }: PieSectorDataItem) => (
                         <g>
-                            <Sector {...props} outerRadius={outerRadius + 5} />
-                            <Sector {...props} outerRadius={outerRadius + 20} innerRadius={outerRadius + 12} />
+                            <Sector {...props} outerRadius={outerRadius + 2.5} />
+                            <Sector {...props} outerRadius={outerRadius + 20} innerRadius={outerRadius + 10} />
                         </g>
                     )}
                     fill={(d: ChartDataItem) => d.fill}
@@ -71,7 +69,7 @@ export default function VehicleStockChart({ data, chartConfig, activeMonth, acti
                                         <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-3xl font-bold">
                                             {grandTotalAvailable}
                                         </tspan>
-                                        <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 24} className="fill-muted-foreground">
+                                        <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 20} className="fill-muted-foreground">
                                             In Stock
                                         </tspan>
                                     </text>

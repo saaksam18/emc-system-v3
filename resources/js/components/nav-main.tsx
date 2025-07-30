@@ -19,7 +19,6 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
             {/* Iterate over each group in the 'groups' array */}
             {groups.map((group, index) => (
                 <SidebarGroup key={group.title || `group-${index}`} className="mb-2 px-2 py-0">
-                    {' '}
                     {/* Add margin-bottom */}
                     {/* Render group label only if a title exists */}
                     {group.title && <SidebarGroupLabel>{group.title}</SidebarGroupLabel>}

@@ -312,7 +312,7 @@ const RentalsIndex: React.FC<PageProps> = ({
                                     <NotebookTabs className="mr-2 h-4 w-4" /> Create
                                 </Button>
                                 {/* Removed Settings button for now, add back if needed */}
-                                <Link href={'/rentals/settings'}>
+                                <Link href={'/settings/rentals'}>
                                     <Button variant="outline" className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
                                         <Settings className="mr-2 h-4 w-4" /> Setting
                                     </Button>

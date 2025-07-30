@@ -84,6 +84,42 @@ class UserRolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'type-create']);
         Permission::create(['name' => 'type-edit']);
         Permission::create(['name' => 'type-delete']);
+
+        // Visa
+        Permission::create(['name' => 'visa-list']);
+        Permission::create(['name' => 'visa-create']);
+        Permission::create(['name' => 'visa-edit']);
+        Permission::create(['name' => 'visa-delete']);
+
+        // Visa Type
+        Permission::create(['name' => 'visa-type-list']);
+        Permission::create(['name' => 'visa-type-create']);
+        Permission::create(['name' => 'visa-type-edit']);
+        Permission::create(['name' => 'visa-type-delete']);
+
+        // Accounting
+        Permission::create(['name' => 'accounting-list']);
+        Permission::create(['name' => 'accounting-create']);
+        Permission::create(['name' => 'accounting-edit']);
+        Permission::create(['name' => 'accounting-delete']);
+
+        // Sales
+        Permission::create(['name' => 'sales-list']);
+        Permission::create(['name' => 'sales-create']);
+        Permission::create(['name' => 'sales-edit']);
+        Permission::create(['name' => 'sales-delete']);
+
+        // Expense
+        Permission::create(['name' => 'expense-list']);
+        Permission::create(['name' => 'expense-create']);
+        Permission::create(['name' => 'expense-edit']);
+        Permission::create(['name' => 'expense-delete']);
+
+        // Vendor
+        Permission::create(['name' => 'vendor-list']);
+        Permission::create(['name' => 'vendor-create']);
+        Permission::create(['name' => 'vendor-edit']);
+        Permission::create(['name' => 'vendor-delete']);
         
         $this->command->info('User roles and permissions seeded successfully!');
     }

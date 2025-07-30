@@ -354,8 +354,7 @@ class CustomersController extends Controller
             Log::info("Committing database transaction for Customer [ID: {$customer->id}] by User [ID: {$userId}].");
             DB::commit();
 
-            return redirect()->route('customers.index')
-                   ->with('success', "Customer '{$customer->first_name} {$customer->last_name}' created successfully!");
+            return redirect()->back()->with('success', "Customer '{$customer->first_name} {$customer->last_name}' created successfully!");
 
         } catch (AuthorizationException $e) {
             DB::rollBack();

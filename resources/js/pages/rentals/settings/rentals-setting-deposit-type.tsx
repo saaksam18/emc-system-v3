@@ -26,9 +26,9 @@ import { DataTable } from '@/components/rentals/sheets/settings/tables/data-tabl
 import type { BreadcrumbItem, DepositTypes, User } from '@/types'; // Added 'type' keyword
 
 // --- Utility Imports ---
+import SettingsLayout from '@/layouts/settings/layout';
 import { cn } from '@/lib/utils'; // For Tailwind class merging (Ensure this path is correct)
 import { BookUser } from 'lucide-react'; // Icons
-import RentalsSettingsLayout from './rentals-settings-layout';
 
 // --- Skeleton Loader Components ---
 
@@ -89,12 +89,12 @@ function SkeletonTable({
 // --- Breadcrumbs ---
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Rentals',
-        href: '/rentals',
+        title: 'Settings',
+        href: '/settings',
     },
     {
-        title: 'Settings',
-        href: '/rentals/settings',
+        title: 'Deposit Type',
+        href: '/settings/rentals/deposit-type',
     },
 ];
 
@@ -193,7 +193,7 @@ const RentalStatusIndex: React.FC<PageProps> = ({ depositeType: initialDepositTy
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <RentalsSettingsLayout>
+            <SettingsLayout>
                 <Head title="Rental Status Settings" />
                 <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                     <Card>
@@ -276,7 +276,7 @@ const RentalStatusIndex: React.FC<PageProps> = ({ depositeType: initialDepositTy
                         </SheetContent>
                     </Sheet>
                 </div>
-            </RentalsSettingsLayout>
+            </SettingsLayout>
         </AppLayout>
     );
 };
