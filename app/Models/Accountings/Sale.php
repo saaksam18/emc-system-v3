@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 use App\Models\Accountings\Transaction;
+use App\Models\Customers;
 use App\Models\User;
 
 class Sale extends Model
@@ -50,6 +51,11 @@ class Sale extends Model
     public function accountingTransaction()
     {
         return $this->hasOne(Transaction::class);
+    }
+
+    public function customers(): BelongsTo
+    {
+        return $this->belongsTo(Customers::class, 'customer_id', 'id');
     }
 
     public function creator(): BelongsTo

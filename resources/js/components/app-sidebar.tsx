@@ -6,6 +6,7 @@ import { type NavItem } from '@/types'; // Assuming NavItem is defined here
 import { Link } from '@inertiajs/react';
 import {
     BadgeDollarSign,
+    BarChart,
     Bike,
     BookCheck,
     BookUser,
@@ -18,6 +19,7 @@ import {
     LucideBanknote,
     ReceiptCentIcon,
     Scale,
+    ScaleIcon,
     Settings,
     User2,
 } from 'lucide-react'; // Added Settings icon
@@ -56,6 +58,18 @@ const mainNavGroups: NavGroup[] = [
                 title: 'Expenses',
                 href: '/expenses',
                 icon: LucideBanknote,
+                prefetch: true,
+            },
+            {
+                title: 'Profit & Loss',
+                href: '/profit-loss',
+                icon: BarChart,
+                prefetch: true,
+            },
+            {
+                title: 'Balance Sheet',
+                href: '/balance-sheet',
+                icon: ScaleIcon,
                 prefetch: true,
             },
             {

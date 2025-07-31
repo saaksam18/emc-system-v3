@@ -13,7 +13,7 @@ import {
     useReactTable,
     VisibilityState,
 } from '@tanstack/react-table';
-import { TableMeta } from './columns'; // Assuming TableMeta is defined here
+import { TableMeta } from './account-ledger/columns'; // Assuming TableMeta is defined here
 
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -34,15 +34,7 @@ export function DataTable<TData, TValue>({ columns, data, meta }: DataTableProps
     // --- State hooks remain the same ---
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
-        date_of_birth: false,
-        address: false,
-        primary_deposit_and_count: false,
-        passport_number: false,
-        passport_expiry: false,
-        notes: false,
-        created_at: false,
-    });
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
 
     // --- useReactTable hook remains the same ---
     const table = useReactTable({

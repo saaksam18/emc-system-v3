@@ -34,8 +34,8 @@ import { toast } from 'sonner';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 // Shadcn DataTable components
+import { DataTable } from '@/components/accountings/data-table'; // Re-use DataTable component
 import { columns, TableMeta } from '@/components/accountings/expenses-entries/columns'; // NEW PATH
-import { DataTable } from '@/components/accountings/expenses-entries/data-table'; // Re-use DataTable component
 
 // Shadcn Dialog Imports
 import { Sheet, SheetContent } from '@/components/ui/sheet';

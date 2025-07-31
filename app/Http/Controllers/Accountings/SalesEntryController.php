@@ -72,7 +72,7 @@ class SalesEntryController extends Controller
             });
 
             // Fetch existing transactions with their related debit/credit accounts
-            $sales = Sale::with('creator')
+            $sales = Sale::with('customers', 'creator')
                         ->whereDate('created_at', now())
                         ->orderBy('id', 'desc')
                         ->get();
@@ -88,11 +88,16 @@ class SalesEntryController extends Controller
                 } else {
                     $paymentType = 'N/A';
                 }
+
+                $firstName = $sale->customers->first_name ?? '';
+                $lastName = $sale->customers->last_name ?? '';
+                // Concatenate with a space, handle cases where one or both might be empty
+                $full_name = trim($firstName . ' ' . $lastName);
                 return [
                     'id' => $sale->id,
                     'sale_no' => $sale->sale_no ?? 'N/A',
                     'sale_date' => $sale->sale_date ?? 'N/A',
-                    'customer_name' => $sale->customer_name ?? 'N/A',
+                    'customer_name' => $full_name ?? 'N/A',
                     'item_description' => $sale->item_description ?? 'N/A',
                     'memo_ref_no' => $sale->memo_ref_no ?? 'N/A',
                     'amount' => $sale->amount ?? 'N/A',

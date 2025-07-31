@@ -7,8 +7,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 // Shadcn UI Components
-import { columns } from '@/components/accountings/trial-balance/columns'; // NEW PATH
-import { DataTable } from '@/components/accountings/trial-balance/data-table'; // Re-use your existing DataTable component
+import { DataTable } from '@/components/accountings/data-table'; // Re-use your existing DataTable component
+import { columns, TableMeta } from '@/components/accountings/trial-balance/columns'; // NEW PATH
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -125,6 +125,14 @@ export default function TrialBalance({ trialBalance, asOfDate: initialAsOfDate }
         currency: 'USD',
     }).format(totalCredits);
 
+    // Prepare the meta object to pass to DataTable
+    const tableMeta: TableMeta = useMemo(
+        () => ({
+            asOfDate: asOfDate ? format(asOfDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+        }),
+        [asOfDate],
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
@@ -138,42 +146,47 @@ export default function TrialBalance({ trialBalance, asOfDate: initialAsOfDate }
                         <p className="text-muted-foreground text-sm">As of: {initialAsOfDate ? format(new Date(initialAsOfDate), 'PPP') : 'Today'}</p>
                     </CardHeader>
                     <CardContent>
-                        <div className="mb-6 flex flex-wrap items-end gap-4">
+                        <div className="flex justify-between">
                             {/* As Of Date Filter */}
-                            <div className="flex flex-col gap-1">
-                                <label className="text-sm font-medium text-gray-700">As of Date</label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant={'outline'}
-                                            className={cn('w-[180px] justify-between text-left font-normal', !asOfDate && 'text-muted-foreground')}
-                                        >
-                                            {asOfDate ? format(asOfDate, 'PPP') : 'Select date'}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar mode="single" selected={asOfDate} onSelect={setAsOfDate} captionLayout="dropdown" initialFocus />
-                                    </PopoverContent>
-                                </Popover>
+                            <div className="mb-6 flex flex-wrap items-end gap-4">
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-sm font-medium text-gray-700">As of Date</label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant={'outline'}
+                                                className={cn(
+                                                    'w-[180px] justify-between text-left font-normal',
+                                                    !asOfDate && 'text-muted-foreground',
+                                                )}
+                                            >
+                                                {asOfDate ? format(asOfDate, 'PPP') : 'Select date'}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={asOfDate}
+                                                onSelect={setAsOfDate}
+                                                captionLayout="dropdown"
+                                                initialFocus
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+
+                                {/* Filter Button */}
+                                <div className="flex gap-2">
+                                    <Button onClick={handleApplyFilters} className="bg-purple-600 hover:bg-purple-700">
+                                        <Filter className="mr-2 h-4 w-4" /> Generate Report
+                                    </Button>
+                                    {/* No clear filters needed for just one date */}
+                                </div>
                             </div>
 
-                            {/* Filter Button */}
-                            <div className="flex gap-2">
-                                <Button onClick={handleApplyFilters} className="bg-purple-600 hover:bg-purple-700">
-                                    <Filter className="mr-2 h-4 w-4" /> Generate Report
-                                </Button>
-                                {/* No clear filters needed for just one date */}
-                            </div>
-                        </div>
-
-                        <Deferred data="trialBalance" fallback={<SkeletonTable />}>
-                            <DataTable columns={columns} data={trialBalance} />
-                        </Deferred>
-
-                        {/* Totals Row */}
-                        <div className="mt-4 flex justify-end">
-                            <Card className="flex items-center gap-8 border border-purple-200 bg-purple-50 p-4">
+                            {/* Totals Row */}
+                            <Card className="flex flex-row items-center border border-purple-200 bg-purple-50 p-4">
                                 <p className="font-semibold text-gray-700">Total Debits:</p>
                                 <p className="text-lg font-bold text-purple-800">{formattedTotalDebits}</p>
 
@@ -181,12 +194,16 @@ export default function TrialBalance({ trialBalance, asOfDate: initialAsOfDate }
                                 <p className="text-lg font-bold text-purple-800">{formattedTotalCredits}</p>
 
                                 {totalDebits.toFixed(2) === totalCredits.toFixed(2) ? (
-                                    <p className="ml-4 font-semibold text-green-600">(Balanced)</p>
+                                    <p className="font-semibold text-green-600">(Balanced)</p>
                                 ) : (
-                                    <p className="ml-4 font-semibold text-red-600">(Unbalanced!)</p>
+                                    <p className="font-semibold text-red-600">(Unbalanced!)</p>
                                 )}
                             </Card>
                         </div>
+
+                        <Deferred data="trialBalance" fallback={<SkeletonTable />}>
+                            <DataTable columns={columns} data={trialBalance} meta={tableMeta} />
+                        </Deferred>
                     </CardContent>
                 </Card>
             </div>

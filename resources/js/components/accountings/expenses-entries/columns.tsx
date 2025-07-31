@@ -20,7 +20,7 @@ export const columns: ColumnDef<ExpenseTransaction>[] = [
         accessorKey: 'expense_no',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Sale No. <ArrowUpDown className="ml-2 h-4 w-4" />
+                Expense No. <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
     },
@@ -48,7 +48,7 @@ export const columns: ColumnDef<ExpenseTransaction>[] = [
         accessorKey: 'vendor_name',
         header: ({ column }) => (
             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Customer Name <ArrowUpDown className="ml-2 h-4 w-4" />
+                Vendor Name <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
     },
@@ -89,24 +89,6 @@ export const columns: ColumnDef<ExpenseTransaction>[] = [
                 </>
             );
         },
-    },
-    {
-        accessorKey: 'gl_debit_account_name',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Memo/Ref No. <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.memo_ref_no || '-',
-    },
-    {
-        accessorKey: 'gl_credit_account_name',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Memo/Ref No. <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
-        cell: ({ row }) => row.original.memo_ref_no || '-',
     },
     {
         accessorKey: 'amount',

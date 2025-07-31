@@ -32,7 +32,8 @@ class ExpensesController extends Controller
 
     public function index()
     {
-        $expenses = Expense::orderBy('expense_date', 'desc')
+        $expenses = Expense::with('vendor', 'creator')
+                            ->orderBy('expense_date', 'desc')
                            ->orderBy('id', 'desc')
                            ->get()
                            ->map(function ($expense) {
@@ -48,11 +49,37 @@ class ExpensesController extends Controller
                                 return $expense;
                            });
 
+        $formattedExpenses = $expenses->map(function ($expense) {
+            $paymentType = null;
+            if ($expense->payment_type === 'cash') {
+                $paymentType = 'Cash';
+            } elseif ($expense->payment_type === 'bank') {
+                $paymentType = 'Bank Transfer';
+            } elseif ($expense->payment_type === 'credit') {
+                $paymentType = 'On Credit';
+            } else {
+                $paymentType = 'N/A';
+            }
+            return [
+                'id' => $expense->id,
+                'expense_no' => $expense->expense_no ?? 'N/A',
+                'expense_date' => $expense->expense_date ?? 'N/A',
+                'vendor_name' => $expense->vendor->name ?? 'N/A',
+                'item_description' => $expense->item_description ?? 'N/A',
+                'memo_ref_no' => $expense->memo_ref_no ?? 'N/A',
+                'amount' => $expense->amount ?? 'N/A',
+                'payment_type' => $paymentType,
+                'user_name' => $expense->creator->name,
+                'created_at' => $expense->created_at?->toISOString(),
+                'updated_at' => $expense->updated_at?->toISOString(),
+            ];
+        });
+
         $chartOfAccounts = ChartOfAccounts::orderBy('name')->get();
         $vendors = Vendor::orderBy('name')->get(); // Fetch all vendors
 
         return Inertia::render('accountings/expense-entry', [ 
-            'expenses' => $expenses,
+            'expenses' => Inertia::defer(fn () => $formattedExpenses),
             'chartOfAccounts' => $chartOfAccounts,
             'vendors' => $vendors, // Pass vendors data
             'flash' => [

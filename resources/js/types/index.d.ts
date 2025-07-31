@@ -327,3 +327,61 @@ export interface TrialBalanceProps {
     };
     [key: string]: any;
 }
+
+// NEW: P&L Line Item Interface (for individual revenue/expense accounts)
+export interface PLAccountSummary {
+    id: number;
+    name: string;
+    type: 'Revenue' | 'Expense'; // Explicitly define types for P&L
+    balance: number; // Net balance for this account over the period
+}
+
+// NEW: Profit & Loss Page Props Interface
+export interface ProfitLossProps {
+    profitAndLoss: {
+        revenues: PLAccountSummary[];
+        totalRevenue: number;
+        expenses: PLAccountSummary[];
+        totalExpense: number;
+        netProfitLoss: number;
+    };
+    startDate: string; // Period start date
+    endDate: string; // Period end date
+    flash?: {
+        success?: string;
+        error?: string;
+        errors?: Record<string, string | string[]>;
+    };
+    [key: string]: any;
+}
+
+// Represents a single account item in the report
+export interface Account {
+    id: number;
+    name: string;
+    type: string; // The string value of the AccountType (e.g., 'Asset', 'Liability')
+    balance: number;
+}
+
+// Represents the overall structure of the balanceSheet data passed from Laravel
+export interface BalanceSheetData {
+    assets: Account[];
+    totalAssets: number;
+    liabilities: Account[];
+    totalLiabilities: number;
+    equity: Account[];
+    totalEquity: number;
+    netProfitLossComponent?: number; // Optional: used for internal verification/debugging
+}
+
+// Represents the complete set of props passed to the React component
+export interface BalanceSheetProps {
+    balanceSheet: BalanceSheetData;
+    asOfDate: string; // The date string (e.g., 'YYYY-MM-DD')
+    flash: {
+        success?: string; // Optional success message
+        error?: string; // Optional error message
+        errors?: Record<string, string>; // Optional object for validation errors
+    };
+    [key: string]: any;
+}

@@ -18,8 +18,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 // Select components are no longer directly used for debit/credit, but keep if used elsewhere
 
 // Shadcn Command for searchable dropdown
+import { DataTable } from '@/components/accountings/data-table';
 import { columns, TableMeta } from '@/components/accountings/general-ledger/columns';
-import { DataTable } from '@/components/accountings/general-ledger/data-table';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils'; // Import cn utility for conditional classNames
 import { toast } from 'sonner';

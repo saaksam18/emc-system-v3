@@ -264,4 +264,393 @@ class GeneralLedgerController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Display the Profit & Loss Statement.
+     */
+    public function profitLoss(Request $request)
+    {
+        // Default to current month if no dates are provided
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+
+        // Get all relevant accounts (Revenue and Expense types)
+        $revenueExpenseAccounts = ChartOfAccounts::whereIn('type', ['Revenue', 'Expense'])
+                                                ->get();
+        // Initialize balances for these accounts
+        $accountBalances = [];
+        foreach ($revenueExpenseAccounts as $account) {
+            $accountBalances[$account->id] = [
+                'id' => $account->id,
+                'name' => $account->name,
+                'type' => $account->type,
+                'balance' => 0.00, // Net balance for the period
+            ];
+        }
+
+        // Fetch all transactions within the period for Revenue and Expense accounts
+        $transactions = Transaction::whereBetween('transaction_date', [$startDate, $endDate])
+                                            ->where(function ($query) use ($revenueExpenseAccounts) {
+                                                $accountIds = $revenueExpenseAccounts->pluck('id')->toArray();
+                                                $query->whereIn('debit_account_id', $accountIds)
+                                                      ->orWhereIn('credit_account_id', $accountIds);
+                                            })
+                                            ->get();
+
+        foreach ($transactions as $transaction) {
+            // Debit side processing
+            if (isset($accountBalances[$transaction->debit_account_id])) {
+                $account = $accountBalances[$transaction->debit_account_id];
+                // CHANGE HERE: access ->value
+                if ($account['type']->value === 'Expense') {
+                    $accountBalances[$transaction->debit_account_id]['balance'] += $transaction->amount;
+                } elseif ($account['type']->value === 'Revenue') { // CHANGE HERE: access ->value
+                    $accountBalances[$transaction->debit_account_id]['balance'] -= $transaction->amount;
+                }
+            }
+
+            // Credit side processing
+            if (isset($accountBalances[$transaction->credit_account_id])) {
+                $account = $accountBalances[$transaction->credit_account_id];
+                // CHANGE HERE: access ->value
+                if ($account['type']->value === 'Expense') {
+                    $accountBalances[$transaction->credit_account_id]['balance'] -= $transaction->amount;
+                } elseif ($account['type']->value === 'Revenue') { // CHANGE HERE: access ->value
+                    $accountBalances[$transaction->credit_account_id]['balance'] += $transaction->amount;
+                }
+            }
+        }
+
+        $revenues = collect($accountBalances)->filter(fn($acc) => $acc['type']->value === 'Revenue' && $acc['balance'] != 0) // <-- ENSURE .value IS HERE
+                                    ->sortBy('name')
+                                    ->values()
+                                    ->toArray();
+        $totalRevenue = array_sum(array_column($revenues, 'balance'));
+
+        $expenses = collect($accountBalances)->filter(fn($acc) => $acc['type']->value === 'Expense' && $acc['balance'] != 0) // <-- ENSURE .value IS HERE
+                                            ->sortBy('name')
+                                            ->values()
+                                            ->toArray();
+        $totalExpense = array_sum(array_column($expenses, 'balance'));
+
+        $netProfitLoss = $totalRevenue - $totalExpense;
+
+        return Inertia::render('accountings/profit-loss', [
+            'profitAndLoss' => [
+                'revenues' => $revenues,
+                'totalRevenue' => $totalRevenue,
+                'expenses' => $expenses,
+                'totalExpense' => $totalExpense,
+                'netProfitLoss' => $netProfitLoss,
+            ],
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error'),
+                'errors' => session('errors') ? (object) session('errors') : null,
+            ],
+        ]);
+    }
+
+    /**
+     * Generates the Balance Sheet report.
+     *
+     * @param Request $request
+     * @return \Inertia\Response
+     */
+    public function balanceSheet(Request $request)
+    {
+        // Get the "As Of" Date for the Balance Sheet snapshot
+        // Defaults to today's date if not provided in the request
+        $asOfDate = $request->input('as_of_date', Carbon::now()->toDateString());
+
+        // Fetch all Chart of Accounts that are classified as Assets, Liabilities, or Equity
+        $balanceSheetAccounts = ChartOfAccounts::whereIn('type', ['Asset', 'Liability', 'Equity'])
+                                                ->get();
+
+        // Initialize a dictionary to hold the calculated balance for each relevant account
+        $accountBalances = [];
+        foreach ($balanceSheetAccounts as $account) {
+            $accountBalances[$account->id] = [
+                'id' => $account->id,
+                'name' => $account->name,
+                'type' => $account->type, // This is an App\AccountType object/enum
+                'balance' => 0.00, // All balances start at zero
+            ];
+        }
+
+        // Fetch ALL relevant accounting transactions from the beginning of records
+        // up to and including the 'asOfDate'. The Balance Sheet is cumulative.
+        $transactions = Transaction::where('transaction_date', '<=', $asOfDate)
+                                            ->where(function ($query) use ($balanceSheetAccounts) {
+                                                // Only consider transactions involving Balance Sheet accounts
+                                                $accountIds = $balanceSheetAccounts->pluck('id')->toArray();
+                                                $query->whereIn('debit_account_id', $accountIds)
+                                                      ->orWhereIn('credit_account_id', $accountIds);
+                                            })
+                                            ->orderBy('transaction_date') // Process in chronological order
+                                            ->get();
+
+        // Process each transaction to update account balances
+        foreach ($transactions as $transaction) {
+            // Impact of the Debit side of the transaction
+            if (isset($accountBalances[$transaction->debit_account_id])) {
+                $account = $accountBalances[$transaction->debit_account_id];
+                $type = $account['type']->value; // Access the string value of the AccountType enum/object
+
+                if ($type === 'Asset') {
+                    // Debit to an Asset account increases its balance
+                    $accountBalances[$transaction->debit_account_id]['balance'] += $transaction->amount;
+                } elseif (in_array($type, ['Liability', 'Equity'])) {
+                    // Debit to a Liability or Equity account decreases its balance
+                    $accountBalances[$transaction->debit_account_id]['balance'] -= $transaction->amount;
+                }
+            }
+
+            // Impact of the Credit side of the transaction
+            if (isset($accountBalances[$transaction->credit_account_id])) {
+                $account = $accountBalances[$transaction->credit_account_id];
+                $type = $account['type']->value; // Access the string value of the AccountType enum/object
+
+                if (in_array($type, ['Liability', 'Equity'])) {
+                    // Credit to a Liability or Equity account increases its balance
+                    $accountBalances[$transaction->credit_account_id]['balance'] += $transaction->amount;
+                } elseif ($type === 'Asset') {
+                    // Credit to an Asset account decreases its balance
+                    $accountBalances[$transaction->credit_account_id]['balance'] -= $transaction->amount;
+                }
+            }
+        }
+
+        // --- Crucial Linkage: Incorporating Net Profit/Loss into Equity (Retained Earnings) ---
+        // The Net Profit/Loss from the company's inception up to the 'asOfDate'
+        // is added to the Equity section of the Balance Sheet.
+
+        // Fetch accounts relevant for P&L calculation (Revenue and Expense)
+        $profitLossAccounts = ChartOfAccounts::whereIn('type', ['Revenue', 'Expense'])->get();
+
+        // Fetch all P&L related transactions up to the 'asOfDate'
+        $profitLossTransactions = Transaction::where('transaction_date', '<=', $asOfDate)
+                                                    ->where(function ($query) use ($profitLossAccounts) {
+                                                        $accountIds = $profitLossAccounts->pluck('id')->toArray();
+                                                        $query->whereIn('debit_account_id', $accountIds)
+                                                              ->orWhereIn('credit_account_id', $accountIds);
+                                                    })
+                                                    ->get();
+
+        $currentPeriodRevenue = 0;
+        $currentPeriodExpense = 0;
+
+        // Calculate the cumulative Net Profit/Loss
+        foreach ($profitLossTransactions as $transaction) {
+            // Debit side impact on P&L accounts
+            if ($profitLossAccounts->firstWhere('id', $transaction->debit_account_id)?->type->value === 'Expense') {
+                $currentPeriodExpense += $transaction->amount;
+            } elseif ($profitLossAccounts->firstWhere('id', $transaction->debit_account_id)?->type->value === 'Revenue') {
+                $currentPeriodRevenue -= $transaction->amount; // Debit to Revenue reduces it (e.g., sales return)
+            }
+
+            // Credit side impact on P&L accounts
+            if ($profitLossAccounts->firstWhere('id', $transaction->credit_account_id)?->type->value === 'Revenue') {
+                $currentPeriodRevenue += $transaction->amount; // Credit to Revenue increases it
+            } elseif ($profitLossAccounts->firstWhere('id', $transaction->credit_account_id)?->type->value === 'Expense') {
+                $currentPeriodExpense -= $transaction->amount; // Credit to Expense reduces it (e.g., expense refund)
+            }
+        }
+
+        $netProfitLoss = $currentPeriodRevenue - $currentPeriodExpense;
+
+        // Identify the Retained Earnings or primary Owner's Equity account
+        // Based on your Chart of Accounts, ID 8 is "Owner's Equity"
+        $retainedEarningsAccountId = 8; // **IMPORTANT: Adjust this if your ID is different**
+
+        // Add the Net Profit/Loss to the balance of the Retained Earnings account
+        if (isset($accountBalances[$retainedEarningsAccountId])) {
+            $accountBalances[$retainedEarningsAccountId]['balance'] += $netProfitLoss;
+        } else {
+            // Edge case: If the retained earnings account didn't have any direct transactions
+            // and wasn't included initially, find it and add it with the net profit/loss.
+            $retainedEarningsAccount = ChartOfAccounts::find($retainedEarningsAccountId);
+            if ($retainedEarningsAccount) {
+                $accountBalances[$retainedEarningsAccountId] = [
+                    'id' => $retainedEarningsAccount->id,
+                    'name' => $retainedEarningsAccount->name,
+                    'type' => $retainedEarningsAccount->type,
+                    'balance' => $netProfitLoss,
+                ];
+            }
+        }
+
+        // 6. Categorize accounts and sum their total balances for display
+        // Filter out accounts with zero balances for cleaner display, and sort by name.
+        $assets = collect($accountBalances)
+                    ->filter(fn($acc) => $acc['type']->value === 'Asset' && round((float)$acc['balance'], 2) != 0.00)
+                    ->sortBy('name')
+                    ->values()
+                    ->toArray();
+        $totalAssets = array_sum(array_column($assets, 'balance'));
+
+        $liabilities = collect($accountBalances)
+                        ->filter(fn($acc) => $acc['type']->value === 'Liability' && round((float)$acc['balance'], 2) != 0.00)
+                        ->sortBy('name')
+                        ->values()
+                        ->toArray();
+        $totalLiabilities = array_sum(array_column($liabilities, 'balance'));
+
+        // Handle the Equity accounts, ensuring Retained Earnings is correctly reflected
+        $equity = collect($accountBalances)
+                    ->filter(fn($acc) => $acc['type']->value === 'Equity' && round((float)$acc['balance'], 2) != 0.00)
+                    ->sortBy('name')
+                    ->values()
+                    ->toArray();
+        $totalEquity = array_sum(array_column($equity, 'balance'));
+
+
+        // 7. Render the Inertia view, passing the calculated data as props
+        return Inertia::render('accountings/balance-sheet', [
+            'balanceSheet' => [
+                'assets' => $assets,
+                'totalAssets' => $totalAssets,
+                'liabilities' => $liabilities,
+                'totalLiabilities' => $totalLiabilities,
+                'equity' => $equity,
+                'totalEquity' => $totalEquity,
+                'netProfitLossComponent' => $netProfitLoss // Pass for frontend verification/debugging
+            ],
+            'asOfDate' => $asOfDate,
+            // Flash messages for success/error notifications
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error'),
+                'errors' => session('errors') ? (object) session('errors') : null,
+            ],
+        ]);
+    }
+
+    /**
+     * Displays the detailed general ledger for a specific account.
+     * Allows filtering by date range.
+     *
+     * @param Request $request
+     * @param int $accountId The ID of the ChartOfAccount to view.
+     * @return \Inertia\Response
+     */
+    public function accountLedgerDetail(Request $request, int $accountId)
+    {
+        // 1. Validate the account exists
+        $account = ChartOfAccounts::find($accountId);
+        if (!$account) {
+            // Handle account not found, perhaps redirect with an error message
+            return redirect()->back()->with('error', 'Account not found.');
+        }
+
+        // 2. Get the date range for filtering transactions
+        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->endOfYear()->toDateString());
+        $page = $request->input('page', 1); // For pagination
+
+        // 3. Fetch transactions related to this account within the date range
+        // We need transactions where this account is either the debit or the credit side.
+        $transactions = Transaction::whereBetween('transaction_date', [$startDate, $endDate])
+            ->where(function ($query) use ($accountId) {
+                $query->where('debit_account_id', $accountId)
+                      ->orWhere('credit_account_id', $accountId);
+            })
+            ->with(['debitAccount', 'creditAccount', 'type']) // Eager load related account names and transaction type
+            ->orderBy('transaction_date', 'asc') // Order by date ascending
+            ->orderBy('id', 'asc') // Then by ID to ensure consistent order for same-day transactions
+            ->paginate(15); // Paginate the results (adjust per page as needed)
+
+        // 4. Calculate the opening balance for the account *before* the startDate
+        // This gives context to the transactions shown in the period.
+        $openingBalance = 0.00;
+        $priorTransactions = Transaction::where('transaction_date', '<', $startDate)
+            ->where(function ($query) use ($accountId) {
+                $query->where('debit_account_id', $accountId)
+                      ->orWhere('credit_account_id', $accountId);
+            })
+            ->get();
+
+        foreach ($priorTransactions as $transaction) {
+            // If the account is on the debit side:
+            // Assets & Expenses increase with debit
+            // Liabilities & Equity decrease with debit
+            if ($transaction->debit_account_id === $accountId) {
+                if ($account->type->value === 'Asset' || $account->type->value === 'Expense') {
+                    $openingBalance += $transaction->amount;
+                } else { // Liability, Equity, Revenue
+                    $openingBalance -= $transaction->amount;
+                }
+            }
+            // If the account is on the credit side:
+            // Liabilities, Equity & Revenue increase with credit
+            // Assets & Expenses decrease with credit
+            elseif ($transaction->credit_account_id === $accountId) {
+                 if ($account->type->value === 'Liability' || $account->type->value === 'Equity' || $account->type->value === 'Revenue') {
+                    $openingBalance += $transaction->amount;
+                } else { // Asset, Expense
+                    $openingBalance -= $transaction->amount;
+                }
+            }
+        }
+
+        // 5. Calculate a running balance for the transactions in the current view
+        $runningBalance = $openingBalance;
+        $formattedTransactions = $transactions->through(function ($transaction) use (&$runningBalance, $accountId, $account) {
+            // Determine debit/credit for *this specific account* based on its type
+            $debit = null;
+            $credit = null;
+
+            // Impact on the balance for the ACCOUNT WE ARE VIEWING
+            if ($transaction->debit_account_id === $accountId) {
+                $debit = $transaction->amount;
+                if ($account->type->value === 'Asset' || $account->type->value === 'Expense') {
+                    $runningBalance += $transaction->amount;
+                } else { // Liability, Equity, Revenue
+                    $runningBalance -= $transaction->amount;
+                }
+            } elseif ($transaction->credit_account_id === $accountId) {
+                $credit = $transaction->amount;
+                if ($account->type->value === 'Liability' || $account->type->value === 'Equity' || $account->type->value === 'Revenue') {
+                    $runningBalance += $transaction->amount;
+                } else { // Asset, Expense
+                    $runningBalance -= $transaction->amount;
+                }
+            }
+
+            return [
+                'id' => $transaction->id,
+                'transaction_date' => $transaction->transaction_date,
+                'description' => $transaction->description,
+                'debit_account_name' => $transaction->debitAccount->name,
+                'credit_account_name' => $transaction->creditAccount->name,
+                'transaction_type_name' => $transaction->transactionType->name ?? 'N/A',
+                'amount' => $transaction->amount,
+                'debit' => $debit, // Amount if it was a debit to THIS account
+                'credit' => $credit, // Amount if it was a credit to THIS account
+                'running_balance' => $runningBalance,
+            ];
+        });
+
+        // 6. Return data to the Inertia frontend
+        return Inertia::render('accountings/account-ledger', [
+            'account' => [
+                'id' => $account->id,
+                'name' => $account->name,
+                'type' => $account->type->value, // Pass the string value
+            ],
+            'transactions' => $formattedTransactions, // Paginated collection
+            'dateRange' => [
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+            ],
+            'openingBalance' => $openingBalance,
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error'),
+                'errors' => session('errors') ? (object) session('errors') : null,
+            ],
+        ]);
+    }
 }

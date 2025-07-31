@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 // Model
 use App\Models\Accountings\Transaction;
+use App\Models\Accountings\Vendor;
 use App\Models\User;
 
 class Expense extends Model
@@ -36,6 +37,11 @@ class Expense extends Model
     public function accountingTransaction()
     {
         return $this->hasOne(Transaction::class);
+    }
+
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class, 'vendor_id', 'id');
     }
 
     public function creator(): BelongsTo

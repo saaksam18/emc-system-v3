@@ -69,9 +69,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/administrator/roles/{role}', [UserController::class, 'destroyRole'])->name('administrator.roles.destroy-role');
 
     // Accounting
-        // GeneralLedgerController
-        Route::get('/general-ledger', [GeneralLedgerController::class, 'index'])->name('general-ledger.index');
-        Route::post('/general-ledger/register', [GeneralLedgerController::class, 'store'])->name('general-ledger.store');
+        Route::controller(GeneralLedgerController::class)->group(function () {
+            // GeneralLedgerController
+            Route::get('/general-ledger', 'index')->name('general-ledger.index');
+            Route::post('/general-ledger/register', 'store')->name('general-ledger.store');
+
+            // Trial Balance
+            Route::get('/trial-balance', 'trialBalance')->name('trial-balance.index');
+            // Profit & Loss routes
+            Route::get('/profit-loss', 'profitLoss')->name('profit-loss.index');
+
+            // Define the route for the Balance Sheet report
+            Route::get('/balance-sheet', 'balanceSheet')->name('balance.sheet');
+
+            // Route for Account Ledger Detail
+            // The {accountId} is a route parameter.
+            Route::get('/account-ledger/{accountId}', 'accountLedgerDetail')->name('account.ledger.detail');
+        });
 
         // Sales
         Route::get('/sales', [SalesEntryController::class, 'index'])->name('sales-entry.index');
@@ -80,10 +94,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Expenses
         Route::get('/expenses', [ExpensesController::class, 'index'])->name('expenses-entry.index');
         Route::post('/expenses/register', [ExpensesController::class, 'store'])->name('expenses.store');
-
-        // Trial Balance
-        Route::get('/trial-balance', [GeneralLedgerController::class, 'trialBalance'])->name('trial-balance.index');
-
 
         // Vendors
         Route::post('/vendors/register', [VendorsController::class, 'store'])->name('vendors.store');
