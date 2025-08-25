@@ -6,10 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Response;
 use Illuminate\Support\Facades\Redirect;
@@ -23,14 +21,9 @@ use Inertia\Inertia;
 use App\Services\ChartDataService;
 
 // Import models still needed for index() method
-use App\Models\Customers;
 use App\Models\Rentals;
 use App\Models\User;
-use App\Models\VehicleActualModel;
-use App\Models\VehicleClasses;
-use App\Models\VehicleMaker;
 use App\Models\Vehicles;
-use App\Models\VehicleStatus;
 use App\Models\Contacts;
 use App\Models\Deposits;
 

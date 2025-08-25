@@ -6,6 +6,8 @@ use Inertia\Inertia;
 // Controller
     // Dashboard
     use App\Http\Controllers\Internals\DashboardController;
+    // POS
+    use App\Http\Controllers\Internals\POSController;
     // Accounting
     use App\Http\Controllers\Accountings\GeneralLedgerController;
     use App\Http\Controllers\Accountings\SalesEntryController;
@@ -50,6 +52,7 @@ Route::redirect('/', 'login')->name('home');
 //Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('pos', [POSController::class, 'index'])->name('pos');
 
     Route::redirect('administrator', '/administrator/users');
 
@@ -140,7 +143,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Api
     Route::get('rental-chart', [ChartController::class, 'getChartData'])->name('rental-chart');
     Route::get('vehicle-stock-chart', [ChartController::class, 'getVehicleStockChartData'])->name('vehicle-stock-chart');
-    Route::get('chart-of-accounts', [ChartOfAccountController::class, 'getChartOfAccount'])->name('api.chart-of-accounts');
 });
 
 require __DIR__.'/settings.php';

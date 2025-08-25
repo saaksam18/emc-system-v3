@@ -17,6 +17,12 @@ class UserRolesAndPermissionsSeeder extends Seeder
         // Create permissions
         Permission::create(['name' => 'dashboard-list']);
 
+        // POS
+        Permission::create(['name' => 'pos-list']);
+        Permission::create(['name' => 'pos-create']);
+        Permission::create(['name' => 'pos-edit']);
+        Permission::create(['name' => 'pos-delete']);
+
         // Rental
         Permission::create(['name' => 'rental-list']);
         Permission::create(['name' => 'rental-create']);
