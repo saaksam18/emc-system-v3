@@ -334,7 +334,7 @@ export function ExtendContract({ selectedRow, vehicleStatuses, users, onSubmitSu
                 if (currentErrors && Object.keys(currentErrors).length > 0) {
                     Object.entries(currentErrors).forEach(([field, errorMessage]) => {
                         const fieldNameParts = field.split('.');
-                        let userFriendlyFieldName = fieldNameParts
+                        const userFriendlyFieldName = fieldNameParts
                             .map((part) => {
                                 if (part === 'activeDeposits') return 'Deposits';
                                 // Adjust index display for user (+1)

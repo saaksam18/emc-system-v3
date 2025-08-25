@@ -4,7 +4,26 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types'; // Assuming NavItem is defined here
 import { Link } from '@inertiajs/react';
-import { Bike, BookCheck, Dock, Edit3, ExternalLink, House, NotebookTabs, ReceiptCentIcon, User2 } from 'lucide-react'; // Added Settings icon
+import {
+    BadgeDollarSign,
+    BarChart,
+    Bike,
+    BookCheck,
+    BookUser,
+    ClipboardList,
+    Computer,
+    Dock,
+    ExternalLink,
+    File,
+    FileSliders,
+    House,
+    LucideBanknote,
+    ReceiptCentIcon,
+    Scale,
+    ScaleIcon,
+    Settings,
+    User2,
+} from 'lucide-react'; // Added Settings icon
 import AppLogo from './app-logo';
 
 // --- Updated Navigation Items with Groups ---
@@ -21,35 +40,65 @@ const mainNavGroups: NavGroup[] = [
         ],
     },
     {
-        // Group 2: Rental
-        title: 'Scooter Rental', // Title for the second group
+        // Group 2: Finance & Accounting
+        title: 'Finances & Accountings',
         items: [
             {
-                title: 'Rentals', // Renamed for clarity in this group
-                href: '/rentals',
-                icon: NotebookTabs,
+                title: 'General Ledger',
+                href: '/general-ledger',
+                icon: ClipboardList,
                 prefetch: true,
             },
             {
-                title: 'Vehicles', // Renamed for clarity in this group
-                href: '/vehicles',
-                icon: Bike,
+                title: 'Sales',
+                href: '/sales',
+                icon: BadgeDollarSign,
+                prefetch: true,
+            },
+            {
+                title: 'Expenses',
+                href: '/expenses',
+                icon: LucideBanknote,
+                prefetch: true,
+            },
+            {
+                title: 'Profit & Loss',
+                href: '/profit-loss',
+                icon: BarChart,
+                prefetch: true,
+            },
+            {
+                title: 'Balance Sheet',
+                href: '/balance-sheet',
+                icon: ScaleIcon,
+                prefetch: true,
+            },
+            {
+                title: 'Trial Balance',
+                href: '/trial-balance',
+                icon: Scale,
                 prefetch: true,
             },
         ],
     },
     {
-        // Group 3: Visa & WP
-        title: 'Visa / Work Permit', // Title for the second group
+        // Group 3: Services
+        title: 'Services', // Title for the second group
         items: [
             {
-                title: 'Visa', // Renamed for clarity in this group
+                title: 'Rentals',
+                href: '/rentals',
+                icon: BookUser,
+                prefetch: true,
+            },
+            {
+                title: 'Visa',
                 href: '/vehicles',
                 icon: BookCheck,
                 prefetch: true,
             },
             {
-                title: 'Work Permit', // Renamed for clarity in this group
+                title: 'Work Permit',
                 href: '/vehicles',
                 icon: Dock,
                 prefetch: true,
@@ -57,42 +106,49 @@ const mainNavGroups: NavGroup[] = [
         ],
     },
     {
-        // Group 4: Basic Data
-        title: 'Visa Work Permit', // Title for the second group
+        // Group 4: Stock
+        title: 'Listing', // Title for the second group
         items: [
             {
-                title: 'Customers', // Renamed for clarity in this group
+                title: 'Customers',
                 href: '/customers',
                 icon: User2,
                 prefetch: true,
             },
+            {
+                title: 'Vehicles',
+                href: '/vehicles',
+                icon: Bike,
+                prefetch: true,
+            },
         ],
     },
     {
-        // Group 3: Report
+        // Group 5: Report
         title: 'Report', // Title for the second group
         items: [
             {
-                title: 'Rental Transaction', // Renamed for clarity in this group
+                title: 'Rental Transaction',
                 href: '/reports/rentals-transaction',
                 icon: ReceiptCentIcon,
                 prefetch: true,
             },
-            /* {
-                title: 'Rental Chart', // Renamed for clarity in this group
-                href: '/reports/rentals-transaction/chart',
-                icon: Bike,
-            }, */
         ],
     },
     {
-        // Group 4: Client Edittor
-        title: 'Website Editor', // Title for the second group
+        // Group 6: Client Edittor
+        title: 'Content', // Title for the second group
         items: [
             {
-                title: 'Top', // Renamed for clarity in this group
+                title: 'Pages',
                 href: '/web-editor/top',
-                icon: Edit3,
+                icon: File,
+                prefetch: true,
+            },
+            {
+                title: 'Blog',
+                href: '/web-editor/top',
+                icon: FileSliders,
                 prefetch: true,
             },
         ],
@@ -109,9 +165,23 @@ const footerNavItems: NavItem[] = [
     },
     {
         id: 1,
+        title: 'POS',
+        href: '/pos',
+        icon: Computer,
+        prefetch: true,
+    },
+    {
+        id: 2,
         title: 'Administration',
         href: '/administrator',
         icon: User2,
+        prefetch: true,
+    },
+    {
+        id: 3,
+        title: 'Settings',
+        href: '/settings',
+        icon: Settings,
         prefetch: true,
     },
 ];

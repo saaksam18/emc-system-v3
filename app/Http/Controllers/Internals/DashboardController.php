@@ -6,10 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Response;
 use Illuminate\Support\Facades\Redirect;
@@ -23,14 +21,9 @@ use Inertia\Inertia;
 use App\Services\ChartDataService;
 
 // Import models still needed for index() method
-use App\Models\Customers;
 use App\Models\Rentals;
 use App\Models\User;
-use App\Models\VehicleActualModel;
-use App\Models\VehicleClasses;
-use App\Models\VehicleMaker;
 use App\Models\Vehicles;
-use App\Models\VehicleStatus;
 use App\Models\Contacts;
 use App\Models\Deposits;
 
@@ -70,11 +63,16 @@ class DashboardController extends Controller
             // Fetch overdue rentals data for the dashboard
             $users = $this->getUsers();
 
+            // Call the new method to get deposit and overdue counts
+            $depositAndOverdueData = $this->getDepositAndOverdueCount();
+
+            //dd($depositAndOverdueData);
+
             return Inertia::render('dashboard', [
-                'rentals' => $overdueRentals,
-                'users' => $users,
-                // Pass other data needed for the dashboard here
-                // e.g., 'vehicleClassesWithColors' => VehicleClasses::all()->mapWithKeys(fn($vc) => [$vc->id => $vc->color])
+                'rentals' => Inertia::defer(fn () => $overdueRentals),
+                'users' => Inertia::defer(fn () => $users),
+                'depositAndOverdueData' => Inertia::defer(fn () => $depositAndOverdueData),
+
             ]);
 
         } catch (AuthorizationException $e) {
@@ -84,6 +82,38 @@ class DashboardController extends Controller
             Log::error("Error accessing Dashboard for User [ID: {$userId}]: " . $e->getMessage(), ['exception' => $e]);
             abort(500, 'Could not load dashboard data.');
         }
+    }
+
+    protected function getDepositAndOverdueCount()
+    {
+        // Count Deposit
+            $deposits = Deposits::where('is_active', true)->get();
+
+            $numericDepositSum = 0;
+            $textDepositCount = 0;
+            $textDepositValues = [];
+            $overdueRentalsCount = Rentals::overdue()->count();
+
+            // Iterate through each deposit to categorize and aggregate deposit_value
+            foreach ($deposits as $deposit) {
+                $value = $deposit->deposit_value;
+
+                // Check if the value is numeric.
+                // is_numeric() handles both integer and float strings.
+                if (is_numeric($value)) {
+                    $numericDepositSum += (float) $value; // Cast to float to handle decimal numbers
+                } else {
+                    $textDepositCount++;
+                    $textDepositValues[] = $value; // Store the text value if needed
+                }
+            }
+
+        return [
+            'numericDepositSum' => $numericDepositSum,
+            'textDepositCount' => $textDepositCount,
+            'textDepositValues' => $textDepositValues,
+            'overdueRentalsCount' => $overdueRentalsCount,
+        ];
     }
 
     /**

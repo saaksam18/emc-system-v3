@@ -29,6 +29,9 @@ class DatabaseSeeder extends Seeder
 
             // Rental
             DepositTypeSeeder::class,
+
+            // Chart of Accounting
+            ChartOfAccountSeeder::class,
         ]);
 
         User::factory()->create([

@@ -1,5 +1,6 @@
 // parent component:
 import DashboardChartsSection from '@/components/dashboards/dashboard-charts-section';
+import DepositAndOverdueCountSection from '@/components/dashboards/deposit-and-overdue-count-section';
 import LatePaymentSection from '@/components/dashboards/late-payments/late-payment';
 import VehicleStockChartsSection from '@/components/dashboards/vehicle-stock-charts-section';
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
@@ -18,6 +19,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface DashboardProps {
     rentals: RentalsType[];
+    depositAndOverdueData?: {
+        overdueRentalsCount: number;
+        numericDepositSum: number;
+        textDepositCount: number;
+    };
     users: User[];
     flash?: {
         success?: string;
@@ -27,8 +33,9 @@ interface DashboardProps {
     [key: string]: any;
 }
 
-export default function Dashboard({ rentals, users, chartData }: DashboardProps) {
+export default function Dashboard({ rentals, users, chartData, depositAndOverdueData }: DashboardProps) {
     const { props: pageProps } = usePage<DashboardProps>();
+
     // Effect for flash messages
     useEffect(() => {
         const flash = pageProps.flash;
@@ -54,13 +61,11 @@ export default function Dashboard({ rentals, users, chartData }: DashboardProps)
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+                    <DepositAndOverdueCountSection depositAndOverdueData={depositAndOverdueData} />
+                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative aspect-video overflow-hidden rounded-xl border">
+                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
+                    </div>
                     <VehicleStockChartsSection initialData={chartData} />
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative aspect-video overflow-hidden rounded-xl border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative aspect-video overflow-hidden rounded-xl border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
                 </div>
                 {/* DashboardChartsSection will now fetch its own data */}
                 <DashboardChartsSection />

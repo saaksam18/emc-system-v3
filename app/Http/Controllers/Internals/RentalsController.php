@@ -140,29 +140,6 @@ class RentalsController extends Controller
             $textDepositValues = [];
             $overdueRentalsCount = Rentals::overdue()->count();
 
-            // Retrieve the actual overdue rental records
-            /* $overdueRentals = Rentals::overdue()->get();
-
-            // Calculate how long each rental is overdue
-            foreach ($overdueRentals as $rental) {
-                // Ensure end_date is a Carbon instance (it should be due to $casts in model)
-                if ($rental->end_date instanceof Carbon) {
-                    // Calculate the difference in days from the end_date to now
-                    $overdueDays = $rental->end_date->diffInDays(Carbon::now());
-                    // You can also get a human-readable format, e.g., "3 days ago"
-                    $overdueHuman = $rental->end_date->diffForHumans(Carbon::now(), true); // 'true' for absolute difference
-
-                    $rental->overdue_duration_days = $overdueDays;
-                    $rental->overdue_duration_human = $overdueHuman;
-                } else {
-                    // Handle cases where end_date might not be a Carbon instance (though it should be)
-                    $rental->overdue_duration_days = null;
-                    $rental->overdue_duration_human = 'N/A';
-                }
-            }
-
-            dd($overdueRentals); */
-
             // Iterate through each deposit to categorize and aggregate deposit_value
             foreach ($deposits as $deposit) {
                 $value = $deposit->deposit_value;

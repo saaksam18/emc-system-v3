@@ -323,7 +323,7 @@ const VehiclesIndex: React.FC<PageProps> = () => {
                                     <Bike className="mr-2 h-4 w-4" /> Create Vehicle
                                 </Button>
                                 {/* FIX: Wrap Button inside Link, remove asChild from Button */}
-                                <Link href={'/vehicles/settings'}>
+                                <Link href={'/settings/vehicles'}>
                                     <Button variant="outline" className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
                                         <Settings className="mr-2 h-4 w-4" /> Setting
                                     </Button>
