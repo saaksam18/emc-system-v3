@@ -2,7 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Account, BalanceSheetProps, BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { DatePicker } from '@/components/date-picker';
@@ -57,8 +57,6 @@ export default function BalanceSheet({ balanceSheet, asOfDate }: BalanceSheetPro
     const formatDateForDisplay = (dateString: string): string => {
         return format(parseISO(dateString), 'MMMM do, yyyy');
     };
-
-    
 
     // Helper function to apply color classes based on value (positive/negative)
     const getValueClass = (value: number): string => {

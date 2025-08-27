@@ -14,8 +14,6 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
-use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use Exception; // <-- Import base Exception
 use Illuminate\Auth\Access\AuthorizationException; // <-- Import Auth Exception
@@ -23,7 +21,6 @@ use Illuminate\Validation\ValidationException; // <-- Import Validation Exceptio
 
 // Model
 use App\Models\User;
-use App\Models\Rentals;
 use App\Models\Vehicles;
 use App\Models\Customers;
 use App\Models\VehicleClasses;
@@ -46,9 +43,6 @@ class VehiclesController extends Controller
         try {
             $this->authorize('vehicle-list');
             Log::info("User [ID: {$userId}] authorized to view Vehicle.");
-
-            // --- Fetch Vehicle Classes (for color assignment if needed elsewhere) ---
-            $vehicleClasses = VehicleClasses::select('id', 'name')->get();
 
             // --- Fetch Other Data ---
             // Get all customers
