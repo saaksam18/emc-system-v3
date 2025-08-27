@@ -329,7 +329,7 @@ class RentalsController extends Controller
             // --- Define Validation Rules ---
             $rules = [
                 // Relational Information
-                'vehicle_no' => ['required', 'string', 'max:255', Rule::exists('vehicles', 'vehicle_no')], // Ensure vehicle exists
+                'vehicle_no' => ['required', 'max:255', Rule::exists('vehicles', 'vehicle_no')], // Ensure vehicle exists
                 'customer_name' => [
                     'required',
                     'string',
@@ -399,7 +399,6 @@ class RentalsController extends Controller
             $messages = [
                 // Vehicle
                 'vehicle_no.required' => 'The vehicle number is required.',
-                'vehicle_no.string' => 'The vehicle number must be a string.',
                 'vehicle_no.exists' => 'The selected vehicle does not exist.', // Added exists message
 
                 // Customer
@@ -547,7 +546,7 @@ class RentalsController extends Controller
             // --- Success Response ---
             $successMessage = 'Rental of vehicle no. ' . $vehicle->vehicle_no . ' successfully registered (ID: ' . $rental->id . ').';
             // Redirect to the index page with a success message
-            return to_route('rentals.index')->with('success', $successMessage);
+            return redirect()->back()->with('success', $successMessage);
 
         } catch (AuthorizationException $e) {
             DB::rollBack(); // Rollback transaction on authorization failure

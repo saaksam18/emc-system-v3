@@ -2,9 +2,9 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -193,13 +193,23 @@ interface CreateProps {
     customers: Customers[] | null;
     depositTypes: Deposits[] | null;
     users: User[] | null;
-    onSubmitSuccess: () => void;
+    onSubmitSuccess: (data: InitialFormValues) => void;
+    initialVehicleNo?: string;
 }
 
-export function Create({ availableVehicles, vehicleStatuses, customers, depositTypes, users, onSubmitSuccess }: CreateProps) {
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm<InitialFormValues>(initialFormValues);
-    const formErrors = errors as FormErrors;
+export function Create({ availableVehicles, vehicleStatuses, customers, depositTypes, users, onSubmitSuccess, initialVehicleNo }: CreateProps) {
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm<InitialFormValues>({
+        ...initialFormValues,
+        vehicle_no: initialVehicleNo || '',
+    });
 
+    useEffect(() => {
+        if (initialVehicleNo) {
+            setData('vehicle_no', initialVehicleNo);
+        }
+    }, [initialVehicleNo, setData]);
+
+    const formErrors = errors as FormErrors;
     // State for Combobox Dialogs (unchanged)
     const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
     const [vehicleDialogOpen, setVehicleDialogOpen] = useState(false);
@@ -224,7 +234,7 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
         if (!data.actual_start_date) {
             setData('actual_start_date', today);
         }
-    }, []);
+    }, [data.actual_start_date, setData]);
 
     // Calculate Period Effect (unchanged)
     useEffect(() => {
@@ -429,15 +439,16 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
             toast.error('Please correct the errors in the form.');
             return; // Stop submission
         }
+        console.log(data)
 
         // --- Post Data (unchanged) ---
         post(url, {
             preserveScroll: true,
             onSuccess: () => {
+                onSubmitSuccess(data);
                 reset(); // Reset form to initial values
                 setData('actual_start_date', formatDateForInput(new Date())); // Reset start date to today
                 setExpiryDateDialogsOpen({}); // Reset expiry date dialog states
-                onSubmitSuccess();
             },
             onError: (receivedErrors) => {
                 const currentErrors = receivedErrors as FormErrors; // Cast received errors
@@ -496,8 +507,8 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                 <FormSection title="Relational Information" description="Enter the relational information for the new rental.">
                     {/* Customer Combobox */}
                     <FormField label="Customer" htmlFor="create-customer_name" error={formErrors.customer_name} required>
-                        <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
-                            <DialogTrigger asChild>
+                        <Popover open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
+                            <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     role="combobox"
@@ -516,8 +527,8 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                         : 'Select customer...'}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-h-[80vh] w-[--radix-Dialog-trigger-width] overflow-y-auto p-0">
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                 <Command>
                                     <CommandInput placeholder="Search customer..." />
                                     <CommandList>
@@ -549,78 +560,92 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                 </Command>
                                 <Button variant="ghost" asChild className="m-1">
                                     <Link href={'/customers'} className="flex w-full shrink-0 items-center justify-center gap-2 text-sm sm:w-auto">
-                                        <User2 className="mr-1 h-4 w-4" /> Create Customer
+                                        <User2 className="mr-1 h-4 w-4" /> Add Customer
                                     </Link>
                                 </Button>
-                            </DialogContent>
-                        </Dialog>
+                            </PopoverContent>
+                        </Popover>
                         {validCustomers.length === 0 && !processing && <p className="text-muted-foreground mt-1 text-sm">No customers available.</p>}
                     </FormField>
 
                     {/* Vehicle Combobox */}
                     <FormField label="Vehicle No" htmlFor="create-vehicle_no" error={formErrors.vehicle_no} required>
-                        <Dialog open={vehicleDialogOpen} onOpenChange={setVehicleDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={vehicleDialogOpen}
-                                    aria-label="Select vehicle"
-                                    id="create-vehicle_no"
-                                    className={cn(
-                                        'w-full justify-between',
-                                        !data.vehicle_no && 'text-muted-foreground',
-                                        formErrors.vehicle_no && 'border-red-500',
-                                    )}
-                                    disabled={processing || validVehicles.length === 0}
-                                >
-                                    {data.vehicle_no
-                                        ? validVehicles.find((vehicle) => vehicle.vehicle_no === data.vehicle_no)?.vehicle_no
-                                        : 'Select vehicle...'}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-h-[80vh] w-[--radix-Dialog-trigger-width] overflow-y-auto p-0">
-                                <Command>
-                                    <CommandInput placeholder="Search vehicle no..." />
-                                    <CommandList>
-                                        <CommandEmpty>No vehicle found.</CommandEmpty>
-                                        <CommandGroup>
-                                            {validVehicles.map((vehicle) => (
-                                                <CommandItem
-                                                    key={vehicle.id}
-                                                    value={vehicle.vehicle_no}
-                                                    onSelect={(currentValue) => {
-                                                        handleComboboxChange('vehicle_no', currentValue === data.vehicle_no ? '' : currentValue);
-                                                        setVehicleDialogOpen(false);
-                                                    }}
-                                                >
-                                                    <Check
-                                                        className={cn(
-                                                            'mr-2 h-4 w-4',
-                                                            data.vehicle_no === vehicle.vehicle_no ? 'opacity-100' : 'opacity-0',
-                                                        )}
-                                                    />
-                                                    {vehicle.vehicle_no}
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                                <Button variant="ghost" asChild className="m-1">
-                                    <Link href={'/vehicles'} className="flex w-full shrink-0 items-center justify-center gap-2 text-sm sm:w-auto">
-                                        <Bike className="mr-1 h-4 w-4" /> Check Vehicle Stocks
-                                    </Link>
-                                </Button>
-                            </DialogContent>
-                        </Dialog>
-                        {validVehicles.length === 0 && !processing && <p className="text-muted-foreground mt-1 text-sm">No vehicles available.</p>}
+                        {initialVehicleNo ? (
+                            <Input id="create-vehicle_no" value={initialVehicleNo} readOnly disabled className={'bg-muted/50'} />
+                        ) : (
+                            <>
+                                <Popover open={vehicleDialogOpen} onOpenChange={setVehicleDialogOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={vehicleDialogOpen}
+                                            aria-label="Select vehicle"
+                                            id="create-vehicle_no"
+                                            className={cn(
+                                                'w-full justify-between',
+                                                !data.vehicle_no && 'text-muted-foreground',
+                                                formErrors.vehicle_no && 'border-red-500',
+                                            )}
+                                            disabled={processing || validVehicles.length === 0}
+                                        >
+                                            {data.vehicle_no
+                                                ? validVehicles.find((vehicle) => vehicle.vehicle_no === data.vehicle_no)?.vehicle_no
+                                                : 'Select vehicle...'}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                        <Command>
+                                            <CommandInput placeholder="Search vehicle no..." />
+                                            <CommandList>
+                                                <CommandEmpty>No vehicle found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {validVehicles.map((vehicle) => (
+                                                        <CommandItem
+                                                            key={vehicle.id}
+                                                            value={vehicle.vehicle_no}
+                                                            onSelect={(currentValue) => {
+                                                                handleComboboxChange(
+                                                                    'vehicle_no',
+                                                                    currentValue === data.vehicle_no ? '' : currentValue,
+                                                                );
+                                                                setVehicleDialogOpen(false);
+                                                            }}
+                                                        >
+                                                            <Check
+                                                                className={cn(
+                                                                    'mr-2 h-4 w-4',
+                                                                    data.vehicle_no === vehicle.vehicle_no ? 'opacity-100' : 'opacity-0',
+                                                                )}
+                                                            />
+                                                            {vehicle.vehicle_no}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                        <Button variant="ghost" asChild className="m-1">
+                                            <Link
+                                                href={'/vehicles'}
+                                                className="flex w-full shrink-0 items-center justify-center gap-2 text-sm sm:w-auto"
+                                            >
+                                                <Bike className="mr-1 h-4 w-4" /> Check Vehicle Stocks
+                                            </Link>
+                                        </Button>
+                                    </PopoverContent>
+                                </Popover>
+                                {validVehicles.length === 0 && !processing && (
+                                    <p className="text-muted-foreground mt-1 text-sm">No vehicles available.</p>
+                                )}
+                            </>
+                        )}
                     </FormField>
 
                     {/* Vehicle Status Combobox */}
                     <FormField label="Vehicle Status" htmlFor="create-status_name" error={formErrors.status_name} required>
-                        <Dialog open={vehicleStatusDialogOpen} onOpenChange={setVehicleStatusDialogOpen}>
-                            <DialogTrigger asChild>
+                        <Popover open={vehicleStatusDialogOpen} onOpenChange={setVehicleStatusDialogOpen}>
+                            <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     role="combobox"
@@ -637,8 +662,8 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                     {data.status_name ? data.status_name : 'Select status...'}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-h-[80vh] w-[--radix-Dialog-trigger-width] overflow-y-auto p-0">
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                 <Command>
                                     <CommandInput placeholder="Search status..." />
                                     <CommandList>
@@ -665,8 +690,8 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                         </CommandGroup>
                                     </CommandList>
                                 </Command>
-                            </DialogContent>
-                        </Dialog>
+                            </PopoverContent>
+                        </Popover>
                         {validVehicleStatuses.length === 0 && !processing && (
                             <p className="text-muted-foreground mt-1 text-sm">No vehicle statuses available.</p>
                         )}
@@ -726,10 +751,10 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                             />
                         </FormField>
 
-                        {/* --- MODIFIED: Primary Expiry Date (using Calendar Dialog) --- */}
+                        {/* --- MODIFIED: Primary Expiry Date (using Calendar Popover) --- */}
                         <FormField label="Expiry Date" htmlFor="primary_expiry_date_0" error={primaryDepositExpiryError}>
-                            <Dialog open={expiryDateDialogsOpen[0] || false} onOpenChange={(open) => handleExpiryDateDialogOpenChange(0, open)}>
-                                <DialogTrigger asChild>
+                            <Popover open={expiryDateDialogsOpen[0] || false} onOpenChange={(open) => handleExpiryDateDialogOpenChange(0, open)}>
+                                <PopoverTrigger asChild>
                                     <Button
                                         variant={'outline'}
                                         id="primary_expiry_date_0" // Use a unique ID if needed, but label points here
@@ -746,18 +771,16 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                             <span>Pick expiry date (Optional)</span>
                                         )}
                                     </Button>
-                                </DialogTrigger>
-                                <DialogContent className="w-auto py-6">
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
                                     <Calendar
                                         mode="single"
                                         selected={parseDateString(primaryDeposit.expiry_date)}
                                         onSelect={(date) => handleExpiryDateSelect(0, date)} // Pass index 0
-                                        initialFocus
-                                        // Add disabled logic if needed (e.g., disable past dates)
-                                        // disabled={(date) => date < new Date()}
+                                        captionLayout="dropdown"
                                     />
-                                </DialogContent>
-                            </Dialog>
+                                </PopoverContent>
+                            </Popover>
                         </FormField>
                         {/* --- End of MODIFIED Primary Expiry Date --- */}
 
@@ -870,11 +893,11 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                                 <Label htmlFor={`expiry_date_${actualIndex}`} className="sr-only">
                                                     Expiry Date
                                                 </Label>
-                                                <Dialog
+                                                <Popover
                                                     open={expiryDateDialogsOpen[actualIndex] || false}
                                                     onOpenChange={(open) => handleExpiryDateDialogOpenChange(actualIndex, open)}
                                                 >
-                                                    <DialogTrigger asChild>
+                                                    <PopoverTrigger asChild>
                                                         <Button
                                                             variant={'outline'}
                                                             id={`expiry_date_${actualIndex}`} // Unique ID
@@ -886,22 +909,24 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                                         >
                                                             <CalendarIcon className="mr-2 h-4 w-4" />
                                                             {deposit.expiry_date ? (
-                                                                format(parseDateString(deposit.expiry_date)!, 'PPP')
+                                                                format(parseDateString(deposit.expiry_date), 'PPP')
                                                             ) : (
                                                                 <span>Pick expiry date</span>
                                                             )}
                                                         </Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent className="w-auto py-6">
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0">
                                                         <Calendar
                                                             mode="single"
                                                             selected={parseDateString(deposit.expiry_date)}
-                                                            onSelect={(date) => handleExpiryDateSelect(actualIndex, date)} // Pass actualIndex
-                                                            initialFocus
-                                                            // Add disabled logic if needed
+                                                            onSelect={(date) => {
+                                                                handleExpiryDateSelect(actualIndex, date); // Pass actualIndex
+                                                                handleExpiryDateDialogOpenChange(actualIndex, false);
+                                                            }}
+                                                            captionLayout="dropdown"
                                                         />
-                                                    </DialogContent>
-                                                </Dialog>
+                                                    </PopoverContent>
+                                                </Popover>
                                                 {formErrors[expiryErrorKey] && (
                                                     <p className="mt-1 text-xs text-red-500">{formErrors[expiryErrorKey]}</p>
                                                 )}
@@ -955,8 +980,8 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                 <FormSection title="Rental Details" description="Specify the dates, period, cost, and responsible user.">
                     {/* Start Date */}
                     <FormField label="Start Date" htmlFor="actual_start_date" error={formErrors.actual_start_date} required>
-                        <Dialog open={startDateDialogOpen} onOpenChange={setStartDateDialogOpen}>
-                            <DialogTrigger asChild>
+                        <Popover open={startDateDialogOpen} onOpenChange={setStartDateDialogOpen}>
+                            <PopoverTrigger asChild>
                                 <Button
                                     variant={'outline'}
                                     id="actual_start_date"
@@ -967,26 +992,27 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                     )}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {data.actual_start_date ? format(parseDateString(data.actual_start_date)!, 'PPP') : <span>Pick a date</span>}
+                                    {data.actual_start_date ? format(parseDateString(data.actual_start_date), 'PPP') : <span>Pick a date</span>}
                                 </Button>
-                            </DialogTrigger>
-                            <DialogContent className="w-auto py-6">
-                                {' '}
-                                {/* Changed py-6 to p-0 */}
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
                                 <Calendar
                                     mode="single"
                                     selected={parseDateString(data.actual_start_date)}
-                                    onSelect={(date) => handleDateChange('actual_start_date', date)}
-                                    initialFocus
+                                    onSelect={(date) => {
+                                        handleDateChange('actual_start_date', date);
+                                        setStartDateDialogOpen(false);
+                                    }}
+                                    captionLayout="dropdown"
                                 />
-                            </DialogContent>
-                        </Dialog>
+                            </PopoverContent>
+                        </Popover>
                     </FormField>
 
                     {/* End Date */}
                     <FormField label="End Date" htmlFor="end_date" error={formErrors.end_date} required>
-                        <Dialog open={endDateDialogOpen} onOpenChange={setEndDateDialogOpen}>
-                            <DialogTrigger asChild>
+                        <Popover open={endDateDialogOpen} onOpenChange={setEndDateDialogOpen}>
+                            <PopoverTrigger asChild>
                                 <Button
                                     variant={'outline'}
                                     id="end_date"
@@ -998,21 +1024,22 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                     disabled={!data.actual_start_date}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {data.end_date ? format(parseDateString(data.end_date)!, 'PPP') : <span>Pick a date</span>}
+                                    {data.end_date ? format(parseDateString(data.end_date), 'PPP') : <span>Pick a date</span>}
                                 </Button>
-                            </DialogTrigger>
-                            <DialogContent className="w-auto py-6">
-                                {' '}
-                                {/* Changed py-6 to p-0 */}
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
                                 <Calendar
                                     mode="single"
                                     selected={parseDateString(data.end_date)}
-                                    onSelect={(date) => handleDateChange('end_date', date)}
+                                    onSelect={(date) => {
+                                        handleDateChange('end_date', date);
+                                        setEndDateDialogOpen(false);
+                                    }}
                                     disabled={(date) => (data.actual_start_date ? date < new Date(data.actual_start_date + 'T00:00:00') : false)}
-                                    initialFocus
+                                    captionLayout="dropdown"
                                 />
-                            </DialogContent>
-                        </Dialog>
+                            </PopoverContent>
+                        </Popover>
                     </FormField>
 
                     {/* Period Display */}
@@ -1031,8 +1058,8 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
 
                     {/* Coming Date */}
                     <FormField label="Coming Date" htmlFor="coming_date" error={formErrors.coming_date}>
-                        <Dialog open={comingDateDialogOpen} onOpenChange={setComingDateDialogOpen}>
-                            <DialogTrigger asChild>
+                        <Popover open={comingDateDialogOpen} onOpenChange={setComingDateDialogOpen}>
+                            <PopoverTrigger asChild>
                                 <Button
                                     variant={'outline'}
                                     id="coming_date"
@@ -1046,19 +1073,17 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {data.coming_date ? format(parseDateString(data.coming_date)!, 'PPP') : <span>Pick a date</span>}
                                 </Button>
-                            </DialogTrigger>
-                            <DialogContent className="w-auto py-6">
-                                {' '}
-                                {/* Changed py-6 to p-0 */}
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
                                 <Calendar
                                     mode="single"
                                     selected={parseDateString(data.coming_date)}
                                     onSelect={(date) => handleDateChange('coming_date', date)}
                                     disabled={(date) => (data.actual_start_date ? date < new Date(data.actual_start_date + 'T00:00:00') : false)}
-                                    initialFocus
+                                    captionLayout="dropdown"
                                 />
-                            </DialogContent>
-                        </Dialog>
+                            </PopoverContent>
+                        </Popover>
                     </FormField>
 
                     {/* Rental Cost */}
@@ -1078,8 +1103,8 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
 
                     {/* User Combobox */}
                     <FormField label="Incharge By" htmlFor="create-user_name" error={formErrors.user_name} required>
-                        <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
-                            <DialogTrigger asChild>
+                        <Popover open={userDialogOpen} onOpenChange={setUserDialogOpen}>
+                            <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     role="combobox"
@@ -1096,8 +1121,8 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                     {data.user_name ? validUsers.find((user) => user.name === data.user_name)?.name : 'Select user...'}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-h-[80vh] w-[--radix-Dialog-trigger-width] overflow-y-auto p-0">
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                 <Command>
                                     <CommandInput placeholder="Search user..." />
                                     <CommandList>
@@ -1122,8 +1147,8 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                         </CommandGroup>
                                     </CommandList>
                                 </Command>
-                            </DialogContent>
-                        </Dialog>
+                            </PopoverContent>
+                        </Popover>
                         {validUsers.length === 0 && !processing && <p className="text-muted-foreground mt-1 text-sm">No users available.</p>}
                     </FormField>
                 </FormSection>

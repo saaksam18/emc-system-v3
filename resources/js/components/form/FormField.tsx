@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import React from 'react';
 
 interface FormFieldProps {
@@ -13,16 +13,7 @@ interface FormFieldProps {
     contentClassName?: string;
 }
 
-export const FormField: React.FC<FormFieldProps> = ({
-    label,
-    htmlFor,
-    error,
-    required,
-    children,
-    className,
-    labelClassName,
-    contentClassName,
-}) => (
+export const FormField: React.FC<FormFieldProps> = ({ label, htmlFor, error, required, children, className, labelClassName, contentClassName }) => (
     <div className={cn('grid grid-cols-1 items-start gap-4 md:grid-cols-4 md:items-center', className)}>
         <Label htmlFor={htmlFor} className={cn('text-left md:text-right', labelClassName)}>
             {label}
