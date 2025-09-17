@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('customers', function (Blueprint $table) {
             // Primary Key
             $table->id(); // Auto-incrementing ID for the customer.
+            $table->unsignedBigInteger('legacy_id')->nullable();
 
             // Personal Details
             $table->string('first_name'); // Customer's first name. Required.

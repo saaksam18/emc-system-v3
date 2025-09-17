@@ -16,6 +16,7 @@ return new class extends Migration
         Schema::create('rentals', function (Blueprint $table) {
             // Primary Key
             $table->id(); // Auto-incrementing ID for the rental record.
+            $table->unsignedBigInteger('legacy_id')->nullable();
 
             // Foreign Keys - Linking to other tables
             // Assumes 'vehicles' table exists with an 'id' column. Restricts deletion if rentals exist.

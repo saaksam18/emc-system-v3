@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('vehicles', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('legacy_id')->nullable();
 
             // vehicle Details
             $table->integer('vehicle_no');

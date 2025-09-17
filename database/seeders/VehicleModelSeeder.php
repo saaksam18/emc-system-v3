@@ -40,13 +40,16 @@ class VehicleModelSeeder extends Seeder
         $models = [
             // Honda
             ['maker_name' => 'Honda', 'name' => 'Click', 'user_id' => $userId],
-            ['maker_name' => 'Honda', 'name' => 'Air-Blade', 'user_id' => $userId],
+            ['maker_name' => 'Honda', 'name' => 'Air Blade', 'user_id' => $userId],
             ['maker_name' => 'Honda', 'name' => 'PCX', 'user_id' => $userId],
+            ['maker_name' => 'Honda', 'name' => 'PCX JP 125', 'user_id' => $userId],
+            ['maker_name' => 'Honda', 'name' => 'PCX TH 150', 'user_id' => $userId],
             ['maker_name' => 'Honda', 'name' => 'Dio', 'user_id' => $userId],
             ['maker_name' => 'Honda', 'name' => 'Lead', 'user_id' => $userId],
             ['maker_name' => 'Honda', 'name' => 'Spacy', 'user_id' => $userId],
             ['maker_name' => 'Honda', 'name' => 'Vision', 'user_id' => $userId],
             ['maker_name' => 'Honda', 'name' => 'Today', 'user_id' => $userId],
+            ['maker_name' => 'Honda', 'name' => 'Wave RSX', 'user_id' => $userId],
 
             // Suzuki
             ['maker_name' => 'Suzuki', 'name' => 'Address', 'user_id' => $userId],

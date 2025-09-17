@@ -62,6 +62,20 @@ return [
             ]) : [],
         ],
 
+        'legacy_mysql' => [
+            'driver' => 'mysql',
+            'host' => env('LEGACY_DB_HOST', '127.0.0.1'),
+            'port' => env('LEGACY_DB_PORT', '3306'),
+            'database' => env('LEGACY_DB_DATABASE', 'emc-rental-system'),
+            'username' => env('LEGACY_DB_USERNAME', 'root'),
+            'password' => env('LEGACY_DB_PASSWORD', '@SslP1jivit'),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

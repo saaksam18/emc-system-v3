@@ -63,7 +63,9 @@ class RentalsController extends Controller
                 'incharger:id,name',
                 'creator:id,name',
                 'status'
-            ])->get();
+            ])
+            ->where('status', '!=', 'Return')
+            ->get();
 
             // Get all available vehicles
             $availableVehicles = Vehicles::available()->get();
@@ -166,11 +168,6 @@ class RentalsController extends Controller
                 if (empty($full_name)) {
                     $full_name = 'N/A';
                 }
-
-                $deposits = Deposits::where('rental_id', $rental->id)
-                ->where('is_active', true)
-                ->get();
-                
                 // Get the loaded active deposits collection
                 $activeDeposits = Deposits::where('rental_id', $rental->id)
                 ->where('is_active', true)
