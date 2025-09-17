@@ -439,7 +439,7 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
             toast.error('Please correct the errors in the form.');
             return; // Stop submission
         }
-        console.log(data)
+        console.log(data);
 
         // --- Post Data (unchanged) ---
         post(url, {

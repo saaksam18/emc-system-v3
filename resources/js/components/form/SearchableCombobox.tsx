@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { Link } from '@inertiajs/react';
 import { Check, ChevronsUpDown, User2 } from 'lucide-react';
 import React from 'react';
 
@@ -21,6 +20,7 @@ interface SearchableComboboxProps {
     triggerClassName?: string;
     disabled?: boolean;
     error?: boolean;
+    onCreateClick?: () => void;
 }
 
 export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
@@ -33,6 +33,7 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
     triggerClassName,
     disabled,
     error,
+    onCreateClick,
 }) => {
     const [open, setOpen] = React.useState(false);
 
@@ -74,11 +75,20 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
                         </CommandGroup>
                     </CommandList>
                 </Command>
-                <Button variant="ghost" asChild className="m-1">
-                    <Link href={'/customers'} className="flex w-full shrink-0 items-center justify-center gap-2 text-sm sm:w-auto">
+                {onCreateClick && (
+                    <Button
+                        variant="ghost"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setOpen(false);
+                            onCreateClick();
+                        }}
+                        className="m-1 flex w-full shrink-0 items-center justify-center gap-2 text-sm sm:w-auto"
+                    >
                         <User2 className="mr-1 h-4 w-4" /> Create Customer
-                    </Link>
-                </Button>
+                    </Button>
+                )}
             </DialogContent>
         </Dialog>
     );

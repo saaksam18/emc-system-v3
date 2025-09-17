@@ -23,6 +23,7 @@ import { toast } from 'sonner'; // Assuming sonner is setup for notifications
 type InitialFormValues = Omit<Vehicle, 'id' | 'created_at' | 'updated_at' | 'primary_contact_type' | 'primary_contact'> & {
     // purchase_date is optional initially until fully formed
     purchase_date?: string;
+    photo?: File | null;
 };
 
 // Define the shape for potential errors specifically for date parts
@@ -71,6 +72,7 @@ const initialFormValues: InitialFormValues = {
     current_status_id: '', // Store ID, but display name
     current_location: '',
     notes: '',
+    photo: null,
 };
 
 // --- Reusable Form Field Component (using grid for alignment) ---
@@ -444,6 +446,16 @@ export function Create({ onSubmitSuccess, vehicle_class, vehicle_status, vehicle
                                 onChange={handleInputChange}
                                 className={cn(formErrors.engine_cc && 'border-red-500')}
                                 min="0"
+                            />
+                        </FormField>
+
+                        <FormField label="Photo" htmlFor="create-photo" error={formErrors.photo}>
+                            <Input
+                                id="create-photo"
+                                type="file"
+                                accept="image/png"
+                                onChange={(e) => setData('photo', e.target.files ? e.target.files[0] : null)}
+                                className={cn(formErrors.photo && 'border-red-500')}
                             />
                         </FormField>
 

@@ -143,6 +143,7 @@ export function ChangeDeposit({ selectedRow, depositTypes, users, onSubmitSucces
         });
         return map;
     }, [depositTypes]);
+    console.log(selectedRow);
 
     // --- Initialize Inertia Form ---
     const initialFormValues: ChangeDepositFormValues = useMemo(() => {

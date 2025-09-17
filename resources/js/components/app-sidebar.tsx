@@ -30,6 +30,7 @@ import AppLogo from './app-logo';
 const mainNavGroups: NavGroup[] = [
     {
         // Group 1: Core
+        title: 'Dashboard',
         items: [
             {
                 title: 'Dashboard',
