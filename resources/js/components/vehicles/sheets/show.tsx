@@ -103,6 +103,22 @@ export const Show: React.FC<ShowProps> = ({ selectedVehicle }) => {
         </div>
     );
 
+    // Helper function to render the photo
+    const renderPhotoItem = (imageUrl: string | null | undefined) => {
+        if (!imageUrl) {
+            return null; // Don't render anything if there's no photo
+        }
+        return (
+            <div>
+                <img
+                    src={imageUrl}
+                    alt="Vehicle Photo"
+                    className="h-auto max-h-64 w-full rounded-lg border object-cover"
+                />
+            </div>
+        );
+    };
+
     return (
         <div className="space-y-4 px-1 md:px-4">
             {/* --- Basic Vehicle Information Card --- */}
@@ -111,7 +127,8 @@ export const Show: React.FC<ShowProps> = ({ selectedVehicle }) => {
                     <CardTitle className="text-lg">Basic Information</CardTitle>
                     <CardDescription className="text-xs">Core details of the vehicle.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm">
+                <CardContent className="space-y-3 text-sm">
+                    {renderPhotoItem(selectedVehicle.photo_path)}
                     {renderDetailItem('Vehicle No', selectedVehicle.vehicle_no)}
                     {/* Assuming 'current_status_name' holds the status string */}
                     {renderStatusItem('Status', selectedVehicle.current_status_name)}

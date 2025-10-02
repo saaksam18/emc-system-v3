@@ -44,6 +44,24 @@ class VehicleStatusSeeder extends Seeder
                 'user_id' => $userId,
             ],
             [
+                'status_name' => 'Sold',
+                'description' => 'Vehicle is already sold.',
+                'is_rentable' => false,
+                'user_id' => $userId,
+            ],
+            [
+                'status_name' => 'Lost / Stolen',
+                'description' => 'Vehicle is lost.',
+                'is_rentable' => false,
+                'user_id' => $userId,
+            ],
+            [
+                'status_name' => 'Temp. Return',
+                'description' => 'Vehicle is temporary return.',
+                'is_rentable' => false,
+                'user_id' => $userId,
+            ],
+            [
                 'status_name' => 'Reserved',
                 'description' => 'Vehicle is reserved.',
                 'is_rentable' => false,
@@ -64,12 +82,6 @@ class VehicleStatusSeeder extends Seeder
             [
                 'status_name' => 'Unavailable',
                 'description' => 'Vehicle is not available for rent for other reasons (e.g., reserved, damaged).',
-                'is_rentable' => false,
-                'user_id' => $userId,
-            ],
-             [
-                'status_name' => 'Decommissioned',
-                'description' => 'Vehicle is no longer part of the fleet.',
                 'is_rentable' => false,
                 'user_id' => $userId,
             ],

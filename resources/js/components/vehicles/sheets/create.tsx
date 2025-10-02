@@ -23,6 +23,7 @@ import { toast } from 'sonner'; // Assuming sonner is setup for notifications
 type InitialFormValues = Omit<Vehicle, 'id' | 'created_at' | 'updated_at' | 'primary_contact_type' | 'primary_contact'> & {
     // purchase_date is optional initially until fully formed
     purchase_date?: string;
+    photo?: File | null;
 };
 
 // Define the shape for potential errors specifically for date parts
@@ -71,6 +72,7 @@ const initialFormValues: InitialFormValues = {
     current_status_id: '', // Store ID, but display name
     current_location: '',
     notes: '',
+    photo: null,
 };
 
 // --- Reusable Form Field Component (using grid for alignment) ---
@@ -175,6 +177,28 @@ export function Create({ onSubmitSuccess, vehicle_class, vehicle_status, vehicle
         // Clear errors for the field when the user selects an option
         if (formErrors[name]) {
             clearErrors(name);
+        }
+    };
+
+    // --- Photo File Change Handler ---
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files ? e.target.files[0] : null;
+
+        if (file) {
+            // Check file size (10MB limit)
+            if (file.size > 10 * 1024 * 1024) {
+                toast.error('File size must not exceed 10MB.');
+                // Clear the file input
+                e.target.value = '';
+                // Reset the photo in the form data
+                setData('photo', null);
+            } else {
+                // Set the file if it's valid
+                setData('photo', file);
+            }
+        } else {
+            // If no file is selected, clear it from state
+            setData('photo', null);
         }
     };
 
@@ -445,6 +469,17 @@ export function Create({ onSubmitSuccess, vehicle_class, vehicle_status, vehicle
                                 className={cn(formErrors.engine_cc && 'border-red-500')}
                                 min="0"
                             />
+                        </FormField>
+
+                        <FormField label="Photo" htmlFor="create-photo" error={formErrors.photo} required>
+                            <Input
+                                id="create-photo"
+                                type="file"
+                                accept="image/png"
+                                onChange={handlePhotoChange}
+                                className={cn(formErrors.photo && 'border-red-500')}
+                            />
+                            <p className="text-muted-foreground mt-1 text-xs">Please select PNG file (maximum file size is 10M).</p>
                         </FormField>
 
                         <FormField label="Class" htmlFor="create-vehicle_class_id" error={formErrors.vehicle_class_id} required>

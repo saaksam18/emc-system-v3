@@ -112,7 +112,8 @@ class Rentals extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('is_active', true)
+                    ->where('status', '!=', 'Return');
     }
 
     /**
@@ -134,7 +135,9 @@ class Rentals extends Model
     public function scopeOverdue($query)
     {
         return $query->whereNull('actual_return_date') // Check it hasn't been returned
-                  ->where('end_date', '<', now());    // Check the due date is in the past
+                  ->where('end_date', '<', now())    // Check the due date is in the past
+                  ->where('is_active', true)
+                  ->where('status', '!=', 'Return');
     }
 
     public function incharger(): BelongsTo

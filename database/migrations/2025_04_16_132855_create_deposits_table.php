@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('deposits', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('legacy_id')->nullable();
             // Foreign key relationship to the customers table
             $table->foreignId('customer_id')
             ->constrained('customers')

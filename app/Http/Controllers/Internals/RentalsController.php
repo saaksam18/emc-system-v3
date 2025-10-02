@@ -63,10 +63,12 @@ class RentalsController extends Controller
                 'incharger:id,name',
                 'creator:id,name',
                 'status'
-            ])->get();
+            ])
+            ->where('status', '!=', 'Return')
+            ->get();
 
             // Get all available vehicles
-            $availableVehicles = Vehicles::available()->get();
+            $availableVehicles = Vehicles::available()->orderBy('vehicle_no', 'asc')->get();
             // Get all unavailable vehicles
             $unavailableVehicles = Vehicles::unavailable()->get();
             // --- Format Data for View ---
@@ -88,7 +90,7 @@ class RentalsController extends Controller
             });
 
             // Get all customers
-            $customers = Customers::all();
+            $customers = Customers::orderBy('id', 'desc')->get();
 
             // --- Format Data for View ---
             $formattedCustomers = $customers->map(function (Customers $customer) { // Changed variable name for clarity
@@ -109,7 +111,7 @@ class RentalsController extends Controller
             // --- Fetch Deposit Types (still needed for dropdowns/filters probably) ---
             $depositTypes = DepositTypes::with('creator:id,name', 'deposits')
                 ->where('is_active', true)
-                ->orderBy('name', 'asc')
+                ->orderBy('id', 'asc')
                 ->get();
 
             // --- Format Data for View ---
@@ -120,7 +122,7 @@ class RentalsController extends Controller
                 ];
             });
 
-            $users = User::all();
+            $users = User::orderBy('name', 'asc')->get();
 
             // --- Format Data for View ---
             $formattedUsers = $users->map(function (User $user) {
@@ -166,11 +168,6 @@ class RentalsController extends Controller
                 if (empty($full_name)) {
                     $full_name = 'N/A';
                 }
-
-                $deposits = Deposits::where('rental_id', $rental->id)
-                ->where('is_active', true)
-                ->get();
-                
                 // Get the loaded active deposits collection
                 $activeDeposits = Deposits::where('rental_id', $rental->id)
                 ->where('is_active', true)

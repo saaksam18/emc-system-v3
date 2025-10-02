@@ -14,10 +14,6 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            // User
-            UserRolesAndPermissionsSeeder::class,
-            AdminSeeder::class,
-
             // Customer
             ContactTypeSeeder::class,
 
@@ -26,9 +22,21 @@ class DatabaseSeeder extends Seeder
             VehicleStatusSeeder::class,
             VehicleMakerSeeder::class,
             VehicleModelSeeder::class,
-
+            
             // Rental
             DepositTypeSeeder::class,
+
+            // Legacy Database
+            /* LegacyDBv2DataSeeder::class,
+            LegacyRentalDataSeeder::class,
+            UpdateVehicleRentalIds::class,
+            PostUpdateVehicleSoldSeeder::class, */
+            //LegacyDepositSeeder::class,
+            //PostMigrationDepositUpdaterSeeder::class,
+            
+            // User
+            UserRolesAndPermissionsSeeder::class,
+            AdminSeeder::class,
 
             // Chart of Accounting
             ChartOfAccountSeeder::class,

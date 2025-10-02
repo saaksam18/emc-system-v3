@@ -17,6 +17,8 @@ type EditFormValues = Omit<Vehicle, 'id' | 'created_at' | 'updated_at' | 'primar
     purchase_date?: string | null; // Allow null or undefined initially
     vehicle_class_id: string;
     current_status_id: string;
+    photo?: File | null;
+    _method?: 'PUT';
 };
 
 // Define the shape for potential errors
@@ -88,7 +90,7 @@ export function Edit({ vehicle, onUpdateSuccess, vehicle_class, vehicle_status, 
 
     // Inertia form helper hook, initialized with vehicle data
     // Ensure IDs are strings for Select compatibility if they come as numbers
-    const { data, setData, put, processing, errors, reset, clearErrors } = useForm<EditFormValues>({
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm<EditFormValues>({
         vehicle_no: String(vehicle?.vehicle_no) ?? '',
         make: vehicle?.make ?? '',
         model: vehicle?.model ?? '',
@@ -110,6 +112,7 @@ export function Edit({ vehicle, onUpdateSuccess, vehicle_class, vehicle_status, 
         current_status_id: String(vehicle?.current_status_id ?? ''),
         current_location: vehicle?.current_location ?? '',
         notes: vehicle?.notes ?? '',
+        photo: null,
     });
     // Type assertion for errors
     const formErrors = errors as FormErrors;
@@ -159,6 +162,22 @@ export function Edit({ vehicle, onUpdateSuccess, vehicle_class, vehicle_status, 
         const { name, value } = e.target as (HTMLInputElement | HTMLTextAreaElement) & { name: keyof EditFormValues };
         setData(name, value);
         if (formErrors[name]) clearErrors(name);
+    };
+
+    // --- Photo File Change Handler ---
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files ? e.target.files[0] : null;
+        if (file) {
+            if (file.size > 10 * 1024 * 1024) { // 10MB
+                toast.error('File size cannot exceed 10MB.');
+                e.target.value = '';
+                setData('photo', null);
+            } else {
+                setData('photo', file);
+            }
+        } else {
+            setData('photo', null);
+        }
     };
 
     // --- Generic Select Change Handler (expects ID as value) ---
@@ -255,8 +274,13 @@ export function Edit({ vehicle, onUpdateSuccess, vehicle_class, vehicle_status, 
         e.preventDefault();
         clearErrors();
 
+        if (!vehicle) {
+            toast.error('No vehicle selected for editing.');
+            return;
+        }
+
         // Construct the URL for the PUT request
-        const url = `/vehicles/${vehicle?.id}/update`; // Use the vehicle's ID
+        const url = `/vehicles/${vehicle.id}/update`; // Use the vehicle's ID
 
         const handleError = (errs: Record<string, string>) => {
             console.error('Update error:', errs);
@@ -271,33 +295,21 @@ export function Edit({ vehicle, onUpdateSuccess, vehicle_class, vehicle_status, 
 
         const handleSuccess = () => {
             onUpdateSuccess(); // Call the success callback
-            // Optionally reset form to the *updated* values if needed,
-            // but typically the component might close or navigate away.
-            // reset(); // Resets to initial values passed to useForm (original vehicle data)
         };
 
-        // Perform the PUT request using Inertia
-        put(url, {
-            data: {
-                ...data,
-                // Ensure numeric fields are sent as numbers if required by backend
-                // Convert potentially empty strings for optional numbers to null or omit them
-                vehicle_no: data.vehicle_no ? parseInt(String(data.vehicle_no)) : null,
-                year: data.year ? parseInt(data.year) : null,
-                engine_cc: data.engine_cc ? parseInt(String(data.engine_cc)) : null,
-                compensation_price: data.compensation_price ? parseFloat(String(data.compensation_price)) : null,
-                purchase_price: data.purchase_price ? parseFloat(String(data.purchase_price)) : null,
-                daily_rental_price: data.daily_rental_price ? parseFloat(String(data.daily_rental_price)) : 0, // Assuming required
-                weekly_rental_price: data.weekly_rental_price ? parseFloat(String(data.weekly_rental_price)) : 0, // Assuming required
-                monthly_rental_price: data.monthly_rental_price ? parseFloat(String(data.monthly_rental_price)) : 0, // Assuming required
-                // Ensure IDs are sent as numbers if backend expects numbers
-                vehicle_class_id: data.vehicle_class_id ? parseInt(data.vehicle_class_id) : null,
-                current_status_id: data.current_status_id ? parseInt(data.current_status_id) : null,
-            },
+        // To handle file uploads on a PUT route, we must make a POST request
+        // and spoof the method. We'll add `_method: 'PUT'` to the form data
+        // and use the `post` helper.
+        setData('_method', 'PUT');
+        post(url, {
             onSuccess: handleSuccess,
             onError: handleError,
-            preserveState: (page) => Object.keys(page.props.errors).length > 0, // Preserve state only on validation errors
+            preserveState: (page) => Object.keys(page.props.errors).length > 0,
             preserveScroll: true,
+            onFinish: () => {
+                // Clean up the _method field after the request is finished
+                setData('_method', undefined);
+            },
         });
     };
 
@@ -459,6 +471,22 @@ export function Edit({ vehicle, onUpdateSuccess, vehicle_class, vehicle_status, 
                                 className={cn(formErrors.engine_cc && 'border-red-500')}
                                 min="0"
                             />
+                        </FormField>
+
+                        <FormField label="Photo" htmlFor="edit-photo" error={formErrors.photo}>
+                            {vehicle?.photo_path && (
+                                <img src={vehicle.photo_path} alt="Current Vehicle" className="mb-4 h-32 w-32 rounded-md object-cover" />
+                            )}
+                            <Input
+                                id="edit-photo"
+                                type="file"
+                                accept="image/png"
+                                onChange={handlePhotoChange}
+                                className={cn(formErrors.photo && 'border-red-500')}
+                            />
+                            <p className="text-muted-foreground mt-1 text-xs">
+                                {vehicle?.photo_path ? 'Upload a new photo to replace the current one.' : 'Upload a photo.'} Max 10MB.
+                            </p>
                         </FormField>
 
                         {/* Class Select */}
