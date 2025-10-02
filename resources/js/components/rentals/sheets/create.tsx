@@ -208,6 +208,7 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
             setData('vehicle_no', initialVehicleNo);
         }
     }, [initialVehicleNo, setData]);
+    const currentYear = new Date().getFullYear();
 
     const formErrors = errors as FormErrors;
     // State for Combobox Dialogs (unchanged)
@@ -752,7 +753,7 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                         </FormField>
 
                         {/* --- MODIFIED: Primary Expiry Date (using Calendar Popover) --- */}
-                        <FormField label="Expiry Date" htmlFor="primary_expiry_date_0" error={primaryDepositExpiryError}>
+                        <FormField label="Visa Expiry Date" htmlFor="primary_expiry_date_0" error={primaryDepositExpiryError}>
                             <Popover open={expiryDateDialogsOpen[0] || false} onOpenChange={(open) => handleExpiryDateDialogOpenChange(0, open)}>
                                 <PopoverTrigger asChild>
                                     <Button
@@ -768,7 +769,7 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                         {primaryDeposit.expiry_date ? (
                                             format(parseDateString(primaryDeposit.expiry_date)!, 'PPP')
                                         ) : (
-                                            <span>Pick expiry date (Optional)</span>
+                                            <span>Pick visa expiry date (Optional)</span>
                                         )}
                                     </Button>
                                 </PopoverTrigger>
@@ -778,6 +779,7 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                         selected={parseDateString(primaryDeposit.expiry_date)}
                                         onSelect={(date) => handleExpiryDateSelect(0, date)} // Pass index 0
                                         captionLayout="dropdown"
+                                        toYear={currentYear + 10}
                                     />
                                 </PopoverContent>
                             </Popover>
@@ -891,7 +893,7 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                             {/* --- MODIFIED: Additional Expiry Date (using Calendar Dialog) --- */}
                                             <div className="w-full">
                                                 <Label htmlFor={`expiry_date_${actualIndex}`} className="sr-only">
-                                                    Expiry Date
+                                                    Visa Expiry Date
                                                 </Label>
                                                 <Popover
                                                     open={expiryDateDialogsOpen[actualIndex] || false}
@@ -911,7 +913,7 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                                             {deposit.expiry_date ? (
                                                                 format(parseDateString(deposit.expiry_date), 'PPP')
                                                             ) : (
-                                                                <span>Pick expiry date</span>
+                                                                <span>Pick visa expiry date</span>
                                                             )}
                                                         </Button>
                                                     </PopoverTrigger>
@@ -924,6 +926,7 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                                                 handleExpiryDateDialogOpenChange(actualIndex, false);
                                                             }}
                                                             captionLayout="dropdown"
+                                        toYear={currentYear + 10}
                                                         />
                                                     </PopoverContent>
                                                 </Popover>

@@ -48,6 +48,9 @@ use App\Http\Controllers\Api\ChartController;
 use App\Http\Controllers\Api\ChartOfAccountController;
 
 Route::redirect('/', 'login')->name('home');
+Route::get('/phpinfo', function () {
+     phpinfo();
+   });
 
 //Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -106,7 +109,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Vehicles
     Route::get('/vehicles', [VehiclesController::class, 'index'])->name('vehicles.index');
         Route::post('/vehicles/register', [VehiclesController::class, 'store'])->name('vehicles.register.store');
-        Route::put('/vehicles/{vehicle}/update', [VehiclesController::class, 'update'])->name('vehicles.update');
+        Route::post('/vehicles/{vehicle}/update', [VehiclesController::class, 'update'])->name('vehicles.update');
         Route::put('/vehicles/{vehicle}/update/sold-or-stolen', [VehiclesController::class, 'soldOrStolen'])->name('vehicles.update.sold-or-stolen');
         Route::delete('/vehicles/{vehicle}', [VehiclesController::class, 'destroy'])->name('vehicles.destroy');
     

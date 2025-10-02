@@ -107,13 +107,14 @@ const FormField: React.FC<FormFieldProps> = ({ label, htmlFor, error, required, 
 
 // --- Main Create Component ---
 interface CreateProps {
-    vehicle: Vehicle; // Changed to expect a single Vehicle object
+    vehicle: Vehicle | null; // Changed to expect a single Vehicle object
+    vehicle_status: VehicleStatusType[];
     customers: Customers[] | null;
     users: User[] | null;
     onSubmitSuccess: () => void;
 }
 
-export function SoldOrStolen({ vehicle, customers, users, onSubmitSuccess }: CreateProps) {
+export function SoldOrStolen({ vehicle, vehicle_status, customers, users, onSubmitSuccess }: CreateProps) {
     // Updated useForm generic type
     const { data, setData, put, processing, errors, reset, clearErrors } = useForm<InitialFormValues>(initialFormValues);
     const formErrors = errors as FormErrors; // Cast errors
@@ -125,12 +126,6 @@ export function SoldOrStolen({ vehicle, customers, users, onSubmitSuccess }: Cre
 
     // State for Date Picker Dialogs (unchanged)
     const [endDateDialogOpen, setEndDateDialogOpen] = useState(false);
-
-    // Hardcoded vehicle statuses (unchanged)
-    const vehicleStatuses: VehicleStatusType[] | null = [
-        { id: 1, status_name: 'Sold' },
-        { id: 2, status_name: 'Stolen' },
-    ];
 
     // --- Effects ---
     // Set Initial End Date and Vehicle ID
@@ -188,13 +183,13 @@ export function SoldOrStolen({ vehicle, customers, users, onSubmitSuccess }: Cre
     );
     const validVehicleStatuses = useMemo(
         () =>
-            Array.isArray(vehicleStatuses)
-                ? vehicleStatuses.filter(
+            Array.isArray(vehicle_status)
+                ? vehicle_status.filter(
                       (vs): vs is VehicleStatusType & { id: string | number; status_name: string } =>
                           !!vs && !!vs.id && typeof vs.status_name === 'string' && vs.status_name !== '',
                   )
                 : [],
-        [vehicleStatuses],
+        [vehicle_status],
     );
     const validUsers = useMemo(
         () => (Array.isArray(users) ? users.filter((u): u is User => !!u && !!u.id && typeof u.name === 'string' && u.name !== '') : []),
@@ -206,6 +201,7 @@ export function SoldOrStolen({ vehicle, customers, users, onSubmitSuccess }: Cre
         e.preventDefault();
         clearErrors();
         const url = `/vehicles/${data.vehicle_id}/update/sold-or-stolen`;
+        console.log(data)
 
         // --- Basic Validation ---
         let hasValidationError = false;

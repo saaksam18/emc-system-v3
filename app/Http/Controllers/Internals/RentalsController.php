@@ -68,7 +68,7 @@ class RentalsController extends Controller
             ->get();
 
             // Get all available vehicles
-            $availableVehicles = Vehicles::available()->get();
+            $availableVehicles = Vehicles::available()->orderBy('vehicle_no', 'asc')->get();
             // Get all unavailable vehicles
             $unavailableVehicles = Vehicles::unavailable()->get();
             // --- Format Data for View ---
@@ -90,7 +90,7 @@ class RentalsController extends Controller
             });
 
             // Get all customers
-            $customers = Customers::all();
+            $customers = Customers::orderBy('id', 'desc')->get();
 
             // --- Format Data for View ---
             $formattedCustomers = $customers->map(function (Customers $customer) { // Changed variable name for clarity
@@ -111,7 +111,7 @@ class RentalsController extends Controller
             // --- Fetch Deposit Types (still needed for dropdowns/filters probably) ---
             $depositTypes = DepositTypes::with('creator:id,name', 'deposits')
                 ->where('is_active', true)
-                ->orderBy('name', 'asc')
+                ->orderBy('id', 'asc')
                 ->get();
 
             // --- Format Data for View ---
@@ -122,7 +122,7 @@ class RentalsController extends Controller
                 ];
             });
 
-            $users = User::all();
+            $users = User::orderBy('name', 'asc')->get();
 
             // --- Format Data for View ---
             $formattedUsers = $users->map(function (User $user) {

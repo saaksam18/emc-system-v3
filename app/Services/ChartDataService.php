@@ -5,12 +5,10 @@ namespace App\Services;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Exception;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 use App\Models\Rentals;
 use App\Models\VehicleClasses;
-use App\Models\VehicleStatus;
 use App\Models\Vehicles;
 
 class ChartDataService
@@ -37,14 +35,6 @@ class ChartDataService
                 'key_name' => 'totalClass' . $cleanName,
             ];
         });
-        $vehicleClassIdToKeyName = $vehicleClassesWithColors->pluck('key_name', 'id')->toArray();
-
-        // --- Determine Rentable Status ID (if needed by data logic, though not directly used in chart data itself) ---
-        // $rentableStatusId = VehicleStatus::where('is_rentable', 1)->value('id');
-        // if (is_null($rentableStatusId)) {
-        //     Log::warning("No vehicle status with 'is_rentable' = 1 found. Chart data might be inaccurate for stock.");
-        //     $rentableStatusId = 0;
-        // }
 
 
         // --- Prepare ALL Historical Chart Data (DAILY Granularity) ---
@@ -63,9 +53,30 @@ class ChartDataService
             $minDate = Carbon::now()->subMonths(36)->startOfDay();
         }
 
+        // NEW: Pull all fleet size totals outside of the loop (1 or 2 initial queries)
+        $fleetTotalsByDate = $this->getDailyFleetTotals($minDate);
+        // --- NEW: Pull ALL Rental Data (Aggregated) in a single query ---
+        // This query finds the total number of vehicles for each class that were
+        // rented at some point since the minDate.
+        $allRentals = Rentals::where('start_date', '>=', $minDate)
+            ->withTrashed()
+            ->select('vehicle_id', 'start_date', 'end_date')
+            ->get();
+
+        $allVehicleClasses = Vehicles::whereIn('id', $allRentals->pluck('vehicle_id'))
+            ->pluck('vehicle_class_id', 'id')
+            ->toArray();
+        // --- END NEW DATA PULL ---
+
+        // --- Prepare Historical Chart Data (DAILY Granularity) ---
         $currentDate = Carbon::now()->startOfDay();
         $historicalPeriod = CarbonPeriod::create($minDate, '1 day', $currentDate);
         $allHistoricalChartData = [];
+
+        $currentRentedByClass = []; // State tracker for rented vehicles by class ID
+        foreach ($vehicleClassesWithColors as $class) {
+            $currentRentedByClass[$class['id']] = 0;
+        }
 
         foreach ($historicalPeriod as $date) {
             $dayStart = $date->copy()->startOfDay();
@@ -73,17 +84,19 @@ class ChartDataService
             $dayLabel = $date->format('M d, \'y');
             $dateKey = $date->format('Y-m-d');
 
-            $rentedVehicleIdsOnDay = Rentals::where('start_date', '<=', $dayEnd)
-                ->withTrashed()
-                ->where(function ($query) use ($dayStart) {
-                    $query->where('end_date', '>=', $dayStart)
-                          ->orWhereNull('end_date');
-                })
-                ->distinct()
-                ->pluck('vehicle_id');
+            // --- ZERO Database Queries inside this loop! ---
+            
+            // 1. Calculate the fleet size for the current day
+            $totalMotoCount = $fleetTotalsByDate[$dateKey] ?? 0;
+            
+            // 2. Iterate over all rentals to update the current rented count
+            $rentedVehicleIdsOnDay = $allRentals->filter(function ($rental) use ($dayStart, $dayEnd) {
+                return $rental->start_date <= $dayEnd && (is_null($rental->end_date) || $rental->end_date >= $dayStart);
+            })->pluck('vehicle_id')->unique();
 
-            $totalMotoCount = $this->getTotalFleetSizeForDate($dayEnd);
 
+            // 3. Recalculate current rented counts by class (this is the key calculation)
+            $totalRentedOnDay = 0;
             $dailyEntry = [
                 'label' => $dayLabel,
                 'date_key' => $dateKey,
@@ -91,29 +104,22 @@ class ChartDataService
                 'totalRented' => 0,
                 'totalStock' => $totalMotoCount,
             ];
-
+            
             foreach ($vehicleClassesWithColors as $class) {
-                $dailyEntry[$class['key_name']] = 0;
+                $keyName = $class['key_name'];
+                $classId = $class['id'];
+                
+                // Count vehicles currently rented in this class by checking against pre-pulled vehicle classes
+                $rentedCountForClass = $rentedVehicleIdsOnDay->filter(function ($vehicleId) use ($allVehicleClasses, $classId) {
+                    return ($allVehicleClasses[$vehicleId] ?? null) === $classId;
+                })->count();
+
+                $dailyEntry[$keyName] = $rentedCountForClass;
+                $totalRentedOnDay += $rentedCountForClass;
             }
 
-            if ($rentedVehicleIdsOnDay->isNotEmpty()) {
-                $countsByClassId = Vehicles::whereIn('vehicles.id', $rentedVehicleIdsOnDay)
-                    ->select('vehicles.vehicle_class_id', DB::raw('COUNT(vehicles.id) as count'))
-                    ->groupBy('vehicles.vehicle_class_id')
-                    ->pluck('count', 'vehicle_class_id');
-
-                $totalRentedOnDay = 0;
-                foreach ($countsByClassId as $classId => $count) {
-                    if (isset($vehicleClassIdToKeyName[$classId])) {
-                        $keyName = $vehicleClassIdToKeyName[$classId];
-                        $dailyEntry[$keyName] = $count;
-                        $totalRentedOnDay += $count;
-                    }
-                }
-                $dailyEntry['totalRented'] = $totalRentedOnDay;
-                $dailyEntry['totalStock'] = $totalMotoCount - $totalRentedOnDay;
-            }
-
+            $dailyEntry['totalRented'] = $totalRentedOnDay;
+            $dailyEntry['totalStock'] = $totalMotoCount - $totalRentedOnDay;
             $allHistoricalChartData[] = $dailyEntry;
         }
 
@@ -123,6 +129,56 @@ class ChartDataService
             'chartData' => $allHistoricalChartData,
             'vehicleClasses' => $vehicleClassesWithColors->toArray(),
         ];
+    }
+
+    private function getDailyFleetTotals(Carbon $minDate): array
+    {
+        // Fetch all creation and deletion events for vehicles since the beginning of time
+        $events = Vehicles::withTrashed()
+            ->select('created_at', 'deleted_at')
+            ->where('created_at', '<=', now())
+            ->get();
+
+        $dailyChange = [];
+        $today = Carbon::now()->startOfDay();
+
+        // Tally the change for each day
+        foreach ($events as $vehicle) {
+            $creationDay = $vehicle->created_at->startOfDay()->format('Y-m-d');
+            $deletionDay = $vehicle->deleted_at ? $vehicle->deleted_at->startOfDay()->format('Y-m-d') : null;
+
+            // Count as +1 on the creation day
+            $dailyChange[$creationDay] = ($dailyChange[$creationDay] ?? 0) + 1;
+
+            // Count as -1 on the deletion day (if deleted and before today)
+            if ($deletionDay && $vehicle->deleted_at->lessThanOrEqualTo($today)) {
+                $dailyChange[$deletionDay] = ($dailyChange[$deletionDay] ?? 0) - 1;
+            }
+        }
+
+        // Now, run a cumulative sum (prefix sum) over the historical period
+        $historicalPeriod = CarbonPeriod::create($minDate->startOfDay(), '1 day', $today);
+        $fleetTotals = [];
+        $currentFleet = 0; // Initialize with fleet count before minDate (You can query this once if needed)
+        
+        // For simplicity, let's query the fleet count ON the minDate once:
+        $currentFleet = Vehicles::where('created_at', '<', $minDate)
+                            ->where(function ($query) use ($minDate) {
+                                $query->whereNull('deleted_at')
+                                    ->orWhere('deleted_at', '>', $minDate);
+                            })
+                            ->count();
+        
+        foreach ($historicalPeriod as $date) {
+            $dateKey = $date->format('Y-m-d');
+            
+            // Apply the daily change
+            $currentFleet += $dailyChange[$dateKey] ?? 0;
+            
+            $fleetTotals[$dateKey] = $currentFleet;
+        }
+
+        return $fleetTotals;
     }
 
     /**

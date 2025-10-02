@@ -22,17 +22,21 @@ class DatabaseSeeder extends Seeder
             VehicleStatusSeeder::class,
             VehicleMakerSeeder::class,
             VehicleModelSeeder::class,
+            
+            // Rental
+            DepositTypeSeeder::class,
 
             // Legacy Database
-            LegacyDBv2DataSeeder::class,
+            /* LegacyDBv2DataSeeder::class,
             LegacyRentalDataSeeder::class,
+            UpdateVehicleRentalIds::class,
+            PostUpdateVehicleSoldSeeder::class, */
+            //LegacyDepositSeeder::class,
+            //PostMigrationDepositUpdaterSeeder::class,
             
             // User
             UserRolesAndPermissionsSeeder::class,
             AdminSeeder::class,
-
-            // Rental
-            DepositTypeSeeder::class,
 
             // Chart of Accounting
             ChartOfAccountSeeder::class,

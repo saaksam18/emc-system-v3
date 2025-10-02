@@ -8,13 +8,10 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Http\RedirectResponse;
 use Inertia\Response;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 // Model
@@ -275,6 +272,7 @@ class POSController extends Controller
                     'current_location' => $vehicle->current_location ?? 'N/A',
                     'current_Rentals_id' => $vehicle->current_rental_id,
                     'notes' => $vehicle->notes ?? 'N/A',
+                    'photo_path' => $vehicle->photo_path ? Storage::url($vehicle->photo_path) : null,
                     'user_name' => $vehicle->creator?->name ?? 'Initial',
                     'created_at' => $vehicle->created_at?->toISOString(),
                     'updated_at' => $vehicle->updated_at?->toISOString(),

@@ -1,19 +1,19 @@
+import { Create as CreateCustomerSheet } from '@/components/customers/sheets/create';
 import { OrderListCard } from '@/components/rentals/OrderListCard';
 import { RentalPopoverContent } from '@/components/rentals/RentalPopoverContent';
+import { ChangeDeposit as ChangeDepositSheet } from '@/components/rentals/sheets/change-deposit';
 import { Create as CreateRentalSheet } from '@/components/rentals/sheets/create';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem, Customers, Deposits, SharedData, User, Vehicle, VehicleStatusType, ContactTypes, RentalsType } from '@/types';
+import { BreadcrumbItem, ContactTypes, Customers, Deposits, RentalsType, SharedData, User, Vehicle, VehicleStatusType } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Create as CreateCustomerSheet } from '@/components/customers/sheets/create';
-import { ChangeDeposit as ChangeDepositSheet } from '@/components/rentals/sheets/change-deposit';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -134,7 +134,7 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
 
     const selectedRental = useMemo(() => {
         if (!selectedVehicle || !selectedVehicle.current_Rentals_id) return null;
-        return rentals.find(r => r.id === selectedVehicle.current_Rentals_id) || null;
+        return rentals.find((r) => r.id === selectedVehicle.current_Rentals_id) || null;
     }, [selectedVehicle, rentals]);
 
     const [subTotal, setSubTotal] = useState(0);
@@ -191,7 +191,7 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
                                     </Button>
                                 </div>
                                 <div className="flex-1 overflow-y-auto">
-                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
                                         {filteredVehicles.map((vehicle: Vehicle) => (
                                             <Card
                                                 key={vehicle.id}
@@ -200,9 +200,9 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
                                                 <CardContent className="p-4">
                                                     <div className="mb-2 overflow-hidden rounded-md">
                                                         <img
-                                                            src={vehicle.image}
+                                                            src={vehicle.photo_path || 'https://via.placeholder.com/400x300.png?text=No+Image'}
                                                             alt={vehicle.model}
-                                                            className="h-64 w-full object-contain transition-transform duration-300 group-hover:scale-110"
+                                                            className="h-36 w-full object-cover transition-transform duration-300 group-hover:scale-110"
                                                         />
                                                     </div>
                                                     <h6 className="truncate font-semibold">
@@ -226,9 +226,7 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
                                                         <DialogContent className="w-lg p-8">
                                                             <DialogHeader>
                                                                 <DialogTitle>Rental Form</DialogTitle>
-                                                                <DialogDescription>
-                                                                    Enter the details for the rental form.
-                                                                </DialogDescription>
+                                                                <DialogDescription>Enter the details for the rental form.</DialogDescription>
                                                             </DialogHeader>
                                                             <RentalPopoverContent
                                                                 customers={customers}
@@ -316,15 +314,10 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
                 <SheetContent className="overflow-y-auto sm:max-w-lg">
                     <SheetHeader>
                         <SheetTitle>Create New Customer</SheetTitle>
-                        <SheetDescription>
-                            Enter the details for the new customer.
-                        </SheetDescription>
+                        <SheetDescription>Enter the details for the new customer.</SheetDescription>
                     </SheetHeader>
                     <div className="h-[calc(100vh-100px)] overflow-y-auto">
-                        <CreateCustomerSheet
-                            contactTypes={contactTypes || []}
-                            onSubmitSuccess={handleCustomerCreated}
-                        />
+                        <CreateCustomerSheet contactTypes={contactTypes || []} onSubmitSuccess={handleCustomerCreated} />
                     </div>
                 </SheetContent>
             </Sheet>
@@ -333,9 +326,7 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
                 <SheetContent className="overflow-y-auto sm:max-w-lg">
                     <SheetHeader>
                         <SheetTitle>Change Deposit</SheetTitle>
-                        <SheetDescription>
-                            Update the deposit details for the selected rental.
-                        </SheetDescription>
+                        <SheetDescription>Update the deposit details for the selected rental.</SheetDescription>
                     </SheetHeader>
                     <div className="h-[calc(100vh-100px)] overflow-y-auto">
                         <ChangeDepositSheet

@@ -291,7 +291,7 @@ const VehiclesIndex: React.FC<PageProps> = () => {
     // --- Render ---
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Vehicle Dashboard" />
+            <Head title="Vehicle Management" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Top Section: Chart Card */}
                 <DashboardChartsSection />
@@ -402,6 +402,7 @@ const VehiclesIndex: React.FC<PageProps> = () => {
                                         </SheetHeader>
                                         <SoldOrStolen
                                             vehicle={selectedVehicle}
+                                            vehicle_status={pageProps.vehicle_status || []}
                                             customers={pageProps.customers}
                                             users={pageProps.users}
                                             onSubmitSuccess={handleFormSubmitSuccess}

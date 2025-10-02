@@ -124,43 +124,50 @@ class DashboardController extends Controller
      */
     protected function getOverdueRentalsData()
     {
-
         $rentals = Rentals::overdue()
         ->whereNull('actual_return_date')
         ->where('end_date', '<', now())
+        ->with([
+            // 1. Basic Eager Loading for direct relationships
+            'customer',
+            'vehicle',
+            'incharger',
+            'creator',
+
+            // 2. Constrained & Nested Eager Loading for Deposits
+            // Fetches all relevant active deposits in ONE query.
+            // Includes 'depositType' to solve the nested N+1 problem on deposit type name.
+            'deposits' => function ($query) {
+                $query->where('is_active', true)->with('depositType');
+            },
+
+            // 3. Constrained & Nested Eager Loading for Contacts through Customer
+            // Fetches all relevant active contacts in ONE query.
+            // Includes 'contactType' to solve the nested N+1 problem on contact type name.
+            'customer.contacts' => function ($query) {
+                $query->where('is_active', true)->with('contactType');
+            },
+        ])
         ->get();
 
         // Map the customer data for the frontend
         $formattedRentals = $rentals->map(function (Rentals $rental) use ($rentals) { // Added $rentals to use()
-            // --- Correctly concatenate first and last names with a space ---
-            // Check if customer relationship and names exist before concatenating
             $firstName = $rental->customer->first_name ?? '';
             $lastName = $rental->customer->last_name ?? '';
-            // Concatenate with a space, handle cases where one or both might be empty
             $full_name = trim($firstName . ' ' . $lastName);
-            // If the result is an empty string after trimming, set to 'N/A'
             if (empty($full_name)) {
                 $full_name = 'N/A';
             }
 
-            $deposits = Deposits::where('rental_id', $rental->id)
-            ->where('is_active', true)
-            ->get();
+            // ACCESS PRE-LOADED DATA: Use the relationship properties, which now contain the filtered collections.
+            // The explicit queries have been REMOVED.
+            $activeDeposits = $rental->deposits;
+            $contacts = $rental->customer->contacts;
 
-            // Get the loaded active deposits collection
-            $activeDeposits = Deposits::where('rental_id', $rental->id)
-            ->where('is_active', true)
-            ->get();
-
-
-            $contacts = Contacts::where('customer_id', $rental->customer_id)
-            ->where('is_active', true)
-            ->get();
-
-            // --- Logic to find primary deposits ---
+            // --- Logic to find primary contact ---
             $primaryContact = $contacts->firstWhere('is_primary', true)
-                            ?? $contacts->firstWhere('is_primary', false) // Fallback
-                            ?? null; // Final fallback
+                            ?? $contacts->firstWhere('is_primary', false)
+                            ?? null;
 
             $primaryContactType = $primaryContact?->contactType?->name ?? 'N/A';
             $primaryContactValue = $primaryContact?->contact_value ?? 'N/A';
@@ -168,13 +175,15 @@ class DashboardController extends Controller
 
             // --- Logic to find primary deposit ---
             $primaryDeposit = $activeDeposits->firstWhere('is_primary', true)
-                            ?? $activeDeposits->firstWhere('is_primary', false) // Fallback
-                            ?? null; // Final fallback
+                            ?? $activeDeposits->firstWhere('is_primary', false)
+                            ?? null;
 
             $primaryDepositType = $primaryDeposit?->depositType->name ?? 'N/A';
             $primaryDepositValue = $primaryDeposit?->deposit_value ?? 'N/A';
             $activeDepositsCount = $activeDeposits->count();
 
+            // The inner maps now rely on the *pre-loaded* $contacts and $activeDeposits collections
+            // and the *nested pre-loaded* contactType and depositType relationships.
             $formattedActiveContacts = $contacts->map(function ($contact) {
                 return [
                     'id' => $contact->id,
@@ -184,8 +193,8 @@ class DashboardController extends Controller
                     'description' => $contact->description,
                     'is_primary' => $contact->is_primary,
                     'is_active' => $contact->is_active ? 'Yes' : 'No',
-                        'created_at' => $contact->created_at?->toISOString(),
-                        'updated_at' => $contact->updated_at?->toISOString(),
+                    'created_at' => $contact->created_at?->toISOString(),
+                    'updated_at' => $contact->updated_at?->toISOString(),
                 ];
             });
             $formattedActiveDeposits = $activeDeposits->map(function ($deposit) {
@@ -199,19 +208,15 @@ class DashboardController extends Controller
                     'description' => $deposit->description,
                     'is_primary' => $deposit->is_primary,
                     'is_active' => $deposit->is_active ? 'Yes' : 'No',
-                        'created_at' => $deposit->created_at?->toISOString(),
-                        'updated_at' => $deposit->updated_at?->toISOString(),
+                    'created_at' => $deposit->created_at?->toISOString(),
+                    'updated_at' => $deposit->updated_at?->toISOString(),
                 ];
             });
 
-            // Calculate how long each rental is overdue
-            // This loop was calculating overdue days for ALL rentals in the outer collection
-            // inside each individual rental's map callback, which is incorrect and redundant.
-            // It should be applied to the current $rental being mapped.
+            // Calculate overdue duration (no query involved)
             if ($rental->end_date instanceof Carbon) {
                 $overdueDays = $rental->end_date->diffInDays(Carbon::now());
                 $overdueHuman = $rental->end_date->diffForHumans(Carbon::now(), true);
-
                 $rental->overdue_duration_days = $overdueDays;
                 $rental->overdue_duration_human = $overdueHuman;
             } else {
@@ -222,46 +227,29 @@ class DashboardController extends Controller
 
             // --- Return the formatted array ---
             return [
-                // Basic
                 'id' => $rental->id,
-
-                // Vehicle - Use null coalescing operator correctly
-                'vehicle_no' => $rental->vehicle?->vehicle_no ?? 'N/A', // Optional chaining for related object property
-
-                // --- Use the calculated $full_name variable directly ---
-                'full_name' => $full_name, // Already handled 'N/A' case above
-
-                // Contact
+                'vehicle_no' => $rental->vehicle?->vehicle_no ?? 'N/A',
+                'full_name' => $full_name,
                 'primary_contact_type' => $primaryContactType,
                 'primary_contact' => $primaryContactValue,
                 'active_contact_count' => $activeContactCount,
-
-                // Deposit
                 'primary_deposit_type' => $primaryDepositType,
                 'primary_deposit' => $primaryDepositValue,
                 'active_deposits_count' => $activeDepositsCount,
-
-                // Use the newly formatted collections
                 'activeContacts' => $formattedActiveContacts,
-                'activeDeposits' => $formattedActiveDeposits, // Use formatted deposits
-
-                // Status and Pricing
+                'activeDeposits' => $formattedActiveDeposits,
                 'status_name' => $rental->status,
                 'total_cost' => $rental->total_cost,
-
-                // Date
                 'start_date' => $rental->start_date,
                 'end_date' => $rental->end_date,
                 'coming_date' => $rental->coming_date,
                 'period' => $rental->period,
-                'overdue' => $rental->overdue_duration_human, // Use the human readable value
-
-                // Additional Info
-                'notes' => $rental->notes ?? 'N/A', // Null coalescing for notes
-                'incharger_name' => $rental->incharger?->name ?? 'Initial', // Optional chaining for creator name
-                'user_name' => $rental->creator?->name ?? 'Initial', // Optional chaining for creator name
-                'created_at' => $rental->created_at?->toISOString() ?? 'N/A', // Optional chaining for dates
-                'updated_at' => $rental->updated_at?->toISOString() ?? 'N/A', // Optional chaining for dates
+                'overdue' => $rental->overdue_duration_human,
+                'notes' => $rental->notes ?? 'N/A',
+                'incharger_name' => $rental->incharger?->name ?? 'Initial',
+                'user_name' => $rental->creator?->name ?? 'Initial',
+                'created_at' => $rental->created_at?->toISOString() ?? 'N/A',
+                'updated_at' => $rental->updated_at?->toISOString() ?? 'N/A',
             ];
         });
 

@@ -18,11 +18,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Exception; // <-- Import base Exception
 use Illuminate\Auth\Access\AuthorizationException; // <-- Import Auth Exception
 use Illuminate\Validation\ValidationException; // <-- Import Validation Exception
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
 
 // Model
 use App\Models\User;
 use App\Models\Vehicles;
 use App\Models\Customers;
+use App\Models\Rentals;
 use App\Models\VehicleClasses;
 use App\Models\VehicleStatus;
 use App\Models\VehicleActualModel;
@@ -64,8 +67,9 @@ class VehiclesController extends Controller
             $users = User::select('id', 'name')->get();
 
             $vehicles = Vehicles::orderBy('vehicle_no', 'asc')
-                              ->with(['vehicleMaker:id,name', 'vehicleModel:id,name', 'vehicleClasses:id,name', 'vehicleStatus:id,status_name', 'creator:id,name'])
-                              ->get();
+                                ->with(['vehicleMaker:id,name', 'vehicleModel:id,name', 'vehicleClasses:id,name', 'vehicleStatus:id,status_name', 'creator:id,name'])
+                                ->withTrashed()
+                                ->get();
 
             $vehicles_stock = Vehicles::orderBy('vehicle_no', 'asc')
                 ->whereHas('vehicleStatus', fn ($query) => $query->where('is_rentable', 1))
@@ -127,6 +131,7 @@ class VehiclesController extends Controller
                     'current_Rentals_id' => $vehicle->current_Rentals_id,
                     'notes' => $vehicle->notes ?? 'N/A',
                     'user_name' => $vehicle->creator?->name ?? 'Initial',
+                    'photo_path' => $vehicle->photo_path ? Storage::url($vehicle->photo_path) : null,
                     'created_at' => $vehicle->created_at?->toISOString(),
                     'updated_at' => $vehicle->updated_at?->toISOString(),
                 ];
@@ -154,6 +159,7 @@ class VehiclesController extends Controller
                     'current_Rentals_id' => $vehicle->current_Rentals_id,
                     'notes' => $vehicle->notes ?? 'N/A',
                     'user_name' => $vehicle->creator?->name ?? 'Initial',
+                    'photo_path' => $vehicle->photo_path ? Storage::url($vehicle->photo_path) : null,
                     'created_at' => $vehicle->created_at?->toISOString(),
                     'updated_at' => $vehicle->updated_at?->toISOString(),
                 ];
@@ -211,6 +217,7 @@ class VehiclesController extends Controller
                 'current_status_id' => ['required', 'string', Rule::exists('vehicle_statuses', 'status_name')], // Validate NAME exists
                 'current_location' => 'nullable|string|max:255',
                 'notes' => 'nullable|string',
+                'photo' => ['nullable', 'image', 'mimes:png', 'max:10240'], // 10MB max
             ];
 
             // --- Custom Error Messages ---
@@ -223,11 +230,19 @@ class VehiclesController extends Controller
                 'vehicle_class_id.exists' => 'Invalid vehicle class selected.',
                 'current_status_id.exists' => 'Invalid vehicle status selected.',
                 'purchase_date.before_or_equal' => 'Purchase date cannot be in the future.',
-                // Add other messages as needed
+                'photo.image' => 'The uploaded file must be an image.',
+                'photo.mimes' => 'The photo must be a PNG file.',
+                'photo.max' => 'The photo may not be greater than 10MB.',
             ];
 
             // --- Validate the request data ---
             $validatedData = $request->validate($rules, $messages);
+
+            // --- Handle Photo Upload ---
+            $photoPath = null;
+            if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
+                $photoPath = $request->file('photo')->store('photos/vehicles', 'public');
+            }
 
             // --- Find Foreign Key IDs ---
             $vehicleClass = VehicleClasses::where('name', $validatedData['vehicle_class_id'])->firstOrFail();
@@ -262,6 +277,11 @@ class VehiclesController extends Controller
                 'notes' => $validatedData['notes'] ?? null,
                 'user_id' => $userId, // Assign creator ID
             ]);
+
+            if ($photoPath) {
+                $vehicle->photo_path = $photoPath;
+            }
+
             $vehicle->save();
 
             // --- Success Response ---
@@ -315,6 +335,7 @@ class VehiclesController extends Controller
                 'current_status_id' => ['required', 'string', Rule::exists('vehicle_statuses', 'id')],
                 'current_location' => 'nullable|string|max:255',
                 'notes' => 'nullable|string',
+                'photo' => ['nullable', 'image', 'mimes:png', 'max:10240'], // 10MB max
             ];
 
             // --- Custom Error Messages ---
@@ -343,27 +364,36 @@ class VehiclesController extends Controller
             $locationValue = $validatedData['current_location'] ?? null;
             $notesValue = $validatedData['notes'] ?? null;
 
-            $updated = $vehicle->update([ // Use mass assignment update
-                'vehicle_no' => $validatedData['vehicle_no'],
-                'vehicle_make_id' => $vehicleMaker->id,
-                'vehicle_model_id' => $vehicleModel->id,
-                'year' => $validatedData['year'],
-                'license_plate' => $validatedData['license_plate'],
-                'vin' => ($vinValue === 'N/A' || $vinValue === '') ? null : $vinValue,
-                'color' => $validatedData['color'],
-                'engine_cc' => $validatedData['engine_cc'],
-                'vehicle_class_id' => $vehicleClass->id,
-                'compensation_price' => $validatedData['compensation_price'],
-                'purchase_price' => $validatedData['purchase_price'],
-                'purchase_date' => $validatedData['purchase_date'],
-                'daily_rental_price' => $validatedData['daily_rental_price'],
-                'weekly_rental_price' => $validatedData['weekly_rental_price'],
-                'monthly_rental_price' => $validatedData['monthly_rental_price'],
-                'current_status_id' => $vehicleStatus->id,
-                'current_location' => ($locationValue === 'N/A' || $locationValue === '') ? null : $locationValue,
-                'notes' => ($notesValue === 'N/A' || $notesValue === '') ? null : $notesValue,
-                // 'user_id' => $userId, // DO NOT update creator ID here. Add 'updated_by' if needed.
-            ]);
+            $vehicle->vehicle_no = $validatedData['vehicle_no'];
+            $vehicle->vehicle_make_id = $vehicleMaker->id;
+            $vehicle->vehicle_model_id = $vehicleModel->id;
+            $vehicle->year = $validatedData['year'];
+            $vehicle->license_plate = $validatedData['license_plate'];
+            $vehicle->vin = ($vinValue === 'N/A' || $vinValue === '') ? null : $vinValue;
+            $vehicle->color = $validatedData['color'];
+            $vehicle->engine_cc = $validatedData['engine_cc'];
+            $vehicle->vehicle_class_id = $vehicleClass->id;
+            $vehicle->compensation_price = $validatedData['compensation_price'];
+            $vehicle->purchase_price = $validatedData['purchase_price'];
+            $vehicle->purchase_date = $validatedData['purchase_date'];
+            $vehicle->daily_rental_price = $validatedData['daily_rental_price'];
+            $vehicle->weekly_rental_price = $validatedData['weekly_rental_price'];
+            $vehicle->monthly_rental_price = $validatedData['monthly_rental_price'];
+            $vehicle->current_status_id = $vehicleStatus->id;
+            $vehicle->current_location = ($locationValue === 'N/A' || $locationValue === '') ? null : $locationValue;
+            $vehicle->notes = ($notesValue === 'N/A' || $notesValue === '') ? null : $notesValue;
+
+            if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
+                // Delete old photo if it exists
+                if ($vehicle->photo_path) {
+                    Storage::disk('public')->delete($vehicle->photo_path);
+                }
+                // Store new photo
+                $path = $request->file('photo')->store('photos/vehicles', 'public');
+                $vehicle->photo_path = $path;
+            }
+
+            $updated = $vehicle->save();
 
             if ($updated) {
                 Log::info("Successfully updated Vehicle [ID: {$vehicle->id}] by User [ID: {$userId}].");
@@ -397,32 +427,51 @@ class VehiclesController extends Controller
     {
         // Get authenticated user's ID early for logging/tracking
         $userId = Auth::id();
-
-        // 1. Authorize: Ensure the authenticated user has permission.
-        // Use the existing $vehicle instance passed via route model binding.
-        $this->authorize('vehicle-edit', $vehicle); // Assuming 'rental-delete' policy exists
+        $this->authorize('vehicle-edit', $vehicle);
 
         try {
-            // --- Prepare Identifier for Messages (Fetch before validation) ---
-            $customer = $vehicle->$request->customer_name; // Use the relationship if defined
-            dd($customer);
-            $customerIdentifier = 'N/A'; // Default identifier
-            if ($customer) {
-                $firstName = $customer->first_name ?? '';
-                $lastName = $customer->last_name ?? '';
-                $full_name = trim($firstName . ' ' . $lastName);
-                // Use full name if available, otherwise fallback to Customer ID
-                $customerIdentifier = !empty($full_name) ? $full_name : ('Customer ID: ' . $customer->id);
-            } else {
-                // Fallback if customer relationship is missing or customer deleted
-                $customerIdentifier = 'Vehicle ID: ' . $vehicle->id;
-            }
-            // --- End Prepare Identifier ---
+            // 1. Prepare Identifier for Messages (Fetch before validation)
+            $fullName = $request->customer_name;
+            // End Prepare Identifier
 
             // 2. Validate Input with Custom Messages
             $rules = [
-                // Relational Information
-                'customer_name' => ['required', 'string', Rule::exists('customers', 'fu')],
+                'vehicle_id' => ['required', 'max:255', Rule::exists('vehicles', 'id')],
+                'customer_name' => [
+                    'required',
+                    'string',
+                    // Custom closure to check if CONCAT(first_name, ' ', last_name) exists
+                    function ($attribute, $value, $fail) {
+                        if (!Customers::whereRaw("CONCAT(first_name, ' ', last_name) = ?", [$value])->exists()) {
+                            $fail("The selected customer does not exist.");
+                        }
+                    }
+                ],
+                'status_name' => [
+                    'required',
+                    'string',
+                    // Ensure the status name exists in the types table
+                    Rule::exists('vehicle_statuses', 'status_name'),
+                    // Custom closure to check against the vehicle's current status
+                    function ($attribute, $value, $fail) use ($request) {
+                        // Find the vehicle using the vehicle_no from the request
+                        $vehicle = Vehicles::where('id', $request->input('vehicle_id'))->first();
+
+                        // Find the status ID corresponding to the submitted status_name
+                        $selectedStatus = VehicleStatus::where('status_name', $value)->first();
+
+                        // If vehicle or status type not found (should be caught by earlier rules, but good practice)
+                        if (!$vehicle || !$selectedStatus) {
+                            // Fail silently here as other rules should catch non-existence
+                            return;
+                        }
+
+                        // Compare the vehicle's current_status_id with the ID of the selected status_name
+                        if ($vehicle->current_status_id == $selectedStatus->id) {
+                            $fail('The selected vehicle status (' . $value . ') is the same as its current status. Please choose a different status if you intend to change it.');
+                        }
+                    }
+                ],
                 'user_name' => ['required', 'string', Rule::exists('users', 'name')],
                 'end_date' => 'required|date',
                 'total_cost' => 'required|numeric|min:0',
@@ -431,19 +480,24 @@ class VehiclesController extends Controller
 
             // --- Custom Error Messages ---
             $messages = [
+                // Customer
+                'customer_name.required' => 'The customer name is required.',
+                'customer_name.string' => 'The customer name must be a string.',
+                // Vehicle
+                'vehicle_id.required' => 'The vehicle number is required.',
+                'vehicle_id.exists' => 'The selected vehicle does not exist.',
+                // Status
+                'status_name.required' => 'The vehicle status is required.',
+                'status_name.exists' => 'The selected vehicle status is invalid.',
                 // Incharger
                 'user_name.required' => 'The incharge person is required.',
                 'user_name.string' => 'The incharge name must be a string.',
                 'user_name.exists' => 'The selected incharge person does not exist.', // Use exists message
 
                 // Date & Pricing
-                'start_date.required' => 'Start date is required.',
-                'start_date.date' => 'Start date must be a valid date.',
                 'end_date.required' => 'End date is required.',
                 'end_date.date' => 'End date must be a valid date.',
                 'end_date.after_or_equal' => 'End date must be on or after the start date.',
-                'period.required' => 'Rental period is required.',
-                'coming_date.date' => 'Coming date must be a valid date.',
                 'total_cost.required' => 'Rental cost is required.',
                 'total_cost.numeric' => 'Rental cost must be a number.',
                 'total_cost.min' => 'Rental cost cannot be negative.',
@@ -451,126 +505,91 @@ class VehiclesController extends Controller
 
             // --- Define custom attributes for better error messages ---
             $attributes = [
+                'vehicle_id' => 'vehicle number',
+                'customer_name' => 'customer name',
                 'user_name' => 'incharge person',
-                'start_date' => 'start date',
+                'status_name' => 'vehicle status',
                 'end_date' => 'end date',
                 'total_cost' => 'total cost',
             ];
 
             // Use validate() which automatically handles redirection on failure
             $validatedData = $request->validate($rules, $messages, $attributes);
-            // --- Start Database Transaction ---
 
-            DB::beginTransaction();
+            $rental = Rentals::where('vehicle_id', $vehicle->id)
+            ->where('status', '!=', 'Return')
+            ->where('is_active', true)
+            ->first();
 
-            // --- Find related models needed for updates ---
-            // Find the User model instance for the incharger using the validated name
-            $incharger = User::where('name', $validatedData['user_name'])->firstOrFail();
-            $vehicle = Vehicles::find($vehicle->vehicle_id);
+            if (!$rental) {
+                // --- Start Database Transaction ---
+                DB::beginTransaction();
 
-            // --- ** NEW: Replicate the Rental Record Before Modification ** ---
-            $archivedRental = $vehicle->replicate(); // Create a copy of the original data
-            // Modify the replicated record to mark it as an archive
-            $archivedRental->status = 'Extended';
-            $archivedRental->start_date = $validatedData['start_date'];
-            $archivedRental->end_date = $validatedData['end_date']; // Use validated actual return date
-            $archivedRental->coming_date = $validatedData['coming_date'];
-            $archivedRental->notes = $validatedData['notes']; // Update notes
-            $archivedRental->total_cost = $validatedData['total_cost'];
-            $archivedRental->incharger_id = $incharger->id; // Track who processed the return
-            $archivedRental->user_id = $userId; // Track the user performing the action
-            $archivedRental->period = $validatedData['period'];
-            $archivedRental->is_active = true;
-            $archivedRental->created_at = now();
-            $archivedRental->updated_at = now();
-            // Save the archived copy.
-            // Note: This assumes no unique constraints (other than PK) will conflict.
-            // If conflicts exist (e.g., unique rental agreement number), adjust data or schema.
-            $archivedRental->save();
-            // --- ** End Replication Logic ** ---
+                // --- Find related models needed for updates ---
+                // Find the User model instance for the incharger using the validated name
+                $vehicle = Vehicles::find($vehicle->id);
+                $customer = Customers::whereRaw("CONCAT(first_name, ' ', last_name) = ?", [$fullName])->firstOrFail();
+                $incharger = User::where('name', $validatedData['user_name'])->firstOrFail();
+                $newStatus = VehicleStatus::where('status_name', $validatedData['status_name'])->firstOrFail();
 
-            // 4. Update related Vehicle
-            if ($vehicle) {
-                // Ensure the vehicle is currently linked to *this* specific rental before clearing
-                if ($vehicle->current_rental_id == $vehicle->id) {
-                    $vehicle->current_rental_id = $archivedRental->id; 
-                    $vehicle->user_id = $userId;
-                    $vehicle->save();
-                } else {
-                    // Log if the vehicle wasn't linked to this rental as expected, but still update status
-                    Log::warning("Vehicle [ID: {$vehicle->id}] was not linked to the expected Rental [ID: {$vehicle->id}] during return process by User [ID: {$userId}]. Status updated anyway.");
-                    // Decide if updating status is still desired in this edge case
-                    $vehicle->current_status_id = $newStatus->id;
-                    $vehicle->user_id = $userId;
-                    $vehicle->save();
-                }
+                // Create new Rentals() transaction
+                $sold = new Rentals();
+                $sold->fill([
+                    'vehicle_id' => $vehicle->id,
+                    'customer_id' => $customer->id, // Use the ID from the fetched customer model
+                    'actual_start_date' => Carbon::now(),
+                    'start_date' => Carbon::now(),
+                    'end_date' => $validatedData['end_date'],
+                    'period' => 0,
+                    'total_cost' => $validatedData['total_cost'],
+                    'status' => $validatedData['status_name'],
+                    'notes' => $validatedData['notes'] ?? null,
+                    'is_active' => true,
+                    'incharger_id' => $incharger->id,
+                    'user_id' => $userId,
+                ]);
+                $sold->save();
+
+                // 4. Update Vehicle
+                $vehicle->current_rental_id = $sold->id; 
+                $vehicle->current_location = 'With customer';
+                $vehicle->current_status_id = $newStatus->id;
+                $vehicle->user_id = $userId;
+                $vehicle->save();
+
+                // 6. Perform Soft Deletion on the *updated original* rental record
+                $vehicle->delete(); // This sets the `deleted_at` timestamp
+
+                // 7. Commit Transaction
+                DB::commit();
+
+                // 8. Redirect on Success
+                return to_route('vehicles.index') // Use the correct route name for your rentals list
+                    ->with('success', "Vehicle no {$vehicle->vehicle_no} successfully marked as sold, archived, and saved new transaction.");
+
             } else {
-                // This case should ideally not happen if rental has a valid vehicle_id, but handle defensively
-                Log::error("Vehicle not found for Rental [ID: {$vehicle->id}] during return process by User [ID: {$userId}]. Vehicle ID was {$vehicle->vehicle_id}.");
-                // Consider throwing an exception or returning an error if vehicle is critical
-                 DB::rollBack(); // Rollback as a critical linked record is missing
-                 return Redirect::back()
-                     ->withInput() // Keep user's input
-                     ->with('error', 'Associated vehicle could not be found. Cannot process return.');
+                Log::error("Rental is found for vehicle [ID: {$vehicle->id}] during sold process by User [ID: {$userId}].");
+                return Redirect::back()->withInput()->with('error', "The selected {$vehicle->vehicle_no} is currently unavailable. Please make sure the vehicle is available (In Stock, etc...).");
             }
-
-            // 5. Update the *Original* Rental Record with Return Details
-            $vehicle->is_latest_version = false;
-            $vehicle->is_active = false;
-            $vehicle->updated_at = now();
-
-            $vehicle->save(); // Save the updates BEFORE soft deleting
-
-            // 6. Perform Soft Deletion on the *updated original* rental record
-            $vehicle->delete(); // This sets the `deleted_at` timestamp
-
-            // 7. Commit Transaction
-            DB::commit();
-
-            // 8. Redirect on Success
-            return to_route('vehicles.index') // Use the correct route name for your rentals list
-                   ->with('success', "Vehicle no {$customerIdentifier} successfully extended, archived, and vehicle status updated.");
-
+            
         } catch (AuthorizationException $e) {
             DB::rollBack(); // Rollback transaction on authorization failure
-            Log::warning("Authorization failed for User [ID: {$userId}] extending Rental [ID: {$vehicle->id}]: " . $e->getMessage());
-            // Provide a user-friendly error message
-            return Redirect::back()->with('error', 'You do not have permission to extend this rental.');
+            Log::warning("Authorization failed for User [ID: {$userId}] creating rental: " . $e->getMessage());
+            return Redirect::back()->with('error', 'You do not have permission to create rentals.');
         } catch (ValidationException $e) {
-            // No need to rollback here, Laravel handles this before the transaction starts
-            // Log the validation errors for debugging
-            Log::warning("Validation failed for User [ID: {$userId}] extending Rental [ID: {$vehicle->id}].", [
+            // No need to rollback, Laravel handles this before the transaction starts
+            Log::warning("Validation failed for User [ID: {$userId}] creating rental.", [
                 'errors' => $e->errors(),
                 'request_data' => $request->except(['_token', 'password', 'password_confirmation']) // Exclude sensitive data
             ]);
-            // Let Laravel handle the redirection back with errors automatically
+            // Re-throw the exception to let Laravel handle the redirection back with errors
             throw $e;
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            DB::rollBack(); // Rollback if a related model (User, Status) wasn't found during processing
-            Log::error("Model not found during rental extending for User [ID: {$userId}], Rental [ID: {$vehicle->id}]: " . $e->getMessage(), [
-                    'request_data' => $request->except(['_token', 'password', 'password_confirmation'])
+            DB::rollBack(); // Rollback if a related model (Vehicle, Customer, User, Status) wasn't found
+            Log::error("Model not found during rental creation for User [ID: {$userId}]: " . $e->getMessage(), [
+                 'request_data' => $request->except(['_token', 'password', 'password_confirmation'])
             ]);
-            // Determine which model was not found if possible, or provide a general error
-            $modelName = match(true) {
-                // Check message content to guess the missing model
-                str_contains($e->getMessage(), 'App\\Models\\User') => 'incharge person',
-                str_contains($e->getMessage(), 'App\\Models\\VehicleStatus') => 'vehicle status',
-                // Add other models if necessary
-                default => 'required information' // Fallback message
-            };
-            return Redirect::back()
-                ->withInput() // Keep user's input
-                ->with('error', "The selected {$modelName} could not be found. Please check your selection and try again.");
-        } catch (\Throwable $e) { // Catch any other unexpected errors
-            DB::rollBack(); // Rollback transaction on any other errors
-            Log::critical("An unexpected error occurred during rental extending for User [ID: {$userId}], Rental [ID: {$vehicle->id}]: " . $e->getMessage(), [
-                'exception' => $e,
-                'request_data' => $request->except(['_token', 'password', 'password_confirmation'])
-            ]);
-            // Provide a generic error message to the user
-            return Redirect::back()
-                   ->withInput()
-                   ->with('error', 'An unexpected error occurred while processing the extending. Please try again later or contact support.');
+            return Redirect::back()->withInput()->with('error', "Model not found during rental creation for User [ID: {$userId}]: " . $e->getMessage());
         }
     }
 

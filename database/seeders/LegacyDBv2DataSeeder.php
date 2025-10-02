@@ -20,7 +20,7 @@ class LegacyDBv2DataSeeder extends Seeder
     public function run(): void
     {
         // Step 1: Migrate Users
-        echo 'Migrating users...';
+        echo 'Migrating users...\n';
         $legacyUsers = DB::connection('legacy_mysql')->table('users')->get();
 
         foreach ($legacyUsers as $legacyUser) {
@@ -31,10 +31,10 @@ class LegacyDBv2DataSeeder extends Seeder
             $newUser->password = $legacyUser->password;
             $newUser->save();
         }
-        echo 'Users migrated successfully!';
+        echo 'Users migrated successfully!\n';
 
         // Step 2: Migrate Customers (using the legacy_id to link to new users)
-        echo 'Migrating customers...';
+        echo 'Migrating customers...\n';
         $legacyCustomers = DB::connection('legacy_mysql')->table('tbl_customer')->get();
 
         foreach ($legacyCustomers as $legacyCustomer) {
@@ -68,10 +68,10 @@ class LegacyDBv2DataSeeder extends Seeder
                 ]);
             }
         }
-        echo 'Customers migrated successfully!';
+        echo 'Customers migrated successfully!\n';
 
         // Step 3: Migrate customers Contacts (using the legacy_id to link to new users)
-        echo 'Migrating customer contacts...';
+        echo 'Migrating customer contacts...\n';
 
         // Step 3.1: Cache the new type IDs
         // We'll fetch all contact types from the new 'types' table and create a lookup array
@@ -121,7 +121,7 @@ class LegacyDBv2DataSeeder extends Seeder
                 // Handle edge cases where a type name doesn't exist in the new table.
                 // You can:
                 // a) Log the error for manual review
-                echo "Contact type '{$contactTypeName}' not found in the new 'types' table.";
+                echo "Contact type '{$contactTypeName}' not found in the new 'types' table.\n";
                 
                 // b) Insert a default value for 'Others' if it exists.
                 if (isset($newTypes['Others'])) {
@@ -142,10 +142,10 @@ class LegacyDBv2DataSeeder extends Seeder
                 'updated_at' => $legacyContact->updated_at,
             ]);
         }
-        echo 'Contacts migrated successfully!';
+        echo 'Contacts migrated successfully!\n';
 
         // Step 4: Migrate vehicles (using the legacy_id to link to new users)
-        echo 'Migrating vehicles... ';
+        echo 'Migrating vehicles... \n';
 
         // Step 4.1: Define the hardcoded mapping
         // You must know the new 'id's from your 'vehicle_classes' table.
@@ -199,10 +199,10 @@ class LegacyDBv2DataSeeder extends Seeder
 
                 // Optional: Log any models that were not found for manual review
                 if (!$makeId) {
-                    echo "Vehicle make '{$makeName}' not found.";
+                    echo "Vehicle make '{$makeName}' not found.\n";
                 }
                 if (!$modelId) {
-                    echo "Vehicle model '{$modelName}' not found.";
+                    echo "Vehicle model '{$modelName}' not found.\n";
                 }
             }
 
@@ -211,7 +211,7 @@ class LegacyDBv2DataSeeder extends Seeder
                 $vehicleClassId = $vehicleClassMapping[$legacyVehicle->motorType];
             } else {
                 // Handle unknown types (e.g., assign to a default class or log an error)
-                echo "Unknown motorType: {$legacyVehicle->motorType}. Assigning a default class.";
+                echo "Unknown motorType: {$legacyVehicle->motorType}. Assigning a default class.\n";
                 // You can assign a default ID if you have one, e.g., for an 'Other' class
                 continue;
             }
@@ -221,7 +221,7 @@ class LegacyDBv2DataSeeder extends Seeder
                 $vehicleStatusId = $vehicleStatusMapping[$legacyVehicle->motorStatus];
             } else {
                 // Handle unknown types (e.g., assign to a default class or log an error)
-                echo "Unknown motorType: {$legacyVehicle->motorType}. Assigning a default class.";
+                echo "Unknown motorType: {$legacyVehicle->motorType}. Assigning a default class.\n";
                 // You can assign a default ID if you have one, e.g., for an 'Other' class
                 continue;
             }
@@ -277,7 +277,7 @@ class LegacyDBv2DataSeeder extends Seeder
                 'updated_at' => $legacyVehicle->updated_at,
             ]);
         }
-        echo 'Vehicles migrated successfully!';
+        echo 'Vehicles migrated successfully!\n';
 
     }
 }

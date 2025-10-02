@@ -180,6 +180,28 @@ export function Create({ onSubmitSuccess, vehicle_class, vehicle_status, vehicle
         }
     };
 
+    // --- Photo File Change Handler ---
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files ? e.target.files[0] : null;
+
+        if (file) {
+            // Check file size (10MB limit)
+            if (file.size > 10 * 1024 * 1024) {
+                toast.error('File size must not exceed 10MB.');
+                // Clear the file input
+                e.target.value = '';
+                // Reset the photo in the form data
+                setData('photo', null);
+            } else {
+                // Set the file if it's valid
+                setData('photo', file);
+            }
+        } else {
+            // If no file is selected, clear it from state
+            setData('photo', null);
+        }
+    };
+
     // --- Purchase Date Input Handlers ---
     const handlePurchaseMonthChange = (value: string) => {
         setPurchaseMonth(value ? parseInt(value) : null);
@@ -449,14 +471,15 @@ export function Create({ onSubmitSuccess, vehicle_class, vehicle_status, vehicle
                             />
                         </FormField>
 
-                        <FormField label="Photo" htmlFor="create-photo" error={formErrors.photo}>
+                        <FormField label="Photo" htmlFor="create-photo" error={formErrors.photo} required>
                             <Input
                                 id="create-photo"
                                 type="file"
                                 accept="image/png"
-                                onChange={(e) => setData('photo', e.target.files ? e.target.files[0] : null)}
+                                onChange={handlePhotoChange}
                                 className={cn(formErrors.photo && 'border-red-500')}
                             />
+                            <p className="text-muted-foreground mt-1 text-xs">Please select PNG file (maximum file size is 10M).</p>
                         </FormField>
 
                         <FormField label="Class" htmlFor="create-vehicle_class_id" error={formErrors.vehicle_class_id} required>

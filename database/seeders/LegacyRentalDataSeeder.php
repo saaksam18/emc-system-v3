@@ -20,12 +20,63 @@ class LegacyRentalDataSeeder extends Seeder
     public function run(): void
     {
         // Caching lookups from previous migrations
-        echo 'Migrating rental data...';
+        echo 'Migrating rental data...\n';
 
-        $legacyRentals = DB::connection('legacy_mysql')->table('tbl_rental')->get();
+        $legacyRentals = DB::connection('legacy_mysql')
+        ->table('tbl_rental')
+        // Get all rentals and order them to find the latest for each customer
+        ->orderBy('customerID')
+        ->orderBy('created_at', 'desc') // Or 'rentalDay' or 'returnDate'
+        ->get();
 
-        foreach ($legacyRentals as $legacyRental) {
-        // Step 1: Look up new IDs using legacy_id
+        // This will keep track of which customers we have already marked a 'latest' rental for
+        $processedCustomers = []; // Reset this for each table migration
+
+    $legacyRentals = DB::connection('legacy_mysql')
+        ->table('tbl_rental')
+        ->orderBy('customerID')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    foreach ($legacyRentals as $legacyRental) {
+        $isLatestVersion = false;
+        $deletedAt = null;
+
+        if (!in_array($legacyRental->customerID, $processedCustomers)) {
+            $isLatestVersion = true;
+            $processedCustomers[] = $legacyRental->customerID;
+        } else {
+            $deletedAt = $legacyRental->updated_at;
+        }
+
+        // --- Start of New Logic for "Sold" transactions ---
+        $newStatus = (string) $legacyRental->transactionType;
+        
+
+        if ($newStatus === 'Sold') {
+            // Logic for sold rentals
+            $startDate = $legacyRental->rentalDay;
+            $actualStartDate = $legacyRental->rentalDay;
+            $endDate = $legacyRental->returnDate;
+            $actualReturnDate = $legacyRental->returnDate;
+
+            $isActive = false;
+            $isLatestVersion = true; // A "Sold" record is always the final/latest state
+            $deletedAt = $legacyRental->updated_at; // The record is "deleted" from active usage
+            
+        } else {
+            // Logic for all other rental types
+            $startDate = $legacyRental->rentalDay;
+            $actualStartDate = $legacyRental->rentalDay;
+            $endDate = $legacyRental->returnDate;
+            $actualReturnDate = ($newStatus === 'Return' || $newStatus === 'Temp. Return') ? $legacyRental->returnDate : null;
+
+            $isActive = ($legacyRental->is_Active == 1);
+            // $isLatestVersion and $deletedAt are handled by the logic at the top of the loop
+        }
+        // --- End of New Logic ---
+
+        // Look up new IDs for foreign keys (customer, vehicle, user, staff)
         $newCustomer = Customers::where('legacy_id', $legacyRental->customerID)->first();
         $newVehicle = Vehicles::where('legacy_id', $legacyRental->motorID)->first();
         $newUser = User::where('legacy_id', $legacyRental->userID)->first();
@@ -33,47 +84,33 @@ class LegacyRentalDataSeeder extends Seeder
         
         // Handle missing relationships by skipping the record
         if (!$newCustomer || !$newVehicle || !$newUser || !$newStaff) {
-            echo "Skipping rental with legacy_id: {$legacyRental->rentalID} due to missing customer, vehicle, or user record.";
+            echo "Skipping rental with legacy_id: {$legacyRental->rentalID} due to missing related record.\n";
             continue;
         }
 
-        // Initialize variables for the new table
-        $actualReturnDate = null;
-        
-        // This is the new logic you requested
-        if ($legacyRental->transactionType === 'Return') {
-            $actualReturnDate = $legacyRental->returnDate;
-        }
-
-        // Step 2: Data Transformation and Mapping
-        $newStatus = $legacyRental->transactionType;
-        $isActive = ($legacyRental->is_Active == 1);
-        $startDate = $legacyRental->rentalDay;
-        $endDate = $legacyRental->returnDate;
-        $comingDate = $legacyRental->commingDate;
-        $totalCost = $legacyRental->price;
-
-        // Step 3: Insert into the new `rentals` table
         DB::table('rentals')->insert([
             'vehicle_id' => $newVehicle->id,
             'customer_id' => $newCustomer->id,
             'start_date' => $startDate,
             'end_date' => $endDate,
-            'period' => $legacyRental->rentalPeriod, // Assuming this is a duration in days/months
-            'coming_date' => $comingDate,
-            'actual_start_date' => $startDate, // Mapping old 'rentalDay' to new 'actual_start_date'
-            'actual_return_date' => $actualReturnDate, // This can't be set during migration, it's set later.
-            'total_cost' => $totalCost,
+            'period' => $legacyRental->rentalPeriod,
+            'coming_date' => $legacyRental->commingDate,
+            'actual_start_date' => $actualStartDate,
+            'actual_return_date' => $actualReturnDate,
+            'total_cost' => $legacyRental->price,
             'is_active' => $isActive,
             'status' => $newStatus,
             'incharger_id' => $newStaff->id,
             'user_id' => $newUser->id,
-            'legacy_id' => $legacyRental->rentalID, // Crucial for future relations
+            'legacy_id' => $legacyRental->rentalID,
             'created_at' => $legacyRental->created_at,
             'updated_at' => $legacyRental->updated_at,
+            'is_latest_version' => $isLatestVersion,
+            'version_timestamp' => $legacyRental->created_at,
+            'deleted_at' => $deletedAt,
         ]);
+    
     }
-
-        echo 'Rental data migrated successfully!';
+        echo 'Rental data migrated successfully!\n';
     }
 }

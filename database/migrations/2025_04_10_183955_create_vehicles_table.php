@@ -28,6 +28,7 @@ return new class extends Migration
             $table->integer('compensation_price');
             $table->integer('purchase_price');
             $table->datetime('purchase_date');
+            $table->string('photo_path')->nullable();
 
             // Rental & Status Information
             $table->decimal('daily_rental_price', 8, 2)->unsigned(); // Cost to rent the vehicle per week (e.g., 15.00). Required, unsigned decimal.
