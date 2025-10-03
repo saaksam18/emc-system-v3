@@ -18,10 +18,10 @@ export interface NavGroup {
 export interface NavItem {
     id?: number;
     title: string;
-    href: string;
+    url: string;
     target?: string;
     icon?: LucideIcon | null;
-    prefetch?: boolean;
+    prefetch?: boolean | undefined;
     isActive?: boolean;
 }
 

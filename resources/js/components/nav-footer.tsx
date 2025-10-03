@@ -38,7 +38,7 @@ export function NavFooter({
                         // Determine if the current menu item should be marked as active.
                         // It's active if the current page URL starts with the item's href.
                         // Added check for page.url to ensure it exists before calling startsWith.
-                        const isActive = page.url && item.href ? page.url.startsWith(item.href) : false;
+                        const isActive = page.url && item.url ? page.url.startsWith(item.url) : false;
 
                         return (
                             // SidebarMenuItem represents a single item in the menu
@@ -49,7 +49,7 @@ export function NavFooter({
                                     {/* Render an Inertia Link for internal navigation */}
                                     {isInternalLink ? (
                                         <Link
-                                            href={item.href}
+                                            href={item.url}
                                             className="flex items-center gap-2 text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-neutral-100"
                                             prefetch // Enable prefetching for internal links
                                         >
@@ -61,7 +61,7 @@ export function NavFooter({
                                     ) : (
                                         // Render a standard anchor tag for external links
                                         <a
-                                            href={item.href}
+                                            href={item.url}
                                             target={item.target || '_blank'} // Default to opening in a new tab
                                             rel="noopener noreferrer" // Security best practice for external links
                                             className="flex items-center gap-2 text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-neutral-100"

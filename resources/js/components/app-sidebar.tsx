@@ -26,129 +26,122 @@ import {
 } from 'lucide-react'; // Added Settings icon
 import AppLogo from './app-logo';
 
-// --- Updated Navigation Items with Groups ---
 const mainNavGroups: NavGroup[] = [
     {
-        // Group 1: Core
-        title: 'Dashboard',
+        title: 'Main',
         items: [
             {
                 title: 'Dashboard',
-                href: '/dashboard',
+                url: '/dashboard',
                 icon: House,
-                prefetch: true, // Example: Keep prefetch if needed
+                prefetch: true,
             },
         ],
     },
     {
-        // Group 2: Finance & Accounting
-        title: 'Finances & Accountings',
+        title: 'Financial',
         items: [
             {
                 title: 'General Ledger',
-                href: '/general-ledger',
+                url: '/general-ledger',
                 icon: ClipboardList,
                 prefetch: true,
             },
             {
                 title: 'Sales',
-                href: '/sales',
+                url: '/sales',
                 icon: BadgeDollarSign,
                 prefetch: true,
             },
             {
                 title: 'Expenses',
-                href: '/expenses',
+                url: '/expenses',
                 icon: LucideBanknote,
                 prefetch: true,
             },
             {
                 title: 'Profit & Loss',
-                href: '/profit-loss',
+                url: '/profit-loss',
                 icon: BarChart,
                 prefetch: true,
             },
             {
                 title: 'Balance Sheet',
-                href: '/balance-sheet',
+                url: '/balance-sheet',
                 icon: ScaleIcon,
                 prefetch: true,
             },
             {
                 title: 'Trial Balance',
-                href: '/trial-balance',
+                url: '/trial-balance',
                 icon: Scale,
                 prefetch: true,
             },
         ],
     },
     {
-        // Group 3: Services
-        title: 'Services', // Title for the second group
+        title: 'Services',
         items: [
             {
                 title: 'Rentals',
-                href: '/rentals',
+                url: '/rentals',
                 icon: BookUser,
                 prefetch: true,
             },
             {
                 title: 'Visa',
-                href: '/vehicles',
+                url: '/vehicles',
                 icon: BookCheck,
                 prefetch: true,
             },
             {
                 title: 'Work Permit',
-                href: '/vehicles',
+                url: '/vehicles',
                 icon: Dock,
                 prefetch: true,
             },
         ],
     },
     {
-        // Group 4: Stock
-        title: 'Listing', // Title for the second group
+        title: 'List',
         items: [
             {
                 title: 'Customers',
-                href: '/customers',
+                url: '/customers',
                 icon: User2,
                 prefetch: true,
             },
             {
                 title: 'Vehicles',
-                href: '/vehicles',
+                url: '/vehicles',
                 icon: Bike,
                 prefetch: true,
             },
         ],
     },
     {
-        // Group 5: Report
-        title: 'Report', // Title for the second group
+        title: 'Report',
         items: [
             {
                 title: 'Rental Transaction',
-                href: '/reports/rentals-transaction',
+                url: '/reports/rentals-transaction',
                 icon: ReceiptCentIcon,
                 prefetch: true,
             },
         ],
     },
     {
-        // Group 6: Client Edittor
-        title: 'Content', // Title for the second group
+        title: 'Content',
         items: [
             {
                 title: 'Pages',
-                href: '/web-editor/top',
+                url: '/web-editor/top',
                 icon: File,
                 prefetch: true,
             },
             {
                 title: 'Blog',
-                href: '/web-editor/top',
+                url: '/web-editor/top',
                 icon: FileSliders,
                 prefetch: true,
             },
@@ -160,28 +153,28 @@ const mainNavGroups: NavGroup[] = [
 const footerNavItems: NavItem[] = [
     {
         title: 'Client Site',
-        href: '/home',
+        url: '/home',
         target: '_blank',
         icon: ExternalLink,
     },
     {
         id: 1,
         title: 'POS',
-        href: '/pos',
+        url: '/pos',
         icon: Computer,
         prefetch: true,
     },
     {
         id: 2,
         title: 'Administration',
-        href: '/administrator',
+        url: '/administrator',
         icon: User2,
         prefetch: true,
     },
     {
         id: 3,
         title: 'Settings',
-        href: '/settings',
+        url: '/settings',
         icon: Settings,
         prefetch: true,
     },

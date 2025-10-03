@@ -7,7 +7,7 @@ export default function AppLogo() {
                 <img src={Logo} alt="logo" className="size-6 h-auto w-full" />
             </div>
             <div className="ml-1 grid flex-1 text-left text-sm">
-                <span className="mb-0.5 truncate leading-none font-bold">EMC</span>
+                <span className="mb-0.5 truncate text-2xl leading-none font-bold">emc</span>
             </div>
         </>
     );
