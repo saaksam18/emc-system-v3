@@ -23,7 +23,6 @@ class PostUpdateVehicleSoldSeeder extends Seeder
         // Step 2: Define the rental statuses that correspond to 'On Rent'
         // Step 2: Define the statuses
         $unavailableRentalStatuses = ['Sold', 'Lost / Stolen'];
-        $onRentRentalStatuses = ['New Rental', 'Extension', 'Temp. Return','Add Coming Date', 'EX. Deposit', 'Exchange', 'Return'];
 
         // --- Logic for 'Sold' and 'Lost / Stolen' vehicles ---
         // This query is now simpler and more direct.

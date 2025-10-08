@@ -17,7 +17,7 @@ const sidebarNavItems: NavItemGroup[] = [
         items: [
             {
                 title: 'Appearance',
-                href: '/settings/appearance',
+                url: '/settings/appearance',
                 icon: null,
             },
         ],
@@ -27,12 +27,12 @@ const sidebarNavItems: NavItemGroup[] = [
         items: [
             {
                 title: 'Profile',
-                href: '/settings/profile',
+                url: '/settings/profile',
                 icon: null,
             },
             {
                 title: 'Password',
-                href: '/settings/password',
+                url: '/settings/password',
                 icon: null,
             },
         ],
@@ -42,7 +42,7 @@ const sidebarNavItems: NavItemGroup[] = [
         items: [
             {
                 title: 'Vendors',
-                href: '/settings/vendors',
+                url: '/settings/vendors',
                 icon: null,
             },
         ],
@@ -52,12 +52,12 @@ const sidebarNavItems: NavItemGroup[] = [
         items: [
             {
                 title: 'Deposit Type',
-                href: '/settings/rentals/deposit-type',
+                url: '/settings/rentals/deposit-type',
                 icon: null,
             },
             {
                 title: 'Contact Type',
-                href: '/settings/customers/types',
+                url: '/settings/customers/types',
                 icon: null,
             },
         ],
@@ -67,22 +67,47 @@ const sidebarNavItems: NavItemGroup[] = [
         items: [
             {
                 title: 'Classes',
-                href: '/settings/vehicles/classes',
+                url: '/settings/vehicles/classes',
                 icon: null,
             },
             {
                 title: 'Status',
-                href: '/settings/vehicles/status',
+                url: '/settings/vehicles/status',
                 icon: null,
             },
             {
                 title: 'Maker',
-                href: '/settings/vehicles/makers',
+                url: '/settings/vehicles/makers',
                 icon: null,
             },
             {
                 title: 'Model',
-                href: '/settings/vehicles/models',
+                url: '/settings/vehicles/models',
+                icon: null,
+            },
+        ],
+    },
+    {
+        group: 'Templates',
+        items: [
+            {
+                title: 'Rental Contract',
+                url: '/templates/new-rental-contract-master',
+                icon: null,
+            },
+            {
+                title: 'Rental Receipt',
+                url: '',
+                icon: null,
+            },
+            {
+                title: 'Visa Receipt',
+                url: '',
+                icon: null,
+            },
+            {
+                title: 'Work Permit Receipt',
+                url: '',
                 icon: null,
             },
         ],
@@ -110,20 +135,21 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 <div className="space-y-1">
                                     {group.items.map((item, itemIndex) => (
                                         <Button
-                                            key={`${item.href}-${itemIndex}`}
+                                            key={`${item.url}-${itemIndex}`}
                                             size="sm"
                                             variant="ghost"
                                             asChild
                                             className={cn('w-full justify-start', {
-                                                'bg-muted': currentPath === item.href,
+                                                'bg-muted': currentPath === item.url,
                                             })}
                                         >
-                                            <Link href={item.href} prefetch>
+                                            <Link href={item.url} prefetch>
                                                 {item.title}
                                             </Link>
                                         </Button>
                                     ))}
                                 </div>
+                                <Separator className="my-6 md:hidden" />
                             </div>
                         ))}
                     </nav>

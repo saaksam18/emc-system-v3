@@ -168,7 +168,8 @@ export function Edit({ vehicle, onUpdateSuccess, vehicle_class, vehicle_status, 
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files ? e.target.files[0] : null;
         if (file) {
-            if (file.size > 10 * 1024 * 1024) { // 10MB
+            if (file.size > 10 * 1024 * 1024) {
+                // 10MB
                 toast.error('File size cannot exceed 10MB.');
                 e.target.value = '';
                 setData('photo', null);

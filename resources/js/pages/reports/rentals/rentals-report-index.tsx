@@ -266,7 +266,7 @@ const RentalsReportIndex: React.FC<PageProps> = ({ rentals: initialRentals, tran
                                             {/* Iterate over each vehicle class */}
                                             {Object.entries(classBreakdown ?? {}).map(([className, classData]) => {
                                                 return (
-                                                    <Card key={className}>
+                                                    <Card key={className} className="bg-sidebar">
                                                         <CardHeader>
                                                             {/* Reduced padding */}
                                                             <CardTitle>{className}</CardTitle> {/* Smaller title */}

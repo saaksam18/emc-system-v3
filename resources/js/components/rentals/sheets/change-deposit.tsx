@@ -123,10 +123,10 @@ interface ChangeDepositProps {
     depositTypes: Pick<Deposits, 'id' | 'name'>[] | null; // Use Pick for specific properties
     selectedRow: RentalsType | null; // Assuming RentalsType has activeDeposits, customer_name, vehicle_no, notes, id
     users: User[] | null;
-    onSubmitSuccess: () => void;
+    onDepositUpdated: () => void;
 }
 
-export function ChangeDeposit({ selectedRow, depositTypes, users, onSubmitSuccess }: ChangeDepositProps) {
+export function ChangeDeposit({ selectedRow, depositTypes, users, onDepositUpdated }: ChangeDepositProps) {
     // State for Dialogs
     const [userDialogOpen, setUserDialogOpen] = useState(false);
     const [expiryDateDialogsOpen, setExpiryDateDialogsOpen] = useState<Record<number, boolean>>({});
@@ -331,7 +331,7 @@ export function ChangeDeposit({ selectedRow, depositTypes, users, onSubmitSucces
                 } else {
                     reset();
                 }
-                onSubmitSuccess();
+                onDepositUpdated();
             },
             onError: (receivedErrors) => {
                 const currentErrors = receivedErrors as FormErrors;

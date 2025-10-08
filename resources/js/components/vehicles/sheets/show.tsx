@@ -110,11 +110,7 @@ export const Show: React.FC<ShowProps> = ({ selectedVehicle }) => {
         }
         return (
             <div>
-                <img
-                    src={imageUrl}
-                    alt="Vehicle Photo"
-                    className="h-auto max-h-64 w-full rounded-lg border object-cover"
-                />
+                <img src={imageUrl} alt="Vehicle Photo" className="h-auto max-h-64 w-full rounded-lg border object-cover" />
             </div>
         );
     };

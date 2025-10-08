@@ -385,3 +385,14 @@ export interface BalanceSheetProps {
     };
     [key: string]: any;
 }
+
+// Templates
+interface RentalCustomTexts {
+    compensation_policy_text: string;
+    return_policy_text: string;
+    repair_policy_text: string;
+    phone_address_change_text: string;
+    refund_policy_text: string;
+    overdue_penalties_text: string;
+    effect_contract_text: string;
+}

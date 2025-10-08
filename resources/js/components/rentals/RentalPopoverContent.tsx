@@ -5,7 +5,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import { Customers, Vehicle } from '@/types';
+import { CalendarIcon } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar } from '../ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 interface RentalPopoverContentProps {
     customers: Customers[] | null;
@@ -56,6 +61,8 @@ export function RentalPopoverContent({
     selectedAvailableVehicleId,
     onSelectedAvailableVehicleChange,
 }: RentalPopoverContentProps) {
+    const [startDateDialogOpen, setStartDateDialogOpen] = useState(false);
+    const [endDateDialogOpen, setEndDateDialogOpen] = useState(false);
     const customerOptions =
         customers?.map((customer) => ({
             value: customer.id.toString(),
@@ -148,7 +155,7 @@ export function RentalPopoverContent({
             </div>
             {(transactionType === 'new-rental' || transactionType === 'extend-rental') && (
                 <div>
-                    <h4 className="text-sm leading-none font-medium">Period</h4>
+                    {/* <h4 className="text-sm leading-none font-medium">Period</h4>
                     <div className="mt-2 grid grid-cols-2 gap-4">
                         <div className="flex items-center space-x-2">
                             <Checkbox
@@ -183,11 +190,7 @@ export function RentalPopoverContent({
                             <Label htmlFor="1m-rental">1M Rental</Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="custom-rental"
-                                checked={rentalPeriod === 'custom'}
-                                onCheckedChange={() => onRentalPeriodChange('custom')}
-                            />
+                            <Checkbox id="custom-rental" checked={rentalPeriod === 'custom'} onCheckedChange={() => onRentalPeriodChange('custom')} />
                             <Label htmlFor="custom-rental">Custom</Label>
                         </div>
                     </div>
@@ -199,7 +202,37 @@ export function RentalPopoverContent({
                                 onChange={(e) => onCustomRentalPeriodChange(e.target.value)}
                             />
                         </div>
-                    )}
+                    )} */}
+                    <h4 className="text-sm leading-none font-medium">Start Date</h4>
+                    <div>
+                        <Popover open={startDateDialogOpen} onOpenChange={setStartDateDialogOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={'outline'}
+                                    id="actual_start_date"
+                                    className={cn(
+                                        'w-full justify-start text-left font-normal',
+                                        !data.actual_start_date && 'text-muted-foreground',
+                                        formErrors.actual_start_date && 'border-red-500',
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {data.actual_start_date ? format(parseDateString(data.actual_start_date), 'PPP') : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={parseDateString(data.actual_start_date)}
+                                    onSelect={(date) => {
+                                        handleDateChange('actual_start_date', date);
+                                        setStartDateDialogOpen(false);
+                                    }}
+                                    captionLayout="dropdown"
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                 </div>
             )}
             {isVehicleAvailable && (
@@ -215,19 +248,11 @@ export function RentalPopoverContent({
                             <Label htmlFor="deposit-passport">Passport</Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="deposit-money"
-                                checked={depositType === 'money'}
-                                onCheckedChange={() => onDepositTypeChange('money')}
-                            />
+                            <Checkbox id="deposit-money" checked={depositType === 'money'} onCheckedChange={() => onDepositTypeChange('money')} />
                             <Label htmlFor="deposit-money">Money</Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="deposit-other"
-                                checked={depositType === 'other'}
-                                onCheckedChange={() => onDepositTypeChange('other')}
-                            />
+                            <Checkbox id="deposit-other" checked={depositType === 'other'} onCheckedChange={() => onDepositTypeChange('other')} />
                             <Label htmlFor="deposit-other">Other</Label>
                         </div>
                     </div>

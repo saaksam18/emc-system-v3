@@ -46,16 +46,17 @@ use App\Http\Controllers\Internals\RentalsController;
 // API
 use App\Http\Controllers\Api\ChartController;
 use App\Http\Controllers\Api\ChartOfAccountController;
+use App\Http\Controllers\Internals\PrintController;
+// Templates
+use App\Http\Controllers\Templates\RentalContractController;
 
 Route::redirect('/', 'login')->name('home');
-Route::get('/phpinfo', function () {
-     phpinfo();
-   });
 
 //Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('pos', [POSController::class, 'index'])->name('pos');
+    Route::get('/generate-pdf', [RentalContractController::class, 'generatePdf'])->name('generate-pdf');
 
     Route::redirect('administrator', '/administrator/users');
 
@@ -146,6 +147,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Api
     Route::get('rental-chart', [ChartController::class, 'getChartData'])->name('rental-chart');
     Route::get('vehicle-stock-chart', [ChartController::class, 'getVehicleStockChartData'])->name('vehicle-stock-chart');
+
+    // Templates
+        // Rental Contract
+            // GET /templates/master       -> Shows the TSX form (EditMasterTemplate.tsx)
+            Route::get('/templates/new-rental-contract-master', [RentalContractController::class, 'editTemplate'])->name('edit');
+
+            // POST /templates/master      -> Saves the policy texts to the database
+            Route::post('/templates/new-rental-contract-master', [RentalContractController::class, 'updateTemplate'])->name('update');
+
+    // Printing
+    Route::get('/print/{rental}', [PrintController::class, 'previewRentalContract'])->name('print.rentals.index');
+    Route::get('/print/{rental}/contract', [PrintController::class, 'printRentalContract'])->name('print.rental');
+
 });
 
 require __DIR__.'/settings.php';

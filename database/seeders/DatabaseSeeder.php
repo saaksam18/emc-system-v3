@@ -27,12 +27,12 @@ class DatabaseSeeder extends Seeder
             DepositTypeSeeder::class,
 
             // Legacy Database
-            /* LegacyDBv2DataSeeder::class,
+            LegacyDBv2DataSeeder::class,
             LegacyRentalDataSeeder::class,
             UpdateVehicleRentalIds::class,
-            PostUpdateVehicleSoldSeeder::class, */
-            //LegacyDepositSeeder::class,
-            //PostMigrationDepositUpdaterSeeder::class,
+            PostUpdateVehicleSoldSeeder::class,
+            LegacyDepositSeeder::class,
+            PostMigrationDepositUpdaterSeeder::class,
             
             // User
             UserRolesAndPermissionsSeeder::class,

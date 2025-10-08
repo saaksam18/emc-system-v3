@@ -199,7 +199,14 @@ export default function DashboardChartsSection({} /* no props needed if everythi
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2} captionLayout="dropdown"/>
+                                <Calendar
+                                    mode="range"
+                                    defaultMonth={date?.from}
+                                    selected={date}
+                                    onSelect={setDate}
+                                    numberOfMonths={2}
+                                    captionLayout="dropdown"
+                                />
                             </PopoverContent>
                         </Popover>
 

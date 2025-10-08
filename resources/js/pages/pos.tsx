@@ -1,19 +1,41 @@
 import { Create as CreateCustomerSheet } from '@/components/customers/sheets/create';
-import { OrderListCard } from '@/components/rentals/OrderListCard';
-import { RentalPopoverContent } from '@/components/rentals/RentalPopoverContent';
-import { ChangeDeposit as ChangeDepositSheet } from '@/components/rentals/sheets/change-deposit';
+import ChangeDeposit, { ChangeDeposit as ChangeDepositSheet } from '@/components/rentals/sheets/change-deposit';
+import { ChangeVehicle } from '@/components/rentals/sheets/change-vehicle';
 import { Create as CreateRentalSheet } from '@/components/rentals/sheets/create';
+import { ExtendContract } from '@/components/rentals/sheets/extend-contract';
+import { Pickup } from '@/components/rentals/sheets/pick-up';
+import { Return } from '@/components/rentals/sheets/return';
+import { Show } from '@/components/rentals/sheets/show';
+import { TemporaryReturn } from '@/components/rentals/sheets/temporary-return';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, ContactTypes, Customers, Deposits, RentalsType, SharedData, User, Vehicle, VehicleStatusType } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Deferred, Head, router, usePage } from '@inertiajs/react';
 import { Search } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import CustomizeNewRentalMaster from './templates/contracts/customize-new-rental-master';
+
+// --- Skeleton Component Definition ---
+// This is a reusable component for a single vehicle card skeleton
+const VehicleCardSkeleton = () => (
+    // ... same Skeleton structure as before ...
+    <Card className="border border-transparent">
+        <CardContent className="p-4">
+            <Skeleton className="mb-2 h-36 w-full rounded-md" />
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="mt-1 h-4 w-1/2" />
+            <Skeleton className="mt-2 h-5 w-1/4 rounded-full" />
+            <Skeleton className="mt-2 h-8 w-full" />
+        </CardContent>
+    </Card>
+);
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -47,7 +69,7 @@ interface PageProps {
     customers: Customers[] | null;
     users: User[] | null;
     contactTypes: ContactTypes[];
-    rentals: RentalsType[];
+    rentals: RentalsType[] | null;
     auth: { user: User };
     flash?: {
         success?: string;
@@ -58,40 +80,40 @@ interface PageProps {
 }
 
 export default function Welcome({ vehicles, availableVehicles, customers, users, vehicleStatuses, depositTypes, contactTypes, rentals }: PageProps) {
-    console.log(rentals);
     const { auth } = usePage<SharedData>().props;
+    const { props: pageProps } = usePage<PageProps>();
     const user = auth.user.name;
     const [items, setItems] = useState<OrderItem[]>([]);
     const [filter, setFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedRental, setSelectedRental] = useState<RentalsType | null>(null);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [isCreateRentalSheetOpen, setIsCreateRentalSheetOpen] = useState(false);
     const [isCreateCustomerSheetOpen, setIsCreateCustomerSheetOpen] = useState(false);
     const [isChangeDepositSheetOpen, setIsChangeDepositSheetOpen] = useState(false);
-    const [rentalDetails, setRentalDetails] = useState<RentalDetails | null>(null);
+    const [isCustomizeNewRentalMasterOpen, setIsCustomizeNewRentalMasterOpen] = useState(false);
     const [transactionType, setTransactionType] = useState<string | null>(null);
     const [rentalPeriod, setRentalPeriod] = useState<string | null>(null);
     const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
     const [notes, setNotes] = useState('');
-    const [customRentalPeriod, setCustomRentalPeriod] = useState('');
-    const [depositType, setDepositType] = useState<string | null>(null);
-    const [otherDeposit, setOtherDeposit] = useState('');
-    const [selectedAvailableVehicleId, setSelectedAvailableVehicleId] = useState('');
-    const [orderNumber, setOrderNumber] = useState(`#ORD${Math.floor(Math.random() * 10000)}`);
-    const [newDepositType, setNewDepositType] = useState([]);
-    const [newDepositValue, setNewDepositValue] = useState('');
+    console.log('selectedVehicle', selectedVehicle);
+    console.log('rentals', rentals);
+    console.log('selectedRental', selectedRental);
 
-    const handleRentalCreated = (rentalData: RentalDetails) => {
-        const newItems: OrderItem[] = [
-            {
-                id: rentalData.vehicle_no,
-                name: `Rental for NO-${rentalData.vehicle_no}`,
-                quantity: 1,
-                cost: parseFloat(rentalData.total_cost),
-            },
-        ];
-        setItems(newItems);
-        setRentalDetails(rentalData);
+    const handleExtend = useCallback((rentalToEdit: RentalsType) => {
+        setSheetMode('extend');
+        setSelectedRental(rentalToEdit);
+        setEdit(rentalToEdit);
+        setIsSheetOpen(true);
+    }, []);
+
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [sheetMode, setSheetMode] = useState<
+        'show' | 'create' | 'edit' | 'temporary' | 'extend' | 'exVehicle' | 'exDeposit' | 'pick-up' | 'return'
+    >('create');
+    const [edit, setEdit] = useState<RentalsType | null>(null); // For editing
+
+    const handleRentalCreated = () => {
         setIsCreateRentalSheetOpen(false);
     };
 
@@ -99,47 +121,14 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
         setIsCreateCustomerSheetOpen(false);
     };
 
-    const handleChooseVehicle = (vehicle: Vehicle) => {
-        setSelectedVehicle(vehicle);
+    const handleFormSubmitSuccess = () => {
+        setIsSheetOpen(false);
+        // Reload only the customers data after submit
+        router.reload({ only: ['customers'] });
     };
-
-    const removeItem = (id: number | string) => {
-        setItems(items.filter((item) => item.id !== id));
-    };
-
-    const increaseQuantity = (id: number | string) => {
-        setItems(items.map((item) => (item.id === id ? { ...item, quantity: item.quantity + 1 } : item)));
-    };
-
-    const decreaseQuantity = (id: number | string) => {
-        setItems(items.map((item) => (item.id === id && item.quantity > 1 ? { ...item, quantity: item.quantity - 1 } : item)));
-    };
-
-    const clearAll = () => {
-        setItems([]);
-        setRentalDetails(null);
-    };
-
-    const handleTransactionTypeChange = (type: string) => {
-        setTransactionType(transactionType === type ? null : type);
-    };
-
-    const handleRentalPeriodChange = (period: string) => {
-        setRentalPeriod(rentalPeriod === period ? null : period);
-    };
-
-    const handleDepositTypeChange = (type: string) => {
-        setDepositType(depositType === type ? null : type);
-    };
-
-    const selectedRental = useMemo(() => {
-        if (!selectedVehicle || !selectedVehicle.current_Rentals_id) return null;
-        return rentals.find((r) => r.id === selectedVehicle.current_Rentals_id) || null;
-    }, [selectedVehicle, rentals]);
 
     const [subTotal, setSubTotal] = useState(0);
-    const [tax, setTax] = useState(0);
-    const [discount, setDiscount] = useState(0);
+    const [, setTax] = useState(0);
     const taxRate = 0.1;
 
     useEffect(() => {
@@ -151,11 +140,44 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
         setTax(subTotal * taxRate);
     }, [subTotal]);
 
-    const totalPayable = subTotal + tax - discount;
-
     const filteredVehicles = (vehicles || [])
-        .filter((v) => filter === 'All' || v.status === filter)
+        .filter((v) => filter === 'All' || v.current_status_name === filter)
         .filter((v) => (v.model || '').toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const dummyContractData = {
+        customerName: 'John Doe',
+        sex: 'male' as const,
+        nationality: 'American',
+        phoneNumber: '123-456-7890',
+        occupation: 'Software Engineer',
+        address: '123 Main St, Anytown, USA',
+        rentalDate: '2025-10-03',
+        returnDate: '2025-10-10',
+        rentalPeriodType: 'days' as const,
+        rentalPeriodValue: 7,
+        helmetRental: 'Yes' as const,
+        howToKnow: {
+            facebook: true,
+            webPage: false,
+            wordOfMouth: '',
+            flyer: '',
+            shopSignboard: false,
+            magazine: '',
+            other: '',
+        },
+        motorId: 'M-123',
+        plateNo: 'ABC-123',
+        motorType: 'Honda Dream',
+        transmission: 'AT' as const,
+        rentalFeePerPeriod: 50,
+        totalRentalFee: 350,
+        depositAmount: 100,
+        depositMethod: 'Passport' as const,
+        otherDepositDetails: '',
+        compensationFee: 500,
+        renterSignature: 'John Doe',
+        staffSignature: 'Jane Smith',
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -164,10 +186,28 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
             <div className="relative flex-1">
                 <div className="absolute inset-0 flex flex-col gap-4 p-4">
                     <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
-                        <Card className="flex w-2/3 flex-col">
+                        <Card className="flex w-full flex-col">
                             <CardHeader>
-                                <CardTitle>POS - Sales Management</CardTitle>
-                                <CardDescription>Welcome, {user} | August 25, 2025</CardDescription>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>POS - Sales Management</CardTitle>
+                                        <CardDescription>Welcome, {user} | August 25, 2025</CardDescription>
+                                    </div>
+                                    <Dialog open={isCustomizeNewRentalMasterOpen} onOpenChange={setIsCustomizeNewRentalMasterOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="outline">Print Rental Contract</Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Rental Contract</DialogTitle>
+                                                <DialogDescription>Modify the fields for the new rental master contract.</DialogDescription>
+                                            </DialogHeader>
+                                            <div className="max-h-[70vh] overflow-y-auto">
+                                                <CustomizeNewRentalMaster data={dummyContractData} />
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
                             </CardHeader>
                             <CardContent className="flex min-h-0 flex-1 flex-col">
                                 <div className="mb-4 flex items-center gap-2">
@@ -191,97 +231,111 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
                                     </Button>
                                 </div>
                                 <div className="flex-1 overflow-y-auto">
-                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-                                        {filteredVehicles.map((vehicle: Vehicle) => (
-                                            <Card
-                                                key={vehicle.id}
-                                                className="group hover:border-primary transform cursor-pointer border border-transparent transition-all duration-200"
-                                            >
-                                                <CardContent className="p-4">
-                                                    <div className="mb-2 overflow-hidden rounded-md">
-                                                        <img
-                                                            src={vehicle.photo_path || 'https://via.placeholder.com/400x300.png?text=No+Image'}
-                                                            alt={vehicle.model}
-                                                            className="h-36 w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                                        />
-                                                    </div>
-                                                    <h6 className="truncate font-semibold">
-                                                        NO-{vehicle.vehicle_no} {vehicle.model}
-                                                    </h6>
-                                                    <p className="text-sm text-gray-500">
-                                                        {vehicle.color} - {vehicle.year}
-                                                    </p>
-                                                    <Badge
-                                                        variant={vehicle.current_status_name === 'In Stock' ? 'default' : 'destructive'}
-                                                        className="mt-1"
-                                                    >
-                                                        {vehicle.current_status_name}
-                                                    </Badge>
-                                                    <Dialog>
-                                                        <DialogTrigger asChild>
-                                                            <Button className="mt-2 w-full" size="sm" onClick={() => handleChooseVehicle(vehicle)}>
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                                        <Deferred data="vehicles" fallback={<VehicleCardSkeleton />}>
+                                            {filteredVehicles.map((vehicle: Vehicle) => (
+                                                <Card
+                                                    key={vehicle.id}
+                                                    className="group hover:border-primary bg-sidebar transform cursor-pointer border border-transparent transition-all duration-200"
+                                                >
+                                                    <CardContent className="p-4">
+                                                        <div className="mb-2 overflow-hidden rounded-md">
+                                                            <img
+                                                                src={vehicle.photo_path || 'https://via.placeholder.com/400x300.png?text=No+Image'}
+                                                                alt={vehicle.model}
+                                                                className="h-36 w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                                            />
+                                                        </div>
+                                                        <h6 className="truncate font-semibold">
+                                                            NO-{vehicle.vehicle_no} {vehicle.make} {vehicle.model}
+                                                        </h6>
+                                                        <p className="text-sm text-gray-500">
+                                                            {vehicle.color} - {vehicle.year}
+                                                        </p>
+                                                        <Badge
+                                                            variant={vehicle.current_status_name === 'In Stock' ? 'default' : 'destructive'}
+                                                            className="mt-1"
+                                                        >
+                                                            {vehicle.current_status_name}
+                                                        </Badge>
+                                                        {vehicle.current_status_name === 'In Stock' ? (
+                                                            <Button
+                                                                className="mt-2 w-full"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    // 1. Set the selected vehicle state
+                                                                    setSelectedVehicle(vehicle);
+                                                                    // 2. Open the rental creation sheet
+                                                                    setIsCreateRentalSheetOpen(true);
+                                                                }}
+                                                            >
                                                                 Choose
                                                             </Button>
-                                                        </DialogTrigger>
-                                                        <DialogContent className="w-lg p-8">
-                                                            <DialogHeader>
-                                                                <DialogTitle>Rental Form</DialogTitle>
-                                                                <DialogDescription>Enter the details for the rental form.</DialogDescription>
-                                                            </DialogHeader>
-                                                            <RentalPopoverContent
-                                                                customers={customers}
-                                                                onOpenCreateRentalSheet={() => setIsCreateRentalSheetOpen(true)}
-                                                                onOpenCreateCustomerSheet={() => setIsCreateCustomerSheetOpen(true)}
-                                                                transactionType={transactionType}
-                                                                onTransactionTypeChange={handleTransactionTypeChange}
-                                                                rentalPeriod={rentalPeriod}
-                                                                onRentalPeriodChange={handleRentalPeriodChange}
-                                                                selectedCustomerId={selectedCustomerId}
-                                                                onSelectedCustomerIdChange={setSelectedCustomerId}
-                                                                notes={notes}
-                                                                onNotesChange={setNotes}
-                                                                customRentalPeriod={customRentalPeriod}
-                                                                onCustomRentalPeriodChange={setCustomRentalPeriod}
-                                                                depositType={depositType}
-                                                                onDepositTypeChange={handleDepositTypeChange}
-                                                                otherDeposit={otherDeposit}
-                                                                onOtherDepositChange={setOtherDeposit}
-                                                                availableVehicles={availableVehicles}
-                                                                selectedVehicle={selectedVehicle}
-                                                                selectedAvailableVehicleId={selectedAvailableVehicleId}
-                                                                onSelectedAvailableVehicleChange={setSelectedAvailableVehicleId}
-                                                                onOpenChangeDepositSheet={() => setIsChangeDepositSheetOpen(true)}
-                                                                currentDeposit="Passport"
-                                                                newDepositType={newDepositType || []}
-                                                                onNewDepositTypeChange={setNewDepositType}
-                                                                newDepositValue={newDepositValue}
-                                                                onNewDepositValueChange={setNewDepositValue}
-                                                            />
-                                                        </DialogContent>
-                                                    </Dialog>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
+                                                        ) : (
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <Button
+                                                                        className="mt-2 w-full"
+                                                                        size="sm"
+                                                                        onClick={() => {
+                                                                            // 1. Set the selected vehicle state
+                                                                            setSelectedVehicle(vehicle);
+                                                                            // 2. Find and set the active retnal for the vehicle
+                                                                            const activeRental = rentals?.find(
+                                                                                (r) =>
+                                                                                    r.vehicle_no === vehicle.vehicle_no &&
+                                                                                    vehicle.current_status_name !== 'In Stock',
+                                                                            );
+                                                                            setSelectedRental(activeRental || null);
+                                                                        }}
+                                                                    >
+                                                                        Choose
+                                                                    </Button>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-full">
+                                                                    <div className="flex flex-col gap-2">
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <Button className="w-full" onClick={() => handleExtend(selectedRental!)}>
+                                                                                Extension
+                                                                            </Button>
+                                                                        </div>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <Button variant={'secondary'} className="w-full">
+                                                                                Change Vehicle
+                                                                            </Button>
+                                                                        </div>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <Button variant={'secondary'} className="w-full">
+                                                                                Change Deposit
+                                                                            </Button>
+                                                                        </div>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <Button variant={'secondary'} className="w-full">
+                                                                                Pick Up
+                                                                            </Button>
+                                                                        </div>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <Button variant={'secondary'} className="w-full">
+                                                                                Temp. Return
+                                                                            </Button>
+                                                                        </div>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <Button variant={'destructive'} className="w-full">
+                                                                                Return
+                                                                            </Button>
+                                                                        </div>
+                                                                    </div>
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                        )}
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </Deferred>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
-                        <OrderListCard
-                            items={items}
-                            rentalDetails={rentalDetails}
-                            onClearAll={clearAll}
-                            onRemoveItem={removeItem}
-                            onIncreaseQuantity={increaseQuantity}
-                            onDecreaseQuantity={decreaseQuantity}
-                            orderNumber={orderNumber}
-                            subTotal={subTotal}
-                            tax={tax}
-                            discount={discount}
-                            totalPayable={totalPayable}
-                            onSubTotalChange={setSubTotal}
-                            onTaxChange={setTax}
-                            onDiscountChange={setDiscount}
-                        />
                     </div>
                 </div>
             </div>
@@ -300,6 +354,7 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
                             depositTypes={depositTypes}
                             users={users}
                             onSubmitSuccess={handleRentalCreated}
+                            onCreateClick={() => setIsCreateCustomerSheetOpen(true)}
                             initialVehicleNo={selectedVehicle?.vehicle_no}
                             initialTransactionType={transactionType}
                             initialRentalPeriod={rentalPeriod}
@@ -331,11 +386,131 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
                     <div className="h-[calc(100vh-100px)] overflow-y-auto">
                         <ChangeDepositSheet
                             selectedRow={selectedRental}
-                            depositTypes={depositTypes || []}
+                            depositTypes={depositTypes?.map((d) => ({ id: d.id, name: d.name })) || []}
                             users={users}
                             onDepositUpdated={() => setIsChangeDepositSheetOpen(false)}
                         />
                     </div>
+                </SheetContent>
+            </Sheet>
+
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <SheetContent className="overflow-y-auto sm:max-w-lg">
+                    {/* Show Details View */}
+                    {sheetMode === 'show' && selectedRental && (
+                        <>
+                            <SheetHeader>
+                                <SheetTitle>{selectedRental?.name || 'N/A'} Details:</SheetTitle>
+                                <SheetDescription>Viewing details for rental: {selectedRental?.name || 'N/A'}</SheetDescription>
+                            </SheetHeader>
+                            <Show selectedRow={selectedRental} />
+                            <SheetFooter>
+                                <SheetClose asChild>
+                                    <Button type="button" variant="outline">
+                                        Close
+                                    </Button>
+                                </SheetClose>
+                            </SheetFooter>
+                        </>
+                    )}
+
+                    {/* Extend Form View */}
+                    {sheetMode === 'extend' && edit && (
+                        <>
+                            <SheetHeader>
+                                <SheetTitle>Edit Rental Status for customer: {edit.full_name}</SheetTitle>
+                                <SheetDescription>Update the rental's details.</SheetDescription>
+                            </SheetHeader>
+                            <ExtendContract
+                                selectedRow={selectedRental}
+                                vehicleStatuses={pageProps.vehicleStatuses || vehicleStatuses || []}
+                                users={users}
+                                onSubmitSuccess={handleFormSubmitSuccess}
+                            />
+                        </>
+                    )}
+
+                    {/* Change vehicle Form View */}
+                    {sheetMode === 'exVehicle' && edit && (
+                        <>
+                            <SheetHeader>
+                                <SheetTitle>Edit Rental Status for customer: {edit.full_name}</SheetTitle>
+                                <SheetDescription>Update the rental's details.</SheetDescription>
+                            </SheetHeader>
+                            <ChangeVehicle
+                                availableVehicles={availableVehicles}
+                                selectedRow={selectedRental}
+                                vehicleStatuses={pageProps.vehicleStatuses || vehicleStatuses || []}
+                                users={users}
+                                onSubmitSuccess={handleFormSubmitSuccess}
+                            />
+                        </>
+                    )}
+
+                    {/* Change deposit Form View */}
+                    {sheetMode === 'exDeposit' && edit && (
+                        <>
+                            <SheetHeader>
+                                <SheetTitle>Edit Rental Status for customer: {edit.full_name}</SheetTitle>
+                                <SheetDescription>Update the rental's details.</SheetDescription>
+                            </SheetHeader>
+                            <ChangeDeposit
+                                selectedRow={selectedRental}
+                                depositTypes={pageProps.depositTypes || depositTypes || []}
+                                users={users}
+                                onSubmitSuccess={handleFormSubmitSuccess}
+                            />
+                        </>
+                    )}
+
+                    {/* Pick up Form View */}
+                    {sheetMode === 'pick-up' && edit && (
+                        <>
+                            <SheetHeader>
+                                <SheetTitle>Edit Rental Status for customer: {edit.full_name}</SheetTitle>
+                                <SheetDescription>Update the rental's details.</SheetDescription>
+                            </SheetHeader>
+                            <Pickup
+                                selectedRow={selectedRental}
+                                vehicleStatuses={pageProps.vehicleStatuses || vehicleStatuses || []}
+                                depositTypes={depositTypes}
+                                users={users}
+                                onSubmitSuccess={handleFormSubmitSuccess}
+                            />
+                        </>
+                    )}
+
+                    {/* Temporary Form View */}
+                    {sheetMode === 'temporary' && edit && (
+                        <>
+                            <SheetHeader>
+                                <SheetTitle>Edit Rental Status for customer: {edit.full_name}</SheetTitle>
+                                <SheetDescription>Update the rental's details.</SheetDescription>
+                            </SheetHeader>
+                            <TemporaryReturn
+                                selectedRow={selectedRental}
+                                vehicleStatuses={pageProps.vehicleStatuses || vehicleStatuses || []}
+                                users={users}
+                                onSubmitSuccess={handleFormSubmitSuccess}
+                            />
+                        </>
+                    )}
+
+                    {/* Return Form View */}
+                    {sheetMode === 'return' && edit && (
+                        <>
+                            <SheetHeader>
+                                <SheetTitle>Edit Rental Status for customer: {edit.full_name}</SheetTitle>
+                                <SheetDescription>Update the rental's details.</SheetDescription>
+                            </SheetHeader>
+                            <Return
+                                selectedRow={selectedRental}
+                                vehicleStatuses={pageProps.vehicleStatuses || vehicleStatuses || []}
+                                users={users}
+                                onSubmitSuccess={handleFormSubmitSuccess}
+                            />
+                        </>
+                    )}
                 </SheetContent>
             </Sheet>
         </AppLayout>

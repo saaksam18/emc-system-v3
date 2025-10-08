@@ -543,7 +543,8 @@ class RentalsController extends Controller
             // --- Success Response ---
             $successMessage = 'Rental of vehicle no. ' . $vehicle->vehicle_no . ' successfully registered (ID: ' . $rental->id . ').';
             // Redirect to the index page with a success message
-            return redirect()->back()->with('success', $successMessage);
+            return redirect()->route('print.rentals.index', $rental->id)
+                 ->with('success', $successMessage); 
 
         } catch (AuthorizationException $e) {
             DB::rollBack(); // Rollback transaction on authorization failure

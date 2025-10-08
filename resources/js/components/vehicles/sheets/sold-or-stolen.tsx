@@ -201,7 +201,7 @@ export function SoldOrStolen({ vehicle, vehicle_status, customers, users, onSubm
         e.preventDefault();
         clearErrors();
         const url = `/vehicles/${data.vehicle_id}/update/sold-or-stolen`;
-        console.log(data)
+        console.log(data);
 
         // --- Basic Validation ---
         let hasValidationError = false;

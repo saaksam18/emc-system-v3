@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 // Assuming VehicleStatusType has { id: string | number; status_name: string; ... }
@@ -13,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { Customers, Deposits, User, Vehicle, VehicleStatusType } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import { differenceInDays, format, isValid, parse } from 'date-fns'; // Import differenceInDays, format, isValid, parse
-import { Bike, CalendarIcon, Check, ChevronsUpDown, Trash2, User2 } from 'lucide-react';
+import { Bike, CalendarIcon, Check, ChevronsUpDown, PlusCircle, Trash2 } from 'lucide-react';
 import React, { FormEventHandler, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -194,10 +195,24 @@ interface CreateProps {
     depositTypes: Deposits[] | null;
     users: User[] | null;
     onSubmitSuccess: (data: InitialFormValues) => void;
+    onCreateClick?: () => void;
     initialVehicleNo?: string;
+    initialTransactionType?: string | null;
+    initialRentalPeriod?: string | null;
+    initialCustomerId?: string;
+    initialNotes?: string;
 }
 
-export function Create({ availableVehicles, vehicleStatuses, customers, depositTypes, users, onSubmitSuccess, initialVehicleNo }: CreateProps) {
+export function Create({
+    availableVehicles,
+    vehicleStatuses,
+    customers,
+    depositTypes,
+    users,
+    onSubmitSuccess,
+    onCreateClick,
+    initialVehicleNo,
+}: CreateProps) {
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm<InitialFormValues>({
         ...initialFormValues,
         vehicle_no: initialVehicleNo || '',
@@ -216,6 +231,7 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
     const [vehicleDialogOpen, setVehicleDialogOpen] = useState(false);
     const [vehicleStatusDialogOpen, setVehicleStatusDialogOpen] = useState(false);
     const [userDialogOpen, setUserDialogOpen] = useState(false);
+    const [open, setOpen] = React.useState(false);
 
     // State for Date Picker Dialogs (unchanged)
     const [startDateDialogOpen, setStartDateDialogOpen] = useState(false);
@@ -509,26 +525,44 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                     {/* Customer Combobox */}
                     <FormField label="Customer" htmlFor="create-customer_name" error={formErrors.customer_name} required>
                         <Popover open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={customerDialogOpen}
-                                    aria-label="Select customer"
-                                    id="create-customer_name"
-                                    className={cn(
-                                        'w-full justify-between',
-                                        !data.customer_name && 'text-muted-foreground',
-                                        formErrors.customer_name && 'border-red-500',
-                                    )}
-                                    disabled={processing || validCustomers.length === 0}
-                                >
-                                    {data.customer_name
-                                        ? validCustomers.find((customer) => customer.name === data.customer_name)?.name
-                                        : 'Select customer...'}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
+                            <div className="flex items-center gap-2">
+                                <div className="w-full">
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={customerDialogOpen}
+                                            aria-label="Select customer"
+                                            id="create-customer_name"
+                                            className={cn(
+                                                'w-full justify-between',
+                                                !data.customer_name && 'text-muted-foreground',
+                                                formErrors.customer_name && 'border-red-500',
+                                            )}
+                                            disabled={processing || validCustomers.length === 0}
+                                        >
+                                            {data.customer_name
+                                                ? validCustomers.find((customer) => customer.name === data.customer_name)?.name
+                                                : 'Select customer...'}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                </div>
+                                <div>
+                                    <Button
+                                        variant="default"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setOpen(false);
+                                            onCreateClick();
+                                        }}
+                                        className="flex justify-center gap-2 text-sm"
+                                    >
+                                        <PlusCircle className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
                             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                 <Command>
                                     <CommandInput placeholder="Search customer..." />
@@ -559,14 +593,34 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                         </CommandGroup>
                                     </CommandList>
                                 </Command>
-                                <Button variant="ghost" asChild className="m-1">
-                                    <Link href={'/customers'} className="flex w-full shrink-0 items-center justify-center gap-2 text-sm sm:w-auto">
-                                        <User2 className="mr-1 h-4 w-4" /> Add Customer
-                                    </Link>
+                                <Separator />
+                                <Button
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setOpen(false);
+                                        onCreateClick();
+                                    }}
+                                    className="flex justify-center gap-2 text-sm"
+                                >
+                                    <PlusCircle className="mr-1 h-4 w-4" /> Customer
                                 </Button>
                             </PopoverContent>
                         </Popover>
                         {validCustomers.length === 0 && !processing && <p className="text-muted-foreground mt-1 text-sm">No customers available.</p>}
+                        {/* <Button
+                            variant="ghost"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setOpen(false);
+                                onCreateClick();
+                            }}
+                            className="m-1 flex w-full shrink-0 items-center justify-center gap-2 text-sm sm:w-auto"
+                        >
+                            <User2 className="mr-1 h-4 w-4" /> Add Customer
+                        </Button> */}
                     </FormField>
 
                     {/* Vehicle Combobox */}
@@ -926,7 +980,7 @@ export function Create({ availableVehicles, vehicleStatuses, customers, depositT
                                                                 handleExpiryDateDialogOpenChange(actualIndex, false);
                                                             }}
                                                             captionLayout="dropdown"
-                                        toYear={currentYear + 10}
+                                                            toYear={currentYear + 10}
                                                         />
                                                     </PopoverContent>
                                                 </Popover>
