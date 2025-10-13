@@ -15,7 +15,6 @@ import { toast } from 'sonner'; // For notifications
 
 // --- Custom Component Imports ---
 import { columns, TableMeta } from '@/components/rentals/columns'; // Adjust path
-import { Create } from '@/components/rentals/sheets/create'; // Adjust path
 
 // --- Type Imports ---
 // Make sure these types are correctly defined in '@/types'
@@ -25,6 +24,7 @@ import type { BreadcrumbItem, Customers, Deposits, RentalsType, User, Vehicle, V
 import { DataTable } from '@/components/rentals/data-table';
 import { ChangeDeposit } from '@/components/rentals/sheets/change-deposit';
 import { ChangeVehicle } from '@/components/rentals/sheets/change-vehicle';
+import { Create } from '@/components/rentals/sheets/create';
 import { ExtendContract } from '@/components/rentals/sheets/extend-contract';
 import { Pickup } from '@/components/rentals/sheets/pick-up';
 import { Return } from '@/components/rentals/sheets/return';
@@ -94,7 +94,7 @@ function SkeletonTable({
 // --- Breadcrumbs ---
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Rentals',
+        title: 'Rental Management',
         href: '/rentals', // Ensure this route exists and is correct
     },
 ];
@@ -259,7 +259,7 @@ const RentalsIndex: React.FC<PageProps> = ({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Customers Dashboard" />
+            <Head title="Rental Management" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Top Cards (Consider making these dynamic or removing if static) */}
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
@@ -366,6 +366,7 @@ const RentalsIndex: React.FC<PageProps> = ({
                                     vehicleStatuses={pageProps.vehicleStatuses || vehicleStatuses || []}
                                     depositTypes={depositTypes}
                                     users={users}
+                                    chartOfAccounts={undefined}
                                     onSubmitSuccess={handleFormSubmitSuccess}
                                 />
                             </>

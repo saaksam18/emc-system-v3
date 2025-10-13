@@ -57,22 +57,17 @@ class CustomersController extends Controller
                 // Eager load active contacts AND their associated contactType relationship
                 'activeContacts.contactType',
                 // Eager load active deposits (assuming you might need details later)
-                'activeDeposits',
+                'activeDeposits.depositType',
                 'creator:id,name' // load creator efficiently
             ])->get();
 
-            Log::info("Retrieved {$customers->count()} customers.");
-
             // --- Fetch Contact Types (still needed for dropdowns/filters probably) ---
-            Log::info("Fetching active contact types for User [ID: {$userId}].");
             $contactTypes = Types::with('creator:id,name', 'contacts')
                 ->where('is_active', true)
                 ->orderBy('name', 'asc')
                 ->get();
-            Log::info("Retrieved {$contactTypes->count()} active contact types.");
 
             // --- Format Data for View ---
-            Log::info("Formatting customer and contact type data for view for User [ID: {$userId}].");
             $formattedContactTypes = $contactTypes->map(function (Types $contactType) { // Changed variable name for clarity
                 return [
                     'id' => $contactType->id,

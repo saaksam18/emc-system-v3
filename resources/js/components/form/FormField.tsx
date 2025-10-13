@@ -14,8 +14,8 @@ interface FormFieldProps {
 }
 
 export const FormField: React.FC<FormFieldProps> = ({ label, htmlFor, error, required, children, className, labelClassName, contentClassName }) => (
-    <div className={cn('grid grid-cols-1 items-start gap-4 md:grid-cols-4 md:items-center', className)}>
-        <Label htmlFor={htmlFor} className={cn('text-left md:text-right', labelClassName)}>
+    <div className={cn('grid grid-cols-1 items-start gap-2 md:grid-cols-2 md:items-center', className)}>
+        <Label htmlFor={htmlFor} className={cn('text-left text-nowrap md:text-left', labelClassName)}>
             {label}
             {required && <span className="text-red-500">*</span>}
         </Label>

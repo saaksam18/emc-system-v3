@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Internals;
 
 use App\Http\Controllers\Controller;
+use App\Models\Accountings\ChartOfAccounts;
 use Illuminate\Http\Request;
 
 use Carbon\Carbon;
@@ -77,12 +78,13 @@ class POSController extends Controller
             $formattedAvailableVehicles = $availableVehicles->map(fn ($v) => ['id' => $v->id, 'vehicle_no' => (string)$v->vehicle_no]);
 
             // Get all customers (minimal data)
-            $customers = Customers::select('id', 'first_name', 'last_name')->get();
+            $customers = Customers::select('id', 'first_name', 'last_name')->orderBy('id', 'desc')->get();
             $formattedCustomers = $customers->map(function (Customers $customer) {
                 $full_name = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
                 return ['id' => $customer->id, 'name' => empty($full_name) ? 'N/A' : $full_name];
             });
             $users = User::select('id', 'name')->get();
+            $chartOfAccounts = ChartOfAccounts::orderBy('name')->get()->toArray();
             // --- Fetch Contact Types (still needed for dropdowns/filters probably) ---
             $contactTypes = Types::select('id', 'name')
                 ->where('is_active', true)
@@ -180,6 +182,7 @@ class POSController extends Controller
                 'availableVehicles' => Inertia::defer(fn () => $formattedAvailableVehicles),
                 'customers' => Inertia::defer(fn () => $formattedCustomers),
                 'users' => Inertia::defer(fn () => $users->toArray()),
+                'chartOfAccounts' => Inertia::defer(fn () => $chartOfAccounts),
                 'vehicleStatuses' => Inertia::defer(fn () => $formattedVehicleStatuses),
                 'depositTypes' => Inertia::defer(fn () => $formattedDepositTypes),
                 'contactTypes' => Inertia::defer(fn () => $formattedContactTypes),

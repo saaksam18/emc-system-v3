@@ -46,7 +46,9 @@ use App\Http\Controllers\Internals\RentalsController;
 // API
 use App\Http\Controllers\Api\ChartController;
 use App\Http\Controllers\Api\ChartOfAccountController;
+use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Internals\PrintController;
+use App\Http\Controllers\Internals\Rentals\TransactionController;
 // Templates
 use App\Http\Controllers\Templates\RentalContractController;
 
@@ -147,6 +149,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Api
     Route::get('rental-chart', [ChartController::class, 'getChartData'])->name('rental-chart');
     Route::get('vehicle-stock-chart', [ChartController::class, 'getVehicleStockChartData'])->name('vehicle-stock-chart');
+    Route::get('/api/customer/{customer}', [CustomerController::class, 'showCustomerDetail'])->name('api.customer.details');
 
     // Templates
         // Rental Contract
@@ -159,6 +162,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Printing
     Route::get('/print/{rental}', [PrintController::class, 'previewRentalContract'])->name('print.rentals.index');
     Route::get('/print/{rental}/contract', [PrintController::class, 'printRentalContract'])->name('print.rental');
+
+    // New Rental Transaction
+    Route::get('rentals/new-transaction/{vehicle}', [TransactionController::class, 'index'])->name('rentals.new-transaction.index');
 
 });
 

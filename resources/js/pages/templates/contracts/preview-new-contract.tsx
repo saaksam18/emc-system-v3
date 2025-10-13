@@ -16,37 +16,10 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/print/{rental}', // Ensure this route exists and is correct
     },
 ];
-interface ReceiptData {
-    receiptNo: string;
-    date: string; // e.g., '2025-10-08'
-    receivedFrom: string;
-    paymentFor: string; // "AT Rental 1 month"
-    amount: number;
-    currency: string;
-    receiverInitials: string; // 'VC'
-    companyName: string; // 'EMC Motorbike Rental'
-    companyAddress: string;
-    phoneNumber: string;
-}
 
 interface PageProps {
     rental: RentalsType | undefined;
 }
-
-// --- Example Usage Component ---
-
-const initialReceiptData: ReceiptData = {
-    receiptNo: '124',
-    date: '2025-10-08',
-    receivedFrom: 'Lubin Chofflet',
-    paymentFor: 'AT Motorbike Rental (1 Month)',
-    amount: 95.0,
-    currency: 'USD',
-    receiverInitials: 'VC',
-    companyName: 'EMC Scooter Rental Services',
-    companyAddress: '123 Main St, Central City',
-    phoneNumber: '(555) 123-4567',
-};
 
 export default function RentalContractPreview({ rental }: PageProps) {
     // FIX: Add early return check if rental object is missing or null

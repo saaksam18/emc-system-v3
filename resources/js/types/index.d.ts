@@ -387,7 +387,7 @@ export interface BalanceSheetProps {
 }
 
 // Templates
-interface RentalCustomTexts {
+export interface RentalCustomTexts {
     compensation_policy_text: string;
     return_policy_text: string;
     repair_policy_text: string;
@@ -395,4 +395,13 @@ interface RentalCustomTexts {
     refund_policy_text: string;
     overdue_penalties_text: string;
     effect_contract_text: string;
+}
+
+export interface DateFormFieldProps {
+    label: string;
+    htmlFor: string;
+    error?: string;
+    value: string; // The formatted date string from the form data
+    onChange: (date: Date | undefined) => void; // Handler to update form data
+    required?: boolean;
 }

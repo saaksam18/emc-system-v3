@@ -5,7 +5,11 @@ import { useReactToPrint } from 'react-to-print';
 import Logo from '../../assets/logo.png';
 import { Button } from '../ui/button';
 
-function RentalInvoice({ rental }: RentalsType) {
+interface PageProps {
+    rental: RentalsType | undefined;
+}
+
+function RentalInvoice({ rental }: PageProps) {
     // Convert date to a more thermal-friendly format (DD/MM/YY)
     const receiptDate = new Date(rental?.start_date)
         .toLocaleDateString('en-GB', {
@@ -15,7 +19,6 @@ function RentalInvoice({ rental }: RentalsType) {
         })
         .toUpperCase()
         .replace(/ /g, '/');
-    console.log(rental);
 
     const contentRef = useRef<HTMLDivElement>(null);
     const reactToPrintFn = useReactToPrint({ contentRef });
@@ -84,7 +87,7 @@ function RentalInvoice({ rental }: RentalsType) {
                                     </span>
                                 )}
 
-                                <span className="w-1/3 text-right">{rental?.total_cost}</span>
+                                <span className="w-1/3 text-right">${rental?.total_cost}</span>
                             </div>
                         </div>
                     </section>
@@ -93,7 +96,7 @@ function RentalInvoice({ rental }: RentalsType) {
                     <section className="mb-4">
                         <div className="flex justify-between border-b-2 border-gray-600 pb-2 text-base font-extrabold">
                             <span>TOTAL AMOUNT PAID</span>
-                            <span className="text-green-700">{rental?.total_cost}</span>
+                            <span className="text-green-700">${rental?.total_cost}</span>
                         </div>
                         <div className="mt-2 text-xs">
                             <span className="font-semibold">Payment Method:</span> CASH

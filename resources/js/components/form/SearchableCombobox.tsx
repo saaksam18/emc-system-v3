@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown, User2 } from 'lucide-react';
 import React from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 interface ComboboxOption {
     value: string;
@@ -40,8 +40,8 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
     const selectedOption = options.find((option) => option.value === value);
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
                 <Button
                     variant="outline"
                     role="combobox"
@@ -52,8 +52,8 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
                     {selectedOption ? selectedOption.label : placeholder}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[80vh] w-[--radix-Dialog-trigger-width] overflow-y-auto p-0">
+            </PopoverTrigger>
+            <PopoverContent className="max-h-[80vh] w-[--radix-Dialog-trigger-width] overflow-y-auto p-0">
                 <Command>
                     <CommandInput placeholder={searchPlaceholder} />
                     <CommandList>
@@ -89,7 +89,7 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
                         <User2 className="mr-1 h-4 w-4" /> Create Customer
                     </Button>
                 )}
-            </DialogContent>
-        </Dialog>
+            </PopoverContent>
+        </Popover>
     );
 };

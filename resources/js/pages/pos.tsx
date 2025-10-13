@@ -16,7 +16,18 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem, ContactTypes, Customers, Deposits, RentalsType, SharedData, User, Vehicle, VehicleStatusType } from '@/types';
+import {
+    BreadcrumbItem,
+    ChartOfAccountTypes,
+    ContactTypes,
+    Customers,
+    Deposits,
+    RentalsType,
+    SharedData,
+    User,
+    Vehicle,
+    VehicleStatusType,
+} from '@/types';
 import { Deferred, Head, router, usePage } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -68,6 +79,7 @@ interface PageProps {
     depositTypes: Deposits[] | null;
     customers: Customers[] | null;
     users: User[] | null;
+    chartOfAccounts: ChartOfAccountTypes[];
     contactTypes: ContactTypes[];
     rentals: RentalsType[] | null;
     auth: { user: User };
@@ -79,7 +91,17 @@ interface PageProps {
     [key: string]: unknown;
 }
 
-export default function Welcome({ vehicles, availableVehicles, customers, users, vehicleStatuses, depositTypes, contactTypes, rentals }: PageProps) {
+export default function Welcome({
+    vehicles,
+    availableVehicles,
+    customers,
+    users,
+    chartOfAccounts,
+    vehicleStatuses,
+    depositTypes,
+    contactTypes,
+    rentals,
+}: PageProps) {
     const { auth } = usePage<SharedData>().props;
     const { props: pageProps } = usePage<PageProps>();
     const user = auth.user.name;
@@ -243,7 +265,7 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
                                                             <img
                                                                 src={vehicle.photo_path || 'https://via.placeholder.com/400x300.png?text=No+Image'}
                                                                 alt={vehicle.model}
-                                                                className="h-36 w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                                                className="min-h-36 w-full object-cover transition-transform duration-300 group-hover:scale-110"
                                                             />
                                                         </div>
                                                         <h6 className="truncate font-semibold">
@@ -345,7 +367,7 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
                         <SheetTitle>Create New Rental</SheetTitle>
                         <SheetDescription>Enter the details for the new rental.</SheetDescription>
                     </SheetHeader>
-                    <div className="h-[calc(100vh-100px)] overflow-y-auto">
+                    <div>
                         <CreateRentalSheet
                             key={selectedVehicle?.id}
                             customers={customers}
@@ -353,6 +375,7 @@ export default function Welcome({ vehicles, availableVehicles, customers, users,
                             vehicleStatuses={vehicleStatuses || []}
                             depositTypes={depositTypes}
                             users={users}
+                            chartOfAccounts={chartOfAccounts}
                             onSubmitSuccess={handleRentalCreated}
                             onCreateClick={() => setIsCreateCustomerSheetOpen(true)}
                             initialVehicleNo={selectedVehicle?.vehicle_no}

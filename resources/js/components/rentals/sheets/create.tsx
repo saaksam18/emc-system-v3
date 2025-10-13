@@ -609,18 +609,6 @@ export function Create({
                             </PopoverContent>
                         </Popover>
                         {validCustomers.length === 0 && !processing && <p className="text-muted-foreground mt-1 text-sm">No customers available.</p>}
-                        {/* <Button
-                            variant="ghost"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setOpen(false);
-                                onCreateClick();
-                            }}
-                            className="m-1 flex w-full shrink-0 items-center justify-center gap-2 text-sm sm:w-auto"
-                        >
-                            <User2 className="mr-1 h-4 w-4" /> Add Customer
-                        </Button> */}
                     </FormField>
 
                     {/* Vehicle Combobox */}
