@@ -140,7 +140,7 @@ export function Create({ contactTypes, onSubmitSuccess }: CreateProps) {
     const [dobYear, setDobYear] = useState<string>('');
     const [daysInMonth, setDaysInMonth] = useState<number>(31);
 
-    const contactTypeOptions = contactTypes;
+    const contactTypeOptions = contactTypes || [];
 
     // --- Other existing state ---
     const [nationalityPopoverOpen, setNationalityPopoverOpen] = useState(false);
@@ -332,7 +332,7 @@ export function Create({ contactTypes, onSubmitSuccess }: CreateProps) {
         <div className="px-4">
             <form onSubmit={handleSubmit} className="space-y-4">
                 {/* --- Basic Information --- */}
-                <FormSection title="Create New Customer" description="Enter the basic information for the new customer.">
+                <FormSection title="Basic Information" description="Enter the basic information for the new customer.">
                     {/* Fields: First Name, Last Name, DoB, Gender, Nationality */}
                     <FormField label="First Name" htmlFor="first_name" error={formErrors.first_name} required>
                         <Input

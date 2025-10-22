@@ -136,7 +136,7 @@ export function Show({ selectedCustomer }: Props) {
                                 {selectedCustomer.activeDeposits.map((deposit: Deposits) => (
                                     // Use contact.id as the key
                                     <li key={deposit.id}>
-                                        Type: {deposit.type}: Registered: {deposit.registered_number}: Expiry Date: {deposit.expiry_date}
+                                        Type: {deposit.type}: Registered: {deposit.visa_type}: Expiry Date: {deposit.expiry_date}
                                         {/* Optionally add more details like description */}
                                         {deposit.description && ` (${deposit.description})`}
                                     </li>

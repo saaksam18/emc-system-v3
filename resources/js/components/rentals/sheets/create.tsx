@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 // Assuming VehicleStatusType has { id: string | number; status_name: string; ... }
-// Assuming Deposits includes optional registered_number and expiry_date
+// Assuming Deposits includes optional visa_type and expiry_date
 import { Customers, Deposits, User, Vehicle, VehicleStatusType } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import { differenceInDays, format, isValid, parse } from 'date-fns'; // Import differenceInDays, format, isValid, parse
@@ -101,7 +101,7 @@ const parseDateString = (dateStr: string | null | undefined): Date | undefined =
 interface EnhancedDeposit extends Omit<Deposits, 'id'> {
     id?: string | number;
     is_primary?: boolean;
-    registered_number?: string | null;
+    visa_type?: string | null;
     expiry_date?: string | null; // Stays as string 'YYYY-MM-DD' or null/empty
 }
 
@@ -139,7 +139,7 @@ const initialFormValues: InitialFormValues = {
             id: 'primary_0',
             deposit_type: '',
             deposit_value: '',
-            registered_number: '',
+            visa_type: '',
             expiry_date: '', // Initialize expiry_date as empty string
             description: '',
             is_primary: true,
@@ -334,7 +334,7 @@ export function Create({
             id: `new_${Date.now()}`,
             deposit_type: '',
             deposit_value: '',
-            registered_number: '',
+            visa_type: '',
             expiry_date: '', // Stays empty
             description: '',
             is_primary: false,
@@ -441,10 +441,10 @@ export function Create({
                 validationErrors[`activeDeposits.${index}.expiry_date`] = `Deposit ${index + 1} expiry date is invalid.`;
                 hasValidationError = true;
             }
-            // Add validation for other fields like registered_number here if needed
+            // Add validation for other fields like visa_type here if needed
             // Example:
-            // if (deposit.deposit_type === 'SomeTypeRequiringRegNum' && !deposit.registered_number) {
-            //     validationErrors[`activeDeposits.${index}.registered_number`] = `Registered number required for this deposit type.`;
+            // if (deposit.deposit_type === 'SomeTypeRequiringRegNum' && !deposit.visa_type) {
+            //     validationErrors[`activeDeposits.${index}.visa_type`] = `Registered number required for this deposit type.`;
             //     hasValidationError = true;
             // }
         });
@@ -487,7 +487,7 @@ export function Create({
                                 if (part === 'total_cost') return 'Rental Cost';
                                 if (part === 'deposit_type') return 'Type';
                                 if (part === 'deposit_value') return 'Value';
-                                if (part === 'registered_number') return 'Registered Number';
+                                if (part === 'visa_type') return 'Registered Number';
                                 if (part === 'expiry_date') return 'Expiry Date';
                                 if (part === 'period') return 'Period';
                                 return part.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
@@ -507,7 +507,7 @@ export function Create({
 
     // Memoize primary deposit details (unchanged)
     const primaryDeposit = useMemo(
-        () => data.activeDeposits[0] || { deposit_type: '', deposit_value: '', is_primary: true, registered_number: '', expiry_date: '' },
+        () => data.activeDeposits[0] || { deposit_type: '', deposit_value: '', is_primary: true, visa_type: '', expiry_date: '' },
         [data.activeDeposits],
     );
     const primaryDepositTypeError = formErrors['activeDeposits.0.deposit_type'];
@@ -784,12 +784,12 @@ export function Create({
                             />
                         </FormField>
                         {/* Registered Number */}
-                        <FormField label="Registered Number" htmlFor="primary_deposit_registered_number_0">
+                        <FormField label="Registered Number" htmlFor="primary_deposit_visa_type_0">
                             <Input
-                                id="primary_deposit_registered_number_0"
-                                name="activeDeposits.0.registered_number"
-                                value={primaryDeposit.registered_number || ''}
-                                onChange={(e) => handleActiveDepositChange(0, 'registered_number', e.target.value)}
+                                id="primary_deposit_visa_type_0"
+                                name="activeDeposits.0.visa_type"
+                                value={primaryDeposit.visa_type || ''}
+                                onChange={(e) => handleActiveDepositChange(0, 'visa_type', e.target.value)}
                                 placeholder="Registered Number (Optional)"
                             />
                         </FormField>
@@ -853,7 +853,7 @@ export function Create({
                                 const actualIndex = index + 1; // Index in the full activeDeposits array
                                 const typeErrorKey = `activeDeposits.${actualIndex}.deposit_type` as keyof FormErrors;
                                 const valueErrorKey = `activeDeposits.${actualIndex}.deposit_value` as keyof FormErrors;
-                                const regNumErrorKey = `activeDeposits.${actualIndex}.registered_number` as keyof FormErrors;
+                                const regNumErrorKey = `activeDeposits.${actualIndex}.visa_type` as keyof FormErrors;
                                 const expiryErrorKey = `activeDeposits.${actualIndex}.expiry_date` as keyof FormErrors; // Error key for the whole date field
                                 const descErrorKey = `activeDeposits.${actualIndex}.description` as keyof FormErrors;
 
@@ -916,14 +916,14 @@ export function Create({
 
                                             {/* Registered Number Input */}
                                             <div className="w-full">
-                                                <Label htmlFor={`deposit_registered_number_${actualIndex}`} className="sr-only">
+                                                <Label htmlFor={`deposit_visa_type_${actualIndex}`} className="sr-only">
                                                     Registered Number
                                                 </Label>
                                                 <Input
-                                                    id={`deposit_registered_number_${actualIndex}`}
-                                                    name={`activeDeposits.${actualIndex}.registered_number`}
-                                                    value={deposit.registered_number || ''}
-                                                    onChange={(e) => handleActiveDepositChange(actualIndex, 'registered_number', e.target.value)}
+                                                    id={`deposit_visa_type_${actualIndex}`}
+                                                    name={`activeDeposits.${actualIndex}.visa_type`}
+                                                    value={deposit.visa_type || ''}
+                                                    onChange={(e) => handleActiveDepositChange(actualIndex, 'visa_type', e.target.value)}
                                                     placeholder="Registered Number (Optional)"
                                                     className={cn('h-9 w-full', formErrors[regNumErrorKey] && 'border-red-500')}
                                                 />

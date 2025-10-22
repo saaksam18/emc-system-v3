@@ -45,6 +45,7 @@ return new class extends Migration
             $table->string('status');
 
             // Additional Information
+            $table->text('helmet_amount')->nullable();
             $table->text('notes')->nullable(); // Optional notes about the rental (e.g., special conditions, damage report ID).
             $table->foreignId('incharger_id')
                   ->nullable()

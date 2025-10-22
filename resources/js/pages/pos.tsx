@@ -1,7 +1,5 @@
-import { Create as CreateCustomerSheet } from '@/components/customers/sheets/create';
 import ChangeDeposit, { ChangeDeposit as ChangeDepositSheet } from '@/components/rentals/sheets/change-deposit';
 import { ChangeVehicle } from '@/components/rentals/sheets/change-vehicle';
-import { Create as CreateRentalSheet } from '@/components/rentals/sheets/create';
 import { ExtendContract } from '@/components/rentals/sheets/extend-contract';
 import { Pickup } from '@/components/rentals/sheets/pick-up';
 import { Return } from '@/components/rentals/sheets/return';
@@ -10,7 +8,6 @@ import { TemporaryReturn } from '@/components/rentals/sheets/temporary-return';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -30,8 +27,7 @@ import {
 } from '@/types';
 import { Deferred, Head, router, usePage } from '@inertiajs/react';
 import { Search } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
-import CustomizeNewRentalMaster from './templates/contracts/customize-new-rental-master';
+import { useCallback, useState } from 'react';
 
 // --- Skeleton Component Definition ---
 // This is a reusable component for a single vehicle card skeleton
@@ -91,36 +87,15 @@ interface PageProps {
     [key: string]: unknown;
 }
 
-export default function Welcome({
-    vehicles,
-    availableVehicles,
-    customers,
-    users,
-    chartOfAccounts,
-    vehicleStatuses,
-    depositTypes,
-    contactTypes,
-    rentals,
-}: PageProps) {
+export default function Welcome({ vehicles, availableVehicles, users, vehicleStatuses, depositTypes, rentals }: PageProps) {
     const { auth } = usePage<SharedData>().props;
     const { props: pageProps } = usePage<PageProps>();
     const user = auth.user.name;
-    const [items, setItems] = useState<OrderItem[]>([]);
     const [filter, setFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRental, setSelectedRental] = useState<RentalsType | null>(null);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-    const [isCreateRentalSheetOpen, setIsCreateRentalSheetOpen] = useState(false);
-    const [isCreateCustomerSheetOpen, setIsCreateCustomerSheetOpen] = useState(false);
     const [isChangeDepositSheetOpen, setIsChangeDepositSheetOpen] = useState(false);
-    const [isCustomizeNewRentalMasterOpen, setIsCustomizeNewRentalMasterOpen] = useState(false);
-    const [transactionType, setTransactionType] = useState<string | null>(null);
-    const [rentalPeriod, setRentalPeriod] = useState<string | null>(null);
-    const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
-    const [notes, setNotes] = useState('');
-    console.log('selectedVehicle', selectedVehicle);
-    console.log('rentals', rentals);
-    console.log('selectedRental', selectedRental);
 
     const handleExtend = useCallback((rentalToEdit: RentalsType) => {
         setSheetMode('extend');
@@ -135,71 +110,15 @@ export default function Welcome({
     >('create');
     const [edit, setEdit] = useState<RentalsType | null>(null); // For editing
 
-    const handleRentalCreated = () => {
-        setIsCreateRentalSheetOpen(false);
-    };
-
-    const handleCustomerCreated = () => {
-        setIsCreateCustomerSheetOpen(false);
-    };
-
     const handleFormSubmitSuccess = () => {
         setIsSheetOpen(false);
         // Reload only the customers data after submit
         router.reload({ only: ['customers'] });
     };
 
-    const [subTotal, setSubTotal] = useState(0);
-    const [, setTax] = useState(0);
-    const taxRate = 0.1;
-
-    useEffect(() => {
-        const newSubTotal = items.reduce((acc, item) => acc + item.cost * item.quantity, 0);
-        setSubTotal(newSubTotal);
-    }, [items]);
-
-    useEffect(() => {
-        setTax(subTotal * taxRate);
-    }, [subTotal]);
-
     const filteredVehicles = (vehicles || [])
         .filter((v) => filter === 'All' || v.current_status_name === filter)
         .filter((v) => (v.model || '').toLowerCase().includes(searchTerm.toLowerCase()));
-
-    const dummyContractData = {
-        customerName: 'John Doe',
-        sex: 'male' as const,
-        nationality: 'American',
-        phoneNumber: '123-456-7890',
-        occupation: 'Software Engineer',
-        address: '123 Main St, Anytown, USA',
-        rentalDate: '2025-10-03',
-        returnDate: '2025-10-10',
-        rentalPeriodType: 'days' as const,
-        rentalPeriodValue: 7,
-        helmetRental: 'Yes' as const,
-        howToKnow: {
-            facebook: true,
-            webPage: false,
-            wordOfMouth: '',
-            flyer: '',
-            shopSignboard: false,
-            magazine: '',
-            other: '',
-        },
-        motorId: 'M-123',
-        plateNo: 'ABC-123',
-        motorType: 'Honda Dream',
-        transmission: 'AT' as const,
-        rentalFeePerPeriod: 50,
-        totalRentalFee: 350,
-        depositAmount: 100,
-        depositMethod: 'Passport' as const,
-        otherDepositDetails: '',
-        compensationFee: 500,
-        renterSignature: 'John Doe',
-        staffSignature: 'Jane Smith',
-    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -215,20 +134,6 @@ export default function Welcome({
                                         <CardTitle>POS - Sales Management</CardTitle>
                                         <CardDescription>Welcome, {user} | August 25, 2025</CardDescription>
                                     </div>
-                                    <Dialog open={isCustomizeNewRentalMasterOpen} onOpenChange={setIsCustomizeNewRentalMasterOpen}>
-                                        <DialogTrigger asChild>
-                                            <Button variant="outline">Print Rental Contract</Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Rental Contract</DialogTitle>
-                                                <DialogDescription>Modify the fields for the new rental master contract.</DialogDescription>
-                                            </DialogHeader>
-                                            <div className="max-h-[70vh] overflow-y-auto">
-                                                <CustomizeNewRentalMaster data={dummyContractData} />
-                                            </div>
-                                        </DialogContent>
-                                    </Dialog>
                                 </div>
                             </CardHeader>
                             <CardContent className="flex min-h-0 flex-1 flex-col">
@@ -285,10 +190,7 @@ export default function Welcome({
                                                                 className="mt-2 w-full"
                                                                 size="sm"
                                                                 onClick={() => {
-                                                                    // 1. Set the selected vehicle state
-                                                                    setSelectedVehicle(vehicle);
-                                                                    // 2. Open the rental creation sheet
-                                                                    setIsCreateRentalSheetOpen(true);
+                                                                    router.visit(`/rentals/new-transaction/${vehicle.id}`);
                                                                 }}
                                                             >
                                                                 Choose
@@ -361,44 +263,6 @@ export default function Welcome({
                     </div>
                 </div>
             </div>
-            <Sheet open={isCreateRentalSheetOpen} onOpenChange={setIsCreateRentalSheetOpen}>
-                <SheetContent className="overflow-y-auto sm:max-w-lg">
-                    <SheetHeader>
-                        <SheetTitle>Create New Rental</SheetTitle>
-                        <SheetDescription>Enter the details for the new rental.</SheetDescription>
-                    </SheetHeader>
-                    <div>
-                        <CreateRentalSheet
-                            key={selectedVehicle?.id}
-                            customers={customers}
-                            availableVehicles={availableVehicles}
-                            vehicleStatuses={vehicleStatuses || []}
-                            depositTypes={depositTypes}
-                            users={users}
-                            chartOfAccounts={chartOfAccounts}
-                            onSubmitSuccess={handleRentalCreated}
-                            onCreateClick={() => setIsCreateCustomerSheetOpen(true)}
-                            initialVehicleNo={selectedVehicle?.vehicle_no}
-                            initialTransactionType={transactionType}
-                            initialRentalPeriod={rentalPeriod}
-                            initialCustomerId={selectedCustomerId}
-                            initialNotes={notes}
-                        />
-                    </div>
-                </SheetContent>
-            </Sheet>
-
-            <Sheet open={isCreateCustomerSheetOpen} onOpenChange={setIsCreateCustomerSheetOpen}>
-                <SheetContent className="overflow-y-auto sm:max-w-lg">
-                    <SheetHeader>
-                        <SheetTitle>Create New Customer</SheetTitle>
-                        <SheetDescription>Enter the details for the new customer.</SheetDescription>
-                    </SheetHeader>
-                    <div className="h-[calc(100vh-100px)] overflow-y-auto">
-                        <CreateCustomerSheet contactTypes={contactTypes || []} onSubmitSuccess={handleCustomerCreated} />
-                    </div>
-                </SheetContent>
-            </Sheet>
 
             <Sheet open={isChangeDepositSheetOpen} onOpenChange={setIsChangeDepositSheetOpen}>
                 <SheetContent className="overflow-y-auto sm:max-w-lg">

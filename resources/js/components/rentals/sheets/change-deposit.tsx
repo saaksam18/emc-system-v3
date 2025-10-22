@@ -93,7 +93,7 @@ interface EnhancedDeposit extends Omit<Deposits, 'id' | 'deposit_type_id'> {
     deposit_type: string; // Name of the deposit type
     deposit_value: string; // Value of the deposit
     is_primary?: boolean;
-    registered_number?: string | null;
+    visa_type?: string | null;
     expiry_date?: string | null; // Stays as string 'YYYY-MM-DD' or null/empty
     description?: string | null;
 }
@@ -153,7 +153,7 @@ export function ChangeDeposit({ selectedRow, depositTypes, users, onDepositUpdat
                 id: `new_${Date.now()}`,
                 deposit_type: '', // Default to first type or empty
                 deposit_value: '',
-                registered_number: '',
+                visa_type: '',
                 expiry_date: '',
                 description: '',
                 is_primary: true,
@@ -229,7 +229,7 @@ export function ChangeDeposit({ selectedRow, depositTypes, users, onDepositUpdat
             id: `new_${Date.now()}`, // Temporary unique ID for React key
             deposit_type: depositTypeOptions.length > 0 ? depositTypeOptions[0].name : '',
             deposit_value: '',
-            registered_number: '',
+            visa_type: '',
             expiry_date: '',
             description: '',
             is_primary: false, // New contacts are not primary by default
@@ -380,7 +380,7 @@ export function ChangeDeposit({ selectedRow, depositTypes, users, onDepositUpdat
                 deposit_type: '',
                 deposit_value: '',
                 is_primary: true,
-                registered_number: '',
+                visa_type: '',
                 expiry_date: '',
                 description: '',
             },
@@ -433,7 +433,7 @@ export function ChangeDeposit({ selectedRow, depositTypes, users, onDepositUpdat
                         const typeError = formErrors[`activeDeposits.${index}.deposit_type`];
                         const valueError = formErrors[`activeDeposits.${index}.deposit_value`];
                         const expiryError = formErrors[`activeDeposits.${index}.expiry_date`];
-                        const regNumError = formErrors[`activeDeposits.${index}.registered_number`];
+                        const regNumError = formErrors[`activeDeposits.${index}.visa_type`];
                         const descError = formErrors[`activeDeposits.${index}.description`];
 
                         return (
@@ -510,11 +510,11 @@ export function ChangeDeposit({ selectedRow, depositTypes, users, onDepositUpdat
                                             required
                                         />
                                     </FormField>
-                                    <FormField label="Registered Number" htmlFor={`deposit_registered_number_${index}`} error={regNumError}>
+                                    <FormField label="Registered Number" htmlFor={`deposit_visa_type_${index}`} error={regNumError}>
                                         <Input
-                                            id={`deposit_registered_number_${index}`}
-                                            value={deposit.registered_number || ''}
-                                            onChange={(e) => handleActiveDepositChange(index, 'registered_number', e.target.value)}
+                                            id={`deposit_visa_type_${index}`}
+                                            value={deposit.visa_type || ''}
+                                            onChange={(e) => handleActiveDepositChange(index, 'visa_type', e.target.value)}
                                             placeholder="e.g., Cheque No, ID Card No (Optional)"
                                             className={cn(regNumError && 'border-red-500')}
                                         />

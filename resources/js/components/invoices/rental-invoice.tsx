@@ -1,15 +1,13 @@
 import { RentalsType } from '@/types';
-import { Printer } from 'lucide-react';
-import { useRef } from 'react';
-import { useReactToPrint } from 'react-to-print';
+import { Ref } from 'react';
 import Logo from '../../assets/logo.png';
-import { Button } from '../ui/button';
 
 interface PageProps {
     rental: RentalsType | undefined;
+    contentRef: Ref<HTMLDivElement> | undefined;
 }
 
-function RentalInvoice({ rental }: PageProps) {
+function RentalInvoice({ rental, contentRef }: PageProps) {
     // Convert date to a more thermal-friendly format (DD/MM/YY)
     const receiptDate = new Date(rental?.start_date)
         .toLocaleDateString('en-GB', {
@@ -19,16 +17,14 @@ function RentalInvoice({ rental }: PageProps) {
         })
         .toUpperCase()
         .replace(/ /g, '/');
+    const sale = rental?.sale;
+    const rentalAmount = parseFloat(sale?.rental?.amount || '0');
+    const helmetAmount = parseFloat(sale?.helmet?.amount || '0');
+    const depositAmount = parseFloat(sale?.deposit?.amount || '0');
+    const totalPaid = rentalAmount + helmetAmount + depositAmount;
 
-    const contentRef = useRef<HTMLDivElement>(null);
-    const reactToPrintFn = useReactToPrint({ contentRef });
     return (
         <div>
-            <div className="flex justify-end">
-                <Button variant="default" type="button" onClick={reactToPrintFn}>
-                    <Printer /> Print
-                </Button>
-            </div>
             <div className="font-inter flex min-h-screen justify-center p-4">
                 <div
                     className="rounded-xl border-2 border-dashed border-gray-300 bg-white p-4 shadow-xl"
@@ -65,7 +61,7 @@ function RentalInvoice({ rental }: PageProps) {
                         </div>
                         <div className="border-t border-dashed border-gray-300 pt-2">
                             <span className="block font-semibold">Received From:</span>
-                            <p className="text-sm font-bold uppercase">{rental?.full_name}</p>
+                            <p className="text-sm font-bold uppercase">{rental?.customer?.full_name}</p>
                         </div>
                     </section>
 
@@ -76,19 +72,27 @@ function RentalInvoice({ rental }: PageProps) {
                                 <span>DESCRIPTION</span>
                                 <span className="text-right">AMOUNT</span>
                             </div>
+                            {/* Rental Item */}
                             <div className="flex justify-between">
-                                {rental?.status_name === 'New Rental' ? (
-                                    <span className="w-2/3">
-                                        {rental?.class} {rental?.status_name} {rental?.period} Days
-                                    </span>
-                                ) : (
-                                    <span className="w-2/3">
-                                        {rental?.class} {rental?.status_name} Rental {rental?.period} Days
-                                    </span>
-                                )}
-
-                                <span className="w-1/3 text-right">${rental?.total_cost}</span>
+                                <span className="w-2/3">
+                                    {rental?.vehicle.model} {rental?.status_name} {rental?.period} Days
+                                </span>
+                                <span className="w-1/3 text-right">${rentalAmount.toFixed(2)}</span>
                             </div>
+                            {/* Helmet Item */}
+                            {helmetAmount > 0 && (
+                                <div className="flex justify-between">
+                                    <span className="w-2/3">Helmet Rental</span>
+                                    <span className="w-1/3 text-right">${helmetAmount.toFixed(2)}</span>
+                                </div>
+                            )}
+                            {/* Deposit Item */}
+                            {depositAmount > 0 && (
+                                <div className="flex justify-between">
+                                    <span className="w-2/3">Customer Deposit</span>
+                                    <span className="w-1/3 text-right">${depositAmount.toFixed(2)}</span>
+                                </div>
+                            )}
                         </div>
                     </section>
 
@@ -96,10 +100,10 @@ function RentalInvoice({ rental }: PageProps) {
                     <section className="mb-4">
                         <div className="flex justify-between border-b-2 border-gray-600 pb-2 text-base font-extrabold">
                             <span>TOTAL AMOUNT PAID</span>
-                            <span className="text-green-700">${rental?.total_cost}</span>
+                            <span className="text-green-700">${totalPaid.toFixed(2)}</span>
                         </div>
                         <div className="mt-2 text-xs">
-                            <span className="font-semibold">Payment Method:</span> CASH
+                            <span className="font-semibold">Payment Method:</span> {sale?.rental?.payment_type.toUpperCase() || 'CASH'}
                         </div>
                     </section>
 

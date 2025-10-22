@@ -125,7 +125,7 @@ class CustomersController extends Controller
                          'rental_id' => $deposit->rental_id ?? "N/A",
                          'type_name' => $deposit->depositType?->name ?? "N/A",
                          'deposit_value' => $deposit->deposit_value ?? "N/A",
-                         'registered_number' => $deposit->registered_number ?? "N/A",
+                         'visa_type' => $deposit->visa_type ?? "N/A",
                          'expiry_date' => $deposit->expiry_date?->toISOString() ?? "N/A",
                          'description' => $deposit->description ?? "N/A",
                          'is_primary' => $deposit->is_primary,
@@ -534,9 +534,7 @@ class CustomersController extends Controller
             Log::info("Committing database transaction for Customer [ID: {$customerId}] update by User [ID: {$userId}].");
             DB::commit();
 
-            // Redirect to index or show page after successful update
-            return redirect()->route('customers.index') // Or customers.show, $customer
-                   ->with('success', "Customer '{$customer->first_name} {$customer->last_name}' updated successfully!");
+            return redirect()->back()->with('success', "Customer '{$customer->first_name} {$customer->last_name}' updated successfully!");
 
         } catch (AuthorizationException $e) {
             DB::rollBack(); // Rollback transaction if started

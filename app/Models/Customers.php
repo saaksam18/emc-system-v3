@@ -43,6 +43,8 @@ class Customers extends Model
         'district',
         'city',
         'user_id',
+        'occupations',
+        'how_know_shop',
         'notes',
     ];
 

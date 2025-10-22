@@ -44,6 +44,7 @@ class Rentals extends Model
         'is_active',
         'incharger_id',
         'status',
+        'helmet_amount',
         'notes',
         'user_id',
         'created_at',

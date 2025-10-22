@@ -27,7 +27,6 @@ class CustomerController extends Controller
             // --- 2. Format the Customer Data (Reuse your logic) ---
             // The formatting logic is identical to what you did for a single customer in index().
             $formattedCustomer = $this->formatCustomerForFrontend($customer);
-
             Log::info("Successfully fetched and formatted details for Customer ID: {$customer->id}.");
             // --- 3. Return as a JSON Response ---
             return response()->json([
@@ -86,7 +85,7 @@ class CustomerController extends Controller
                 'rental_id' => $deposit->rental_id ?? "N/A",
                 'type_name' => $deposit->depositType?->name ?? "N/A",
                 'deposit_value' => $deposit->deposit_value ?? "N/A",
-                'registered_number' => $deposit->registered_number ?? "N/A",
+                'visa_type' => $deposit->visa_type ?? "N/A",
                 'expiry_date' => $deposit->expiry_date?->toISOString() ?? "N/A",
                 'description' => $deposit->description ?? "N/A",
                 'is_primary' => $deposit->is_primary,
@@ -103,6 +102,7 @@ class CustomerController extends Controller
             'first_name' => $customer->first_name ?: 'N/A',
             'last_name' => $customer->last_name ?: 'N/A',
             'primary_contact' => $primaryContactValue,
+            'primary_contact_type' => $primaryContactType,
             'primary_deposit' => $primaryDepositValue,
             'address' => $customer->full_address ?: 'N/A',
             'gender' => $customer->gender ?? 'N/A',
@@ -128,7 +128,6 @@ class CustomerController extends Controller
             'passport_expiry' => $customer->passport_expiry?->toDateString() ?? 'N/A',
             'notes' => $customer->notes  ?? 'N/A',
         ];
-
         // --- END: Replicate your existing formatting logic here ---
     }
 }

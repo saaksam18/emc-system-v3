@@ -31,6 +31,8 @@ return new class extends Migration
             $table->string('city')->nullable();
 
             // Additional Information
+            $table->text('occupations')->nullable();
+            $table->text('how_know_shop')->nullable();
             $table->text('notes')->nullable(); // Any relevant notes about the customer. Optional.
             $table->foreignId('user_id')
                   ->nullable()

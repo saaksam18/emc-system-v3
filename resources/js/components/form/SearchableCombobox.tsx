@@ -11,6 +11,7 @@ interface ComboboxOption {
 }
 
 interface SearchableComboboxProps {
+    id?: string;
     options: ComboboxOption[];
     value: string;
     onChange: (value: string) => void;
@@ -33,6 +34,7 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
     triggerClassName,
     disabled,
     error,
+    id,
     onCreateClick,
 }) => {
     const [open, setOpen] = React.useState(false);
@@ -55,7 +57,7 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
             </PopoverTrigger>
             <PopoverContent className="max-h-[80vh] w-[--radix-Dialog-trigger-width] overflow-y-auto p-0">
                 <Command>
-                    <CommandInput placeholder={searchPlaceholder} />
+                    <CommandInput placeholder={searchPlaceholder} id={id} />
                     <CommandList>
                         <CommandEmpty>{emptyMessage}</CommandEmpty>
                         <CommandGroup>

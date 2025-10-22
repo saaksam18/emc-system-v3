@@ -26,7 +26,7 @@ class Deposits extends Model
             'customer_id', // Important: Ensure foreign key is fillable if creating contacts via mass assignment
             'type_id',
             'deposit_value',
-            'registered_number',
+            'visa_type',
             'expiry_date',
             'is_primary',
             'description',

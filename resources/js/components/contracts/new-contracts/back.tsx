@@ -1,20 +1,11 @@
-import { Button } from '@/components/ui/button';
-import { Printer } from 'lucide-react';
-import { useRef } from 'react';
-import { useReactToPrint } from 'react-to-print';
+import { Ref } from 'react';
 
-function BackNewContract() {
-    const contentRef = useRef<HTMLDivElement>(null);
-    const reactToPrintFn = useReactToPrint({ contentRef });
+interface PageProps {
+    contentRef: Ref<HTMLDivElement> | undefined;
+}
+function BackNewContract({ contentRef }: PageProps) {
     return (
         <div>
-            {/* Added style block for print media queries to ensure a clean printed look */}
-            <div className="flex justify-end">
-                <Button variant="default" type="button" onClick={reactToPrintFn}>
-                    <Printer /> Print
-                </Button>
-            </div>
-
             <div className="min-h-screen p-8">
                 {/* Replaced <Head> with standard document title visualization */}
 

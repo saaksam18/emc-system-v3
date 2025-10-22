@@ -54,9 +54,12 @@ class TransactionController extends Controller
                     'year' => $vehicle->year,
                     'color' => $vehicle->color ?? 'N/A',
                     'current_status_name' => $vehicle->vehicleStatus?->status_name ?? 'N/A',
+                    'vehicle_class' => $vehicle->vehicleClasses?->name ?? 'N/A',
                     'current_status_id' => $vehicle->current_status_id ?? 'N/A',
                     'current_Rentals_id' => $vehicle->current_rental_id,
                     'photo_path' => $vehicle->photo_path ? Storage::url($vehicle->photo_path) : null,
+                    'compensation_price' => $vehicle->compensation_price ?? 'N/A',
+                    'license_plate' => $vehicle->license_plate ?? 'N/A',
                 ];
 
             // Get all customers (minimal data)
@@ -101,7 +104,7 @@ class TransactionController extends Controller
 
             $depositTypes = DepositTypes::select('id', 'name') // Reduced selected columns
                 ->where('is_active', true)
-                ->orderBy('name', 'asc')
+                ->orderBy('id', 'asc')
                 ->get();
 
             // --- Format Data for View ---

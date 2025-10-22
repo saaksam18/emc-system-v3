@@ -183,7 +183,7 @@ export function Show({ selectedCustomer }: Props) {
                                             {/* Registered Number */}
                                             <div className="min-w-[150px] flex-1">
                                                 <Label className="text-muted-foreground text-xs">Registered #</Label>
-                                                <p className="font-medium">{deposit.registered_number || 'N/A'}</p>
+                                                <p className="font-medium">{deposit.visa_type || 'N/A'}</p>
                                             </div>
                                             {/* Expiry Date */}
                                             <div className="min-w-[100px] flex-1">

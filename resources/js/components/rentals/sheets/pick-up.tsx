@@ -95,7 +95,7 @@ interface FormDeposit extends Omit<Deposits, 'id' | 'rental_id' | 'created_at' |
     is_primary?: boolean;
     deposit_type: string;
     deposit_value: string;
-    registered_number?: string | null;
+    visa_type?: string | null;
     expiry_date?: string | null;
     description?: string | null;
 }
@@ -125,7 +125,7 @@ type FormErrors = Partial<
 const createEmptyDeposit = (): FormDeposit => ({
     deposit_type: '',
     deposit_value: '',
-    registered_number: '',
+    visa_type: '',
     expiry_date: '',
     description: '',
     is_primary: true,
@@ -321,7 +321,7 @@ export function Pickup({ selectedRow, vehicleStatuses, depositTypes, users, onSu
             id: `new_${Date.now()}`,
             deposit_type: '',
             deposit_value: '',
-            registered_number: '',
+            visa_type: '',
             expiry_date: '',
             description: '',
             is_primary: false,
@@ -512,7 +512,7 @@ export function Pickup({ selectedRow, vehicleStatuses, depositTypes, users, onSu
                                 if (part === 'total_cost') return 'Rental Cost';
                                 if (part === 'deposit_type') return 'Type';
                                 if (part === 'deposit_value') return 'Value';
-                                if (part === 'registered_number') return 'Registered Number';
+                                if (part === 'visa_type') return 'Registered Number';
                                 if (part === 'expiry_date') return 'Expiry Date';
                                 if (part === 'period') return 'Period';
                                 return part.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
@@ -534,7 +534,7 @@ export function Pickup({ selectedRow, vehicleStatuses, depositTypes, users, onSu
     const primaryDeposit = useMemo(() => data.activeDeposits[0] || createEmptyDeposit(), [data.activeDeposits]);
     const primaryDepositTypeError = formErrors['activeDeposits.0.deposit_type'];
     const primaryDepositValueError = formErrors['activeDeposits.0.deposit_value'];
-    const primaryDepositRegNumError = formErrors['activeDeposits.0.registered_number'];
+    const primaryDepositRegNumError = formErrors['activeDeposits.0.visa_type'];
     const primaryDepositExpiryError = formErrors['activeDeposits.0.expiry_date'];
     const primaryDepositDescError = formErrors['activeDeposits.0.description'];
 
@@ -862,12 +862,12 @@ export function Pickup({ selectedRow, vehicleStatuses, depositTypes, users, onSu
                             />
                         </FormField>
                         {/* Registered Number */}
-                        <FormField label="Registered Number" htmlFor="primary_deposit_registered_number_0" error={primaryDepositRegNumError}>
+                        <FormField label="Registered Number" htmlFor="primary_deposit_visa_type_0" error={primaryDepositRegNumError}>
                             <Input
-                                id="primary_deposit_registered_number_0"
-                                name="activeDeposits.0.registered_number"
-                                value={primaryDeposit.registered_number || ''}
-                                onChange={(e) => handleActiveDepositChange(0, 'registered_number', e.target.value)}
+                                id="primary_deposit_visa_type_0"
+                                name="activeDeposits.0.visa_type"
+                                value={primaryDeposit.visa_type || ''}
+                                onChange={(e) => handleActiveDepositChange(0, 'visa_type', e.target.value)}
                                 className={cn(primaryDepositRegNumError && 'border-red-500')}
                                 placeholder="Registered Number (Optional)"
                             />
@@ -933,7 +933,7 @@ export function Pickup({ selectedRow, vehicleStatuses, depositTypes, users, onSu
                                 const actualIndex = index + 1; // Index in the full activeDeposits array
                                 const typeErrorKey = `activeDeposits.${actualIndex}.deposit_type` as keyof FormErrors;
                                 const valueErrorKey = `activeDeposits.${actualIndex}.deposit_value` as keyof FormErrors;
-                                const regNumErrorKey = `activeDeposits.${actualIndex}.registered_number` as keyof FormErrors;
+                                const regNumErrorKey = `activeDeposits.${actualIndex}.visa_type` as keyof FormErrors;
                                 const expiryErrorKey = `activeDeposits.${actualIndex}.expiry_date` as keyof FormErrors;
                                 const descErrorKey = `activeDeposits.${actualIndex}.description` as keyof FormErrors;
 
@@ -998,14 +998,14 @@ export function Pickup({ selectedRow, vehicleStatuses, depositTypes, users, onSu
 
                                             {/* Registered Number Input */}
                                             <div className="w-full">
-                                                <Label htmlFor={`deposit_registered_number_${actualIndex}`} className="sr-only">
+                                                <Label htmlFor={`deposit_visa_type_${actualIndex}`} className="sr-only">
                                                     Registered Number {actualIndex + 1}
                                                 </Label>
                                                 <Input
-                                                    id={`deposit_registered_number_${actualIndex}`}
-                                                    name={`activeDeposits.${actualIndex}.registered_number`}
-                                                    value={deposit.registered_number || ''}
-                                                    onChange={(e) => handleActiveDepositChange(actualIndex, 'registered_number', e.target.value)}
+                                                    id={`deposit_visa_type_${actualIndex}`}
+                                                    name={`activeDeposits.${actualIndex}.visa_type`}
+                                                    value={deposit.visa_type || ''}
+                                                    onChange={(e) => handleActiveDepositChange(actualIndex, 'visa_type', e.target.value)}
                                                     placeholder="Registered Number (Optional)"
                                                     className={cn('h-9 w-full', formErrors[regNumErrorKey] && 'border-red-500')}
                                                 />

@@ -1,29 +1,97 @@
+import { FormField } from '@/components/form/FormField';
+import { SearchableCombobox } from '@/components/form/SearchableCombobox';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { Customers } from '@/types';
-import { EnhancedDeposit, FormErrors, InitialFormValues, SetDataFunction } from '@/types/transaction-types'; // Adjusted to use the specific imports from your parent component context
-import { AlertCircle, Plus, Trash2 } from 'lucide-react';
-import React from 'react';
-import CustomerDetailsCard from './customer-details-card';
+import { Customers, Vehicle } from '@/types';
+import { EnhancedDeposit, FormErrors, InitialFormValues } from '@/types/transaction-types'; // Adjusted to use the specific imports from your parent component context
+import { InertiaFormProps } from '@inertiajs/react';
+import { AlertCircle, CheckCircle, Plus, Trash2 } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { DepositDatePicker } from './helpers/DepositDatePicker';
+
+const lookupName = (items: { id: number; name: string }[], id: number | string | null | undefined): string => {
+    if (!id || typeof id !== 'number') {
+        return '';
+    }
+    const foundItem = items.find((item) => item.id === id);
+    return foundItem ? foundItem.name : '';
+};
+// --- Reusable Entity Combobox ---
+interface EntityComboboxProps<T extends { id: number; name: string }> {
+    items: T[] | null;
+    value: string;
+    onChange: (value: string, id: number | null) => void;
+    processing: boolean;
+    error?: string;
+    entityName: string;
+    id?: string;
+}
+function EntityCombobox<T extends { id: number; name: string }>({ items, value, onChange, processing, error, entityName }: EntityComboboxProps<T>) {
+    const options = useMemo(
+        () =>
+            Array.isArray(items)
+                ? items
+                      .filter((item): item is T => !!item && !!item.id && typeof item.name === 'string' && item.name !== '')
+                      .map((item) => ({ value: item.name, label: item.name }))
+                : [],
+        [items],
+    );
+
+    const handleSelect = (selectedName: string) => {
+        // Find the corresponding item/ID
+        const selectedItem = items?.find((item) => item.name === selectedName);
+        const selectedId = selectedItem?.id ?? null;
+
+        // Call the new onChange with both name and ID
+        onChange(selectedName, selectedId);
+    };
+
+    return (
+        <>
+            <SearchableCombobox
+                options={options}
+                value={value}
+                onChange={handleSelect}
+                placeholder={`Select ${entityName}...`}
+                searchPlaceholder={`Search ${entityName}...`}
+                emptyMessage={`No ${entityName} found.`}
+                disabled={processing || options.length === 0}
+                error={!!error}
+            />
+            {options.length === 0 && !processing && <p className="text-muted-foreground mt-1 text-sm">No {entityName}s available.</p>}
+        </>
+    );
+}
 
 // --- Component Props Type ---
 interface DepositDetailsProps {
     data: InitialFormValues;
-    setData: SetDataFunction;
     formErrors: FormErrors;
     handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     // Other props from the parent are passed but not strictly needed for this form:
-    selectedCustomerData?: Customers | null;
+    selectedCustomerData: Customers | null;
+    selectedVehicleData: Vehicle | undefined;
+    depositTypes: { id: number; name: string }[];
+    processing: boolean;
+
+    // Handlers
+    setData: InertiaFormProps<InitialFormValues>['setData'];
 }
 
 // --- Deposit Details Component ---
-const DepositDetails: React.FC<DepositDetailsProps> = ({ data, setData, formErrors, selectedCustomerData }) => {
-    // --- 1. Handlers for Deposit Array Manipulation ---
-
+const DepositDetails: React.FC<DepositDetailsProps> = ({
+    data,
+    setData,
+    formErrors,
+    selectedCustomerData,
+    selectedVehicleData,
+    depositTypes,
+    processing,
+}) => {
     /**
      * Adds a new deposit object to the activeDeposits array.
      * It ensures there is always one primary deposit.
@@ -34,8 +102,9 @@ const DepositDetails: React.FC<DepositDetailsProps> = ({ data, setData, formErro
         const newDeposit: EnhancedDeposit = {
             id: newId,
             deposit_type: '',
+            deposit_type_name: '',
             deposit_value: '',
-            registered_number: null,
+            visa_type: null,
             expiry_date: null,
             description: '',
             is_primary: false, // All added deposits are secondary by default
@@ -62,44 +131,68 @@ const DepositDetails: React.FC<DepositDetailsProps> = ({ data, setData, formErro
             data.activeDeposits.filter((_, index) => index !== indexToRemove),
         );
     };
-
-    /**
-     * Handles changes for inputs within the nested activeDeposits array.
-     * @param index - The index of the deposit in the array.
-     * @param field - The field name to update (e.g., 'deposit_value').
-     * @param value - The new value for the field.
-     */
     const handleDepositChange = (index: number, field: keyof EnhancedDeposit, value: string | number | boolean | null) => {
-        // Create a new array to avoid direct state mutation
         const updatedDeposits = data.activeDeposits.map((deposit, i) => {
             if (i === index) {
-                // Return a new object for the specific deposit being updated
                 return { ...deposit, [field]: value };
             }
-            return deposit; // Return other deposits as they are
+            return deposit;
         });
-
-        // Update the form data with the new array
         setData('activeDeposits', updatedDeposits);
     };
 
     // --- 2. Form Rendering ---
 
     return (
-        <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-6">
-                <p className="text-sm text-gray-500">
-                    Configure the deposit(s) required for this rental. The first deposit is marked as **Primary**.
-                </p>
+        <div className="space-y-6">
+            <div className="space-y-8">
+                {data.activeDeposits.map((deposit, index) => {
+                    const isPrimary = index === 0;
 
-                <div className="space-y-8">
-                    {data.activeDeposits.map((deposit, index) => {
-                        const isPrimary = index === 0;
+                    const currentDepositTypeName = lookupName(depositTypes, deposit.deposit_type);
+                    const isPassport = currentDepositTypeName === 'Passport';
 
-                        return (
-                            <Card key={deposit.id} className="relative shadow-lg ring-1 ring-gray-200">
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                                    <CardTitle className="text-xl font-bold">
+                    // Define a specific change handler for this combobox
+                    const handleDepositTypeChange = (name: string, id: number | null) => {
+                        const updatedDeposits = data.activeDeposits.map((d, i) => {
+                            if (i === index) {
+                                const isMoney = name === 'Money';
+                                let newDepositValue = d.deposit_value;
+
+                                if (!isMoney && selectedCustomerData?.nationality) {
+                                    newDepositValue = selectedCustomerData.nationality;
+                                } else if (isMoney) {
+                                    newDepositValue = '';
+                                }
+
+                                const newDeposit = {
+                                    ...d,
+                                    deposit_type: id,
+                                    deposit_type_name: name,
+                                    deposit_value: newDepositValue,
+                                };
+
+                                if (name !== 'Passport') {
+                                    newDeposit.visa_type = null;
+                                    newDeposit.expiry_date = null;
+                                }
+
+                                return newDeposit;
+                            }
+                            return d;
+                        });
+                        setData('activeDeposits', updatedDeposits);
+                    };
+
+                    return (
+                        <Card
+                            key={deposit.id}
+                            className={`${isPrimary ? 'dark:bg-sidebar border-green-200 bg-green-50 dark:border-green-950' : ''} relative space-y-0 shadow-lg ring-1 ring-gray-200`}
+                        >
+                            <CardHeader className="flex flex-col items-center justify-start space-y-0">
+                                <div className="flex w-full justify-between">
+                                    <CardTitle className="flex items-center">
+                                        <CheckCircle className="mr-2 h-5 w-5 text-indigo-500" />
                                         {isPrimary ? 'Primary Deposit' : `Additional Deposit #${index}`}
                                     </CardTitle>
                                     {!isPrimary && (
@@ -114,112 +207,120 @@ const DepositDetails: React.FC<DepositDetailsProps> = ({ data, setData, formErro
                                             <Trash2 className="h-5 w-5" />
                                         </Button>
                                     )}
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                    {/* Error Display for Array Item */}
-                                    {formErrors[`activeDeposits.${index}`] && (
-                                        <div className="flex items-center space-x-2 rounded-md bg-red-50 p-3 text-sm text-red-600">
-                                            <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                                            <span>{formErrors[`activeDeposits.${index}`]}</span>
-                                        </div>
-                                    )}
-
-                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                        {/* Deposit Type */}
-                                        <div className="space-y-2">
-                                            <Label htmlFor={`deposit_type_${deposit.id}`}>Deposit Type</Label>
-                                            <Input
-                                                id={`deposit_type_${deposit.id}`}
-                                                type="text"
-                                                value={deposit.deposit_type || ''}
-                                                onChange={(e) => handleDepositChange(index, 'deposit_type', e.target.value)}
-                                                placeholder="e.g., Security, Bond, Key"
-                                                className={formErrors[`activeDeposits.${index}.deposit_type`] ? 'border-red-500' : ''}
-                                            />
-                                            {formErrors[`activeDeposits.${index}.deposit_type`] && (
-                                                <p className="text-xs text-red-500">{formErrors[`activeDeposits.${index}.deposit_type`]}</p>
-                                            )}
-                                        </div>
-
-                                        {/* Deposit Value */}
-                                        <div className="space-y-2">
-                                            <Label htmlFor={`deposit_value_${deposit.id}`}>Value (Amount)</Label>
-                                            <Input
-                                                id={`deposit_value_${deposit.id}`}
-                                                type="number"
-                                                value={deposit.deposit_value}
-                                                onChange={(e) => handleDepositChange(index, 'deposit_value', e.target.value)}
-                                                placeholder="e.g., 50.00"
-                                                className={formErrors[`activeDeposits.${index}.deposit_value`] ? 'border-red-500' : ''}
-                                            />
-                                            {formErrors[`activeDeposits.${index}.deposit_value`] && (
-                                                <p className="text-xs text-red-500">{formErrors[`activeDeposits.${index}.deposit_value`]}</p>
-                                            )}
-                                        </div>
+                                </div>
+                                <CardDescription className="w-full">
+                                    {isPrimary
+                                        ? 'Define the primary deposit for this transaction.'
+                                        : 'Define the additional deposit for this transaction.'}
+                                </CardDescription>
+                            </CardHeader>
+                            <Separator />
+                            <CardContent className="space-y-6">
+                                {/* Error Display for Array Item */}
+                                {formErrors[`activeDeposits.${index}`] && (
+                                    <div className="flex items-center space-x-2 rounded-md bg-red-50 p-3 text-sm text-red-600">
+                                        <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                                        <span>{formErrors[`activeDeposits.${index}`]}</span>
                                     </div>
+                                )}
 
-                                    <Separator />
+                                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                    {/* Deposit Type */}
+                                    <FormField
+                                        label="Kind of Deposit"
+                                        htmlFor={`deposit_type_${deposit.id}`}
+                                        error={formErrors.deposit_type}
+                                        required
+                                    >
+                                        {/* Customer Combobox */}
+                                        <EntityCombobox
+                                            id={`deposit_type_${deposit.id}`}
+                                            items={depositTypes}
+                                            value={currentDepositTypeName}
+                                            onChange={handleDepositTypeChange}
+                                            processing={processing}
+                                            error={formErrors.deposit_type}
+                                            entityName="kind"
+                                        />
+                                    </FormField>
 
-                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    {/* Deposit Value */}
+                                    <FormField label="Value" htmlFor={`deposit_value_${deposit.id}`} error={formErrors.deposit_type} required>
+                                        <Input
+                                            id={`deposit_value_${deposit.id}`}
+                                            type="text"
+                                            value={deposit.deposit_value}
+                                            onChange={(e) => handleDepositChange(index, 'deposit_value', e.target.value)}
+                                            placeholder="e.g., 50.00"
+                                            className={formErrors[`activeDeposits.${index}.deposit_value`] ? 'border-red-500' : 'bg-white'}
+                                        />
+                                        {formErrors[`activeDeposits.${index}.deposit_value`] && (
+                                            <p className="text-xs text-red-500">{formErrors[`activeDeposits.${index}.deposit_value`]}</p>
+                                        )}
+                                    </FormField>
+                                </div>
+
+                                {isPassport && (
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                                         {/* Registered Number (Optional) */}
                                         <div className="space-y-2">
-                                            <Label htmlFor={`registered_number_${deposit.id}`}>Registered No. (Optional)</Label>
+                                            <Label htmlFor={`visa_type_${deposit.id}`}>Visa Type. (Optional)</Label>
                                             <Input
-                                                id={`registered_number_${deposit.id}`}
+                                                id={`visa_type_${deposit.id}`}
                                                 type="text"
-                                                value={deposit.registered_number || ''}
-                                                onChange={(e) => handleDepositChange(index, 'registered_number', e.target.value)}
-                                                placeholder="e.g., Receipt/Serial Number"
-                                                className={formErrors[`activeDeposits.${index}.registered_number`] ? 'border-red-500' : ''}
+                                                value={deposit.visa_type || ''}
+                                                onChange={(e) => handleDepositChange(index, 'visa_type', e.target.value)}
+                                                placeholder="e.g., EB, EG"
+                                                className={formErrors[`activeDeposits.${index}.visa_type`] ? 'border-red-500' : 'bg-white'}
                                             />
                                         </div>
 
                                         {/* Expiry Date (Optional) */}
-                                        <div className="space-y-2">
-                                            <Label htmlFor={`expiry_date_${deposit.id}`}>Expiry Date (Optional)</Label>
-                                            <Input
+                                        <FormField
+                                            label="Visa Expiry Date (Optional)"
+                                            htmlFor={`expiry_date_${deposit.id}`}
+                                            error={formErrors[`activeDeposits.${index}.expiry_date`]} // Use array-specific error
+                                        >
+                                            <DepositDatePicker
                                                 id={`expiry_date_${deposit.id}`}
-                                                type="date"
-                                                value={deposit.expiry_date || ''}
-                                                onChange={(e) => handleDepositChange(index, 'expiry_date', e.target.value)}
-                                                className={formErrors[`activeDeposits.${index}.expiry_date`] ? 'border-red-500' : ''}
+                                                value={deposit.expiry_date}
+                                                // Pass the handler to update the correct field in the correct deposit object
+                                                onChange={(dateString) => handleDepositChange(index, 'expiry_date', dateString)}
+                                                error={formErrors[`activeDeposits.${index}.expiry_date`]}
                                             />
-                                        </div>
+                                        </FormField>
                                     </div>
+                                )}
 
-                                    {/* Description (Full Width) */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor={`description_${deposit.id}`}>Description (Optional)</Label>
-                                        <Textarea
-                                            id={`description_${deposit.id}`}
-                                            value={deposit.description || ''}
-                                            onChange={(e) => handleDepositChange(index, 'description', e.target.value)}
-                                            placeholder="Detailed reason for this deposit..."
-                                            rows={3}
-                                            className={formErrors[`activeDeposits.${index}.description`] ? 'border-red-500' : ''}
-                                        />
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
+                                {/* Description (Full Width) */}
+                                <div className="space-y-2">
+                                    <Label htmlFor={`description_${deposit.id}`}>Description (Optional)</Label>
+                                    <Textarea
+                                        id={`description_${deposit.id}`}
+                                        value={deposit.description || ''}
+                                        onChange={(e) => handleDepositChange(index, 'description', e.target.value)}
+                                        placeholder="Detailed reason for this deposit..."
+                                        rows={3}
+                                        className={formErrors[`activeDeposits.${index}.description`] ? 'border-red-500' : 'bg-white'}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
+            </div>
+
+            <Button type="button" onClick={addDeposit} className="mt-4" variant="default">
+                <Plus className="mr-2 h-4 w-4" /> Add Additional Deposit
+            </Button>
+
+            {/* Top-level array error */}
+            {formErrors.activeDeposits && (
+                <div className="mt-4 flex items-center space-x-2 rounded-md bg-red-50 p-3 text-sm text-red-600">
+                    <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                    <span>{formErrors.activeDeposits}</span>
                 </div>
-
-                <Button type="button" onClick={addDeposit} className="mt-4" variant="outline">
-                    <Plus className="mr-2 h-4 w-4" /> Add Another Deposit
-                </Button>
-
-                {/* Top-level array error */}
-                {formErrors.activeDeposits && (
-                    <div className="mt-4 flex items-center space-x-2 rounded-md bg-red-50 p-3 text-sm text-red-600">
-                        <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                        <span>{formErrors.activeDeposits}</span>
-                    </div>
-                )}
-            </div>
-            <div>
-                <CustomerDetailsCard selectedCustomerData={selectedCustomerData} />
-            </div>
+            )}
         </div>
     );
 };

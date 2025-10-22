@@ -1,8 +1,5 @@
-import { Button } from '@/components/ui/button';
 import { RentalsType } from '@/types';
-import { Printer } from 'lucide-react';
-import React, { useRef } from 'react';
-import { useReactToPrint } from 'react-to-print';
+import React, { Ref } from 'react';
 
 // Dummy Logo Component (Since I cannot render the original image)
 const EmcLogo: React.FC = () => (
@@ -18,9 +15,10 @@ const EmcLogo: React.FC = () => (
 
 interface PageProps {
     rental: RentalsType | undefined;
+    contentRef: Ref<HTMLDivElement> | undefined;
 }
 
-function FrontNewContract({ rental }: PageProps) {
+function FrontNewContract({ rental, contentRef }: PageProps) {
     const DottedLineInput: React.FC<{ flex?: boolean; widthClass?: string; value?: string }> = ({
         flex = false,
         widthClass = 'flex-1',
@@ -106,17 +104,27 @@ function FrontNewContract({ rental }: PageProps) {
         }
     };
 
-    const contentRef = useRef<HTMLDivElement>(null);
-    const reactToPrintFn = useReactToPrint({ contentRef });
+    const calculateTotalRentalCost = (rentalData: { sale: { helmet: { amount: string }; rental: { amount: string } } }): number => {
+        // Safely access the amount, defaulting to '0' if the property or nested object is undefined.
+        // The nullish coalescing operator (??) is used for robust default assignment.
+        const helmetAmountStr = rentalData.sale.helmet?.amount ?? '0';
+        const rentalAmountStr = rentalData.sale.rental?.amount ?? '0';
+
+        // Convert the string amounts (which are now guaranteed to be either the original string or '0') to numbers.
+        const helmetAmount = parseFloat(helmetAmountStr);
+        const rentalAmount = parseFloat(rentalAmountStr);
+
+        // Basic check for valid conversion, though '0' should always convert correctly.
+        if (isNaN(helmetAmount) || isNaN(rentalAmount)) {
+            console.error('One or both amounts are not valid numbers.');
+            return 0; // Return 0 or throw an error based on your desired error handling
+        }
+
+        return helmetAmount + rentalAmount;
+    };
+    const totalCost = calculateTotalRentalCost(rental);
     return (
         <div>
-            {/* Added style block for print media queries to ensure a clean printed look */}
-            <div className="flex justify-end">
-                <Button variant="default" type="button" onClick={reactToPrintFn}>
-                    <Printer /> Print
-                </Button>
-            </div>
-
             <div className="min-h-screen p-8">
                 {/* Replaced <Head> with standard document title visualization */}
 
@@ -161,40 +169,45 @@ function FrontNewContract({ rental }: PageProps) {
                             <div className="flex flex-wrap items-center space-x-4">
                                 <label className="text-sm whitespace-nowrap">
                                     <span className="w-24 font-semibold">Customer Name: </span>
-                                    {rental?.full_name || 'N/A'}
+                                    {rental?.full_name || rental?.customer?.full_name || 'N/A'}
                                 </label>
 
                                 <div className="ml-4 flex items-center space-x-2 whitespace-nowrap">
                                     <label className="text-sm">
-                                        <span className="w-24 font-semibold">Sex:</span> {rental?.sex || 'N/A'}
+                                        <span className="w-24 font-semibold">Sex:</span> {rental?.sex || rental?.customer?.gender || 'N/A'}
                                     </label>
                                 </div>
                                 <label className="text-sm whitespace-nowrap">
-                                    <span className="w-24 font-semibold">Nationality:</span> {rental?.nationality || 'N/A'}
+                                    <span className="w-24 font-semibold">Nationality:</span>{' '}
+                                    {rental?.nationality || rental?.customer?.nationality || 'N/A'}
                                 </label>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                                 <label className="text-sm font-semibold whitespace-nowrap">
-                                    {rental?.primary_contact_type ? <>{rental?.primary_contact_type}</> : 'Contact'}:
+                                    {rental?.primary_contact_type && <>{rental?.primary_contact_type}</>}
+                                    {rental?.customer?.primary_contact_type && <>{rental?.customer?.primary_contact_type}</>}
+                                    {!rental?.primary_contact_type && !rental?.customer?.primary_contact_type && <>Contact</>}
                                 </label>
-                                {rental?.primary_contact ? (
-                                    // Call the new formatting function
+                                {rental?.primary_contact &&
                                     (() => {
                                         const formatted = formatPhoneNumber(rental.primary_contact);
                                         return (
                                             <div className="flex flex-col space-y-1">
-                                                {/* Display the Local, spaced format */}
                                                 <span className="text-sm">{formatted.local || rental.primary_contact}</span>
-
-                                                {/* Display the International/WhatsApp/Telegram format */}
-                                                {/* {formatted.international && (
-                                                    <span className="text-xs text-gray-700 italic">WhatsApp/Telegram: {formatted.international}</span>
-                                                )} */}
                                             </div>
                                         );
-                                    })()
-                                ) : (
+                                    })()}
+                                {rental?.customer?.primary_contact &&
+                                    (() => {
+                                        const formatted = formatPhoneNumber(rental.customer.primary_contact);
+                                        return (
+                                            <div className="flex flex-col space-y-1">
+                                                <span className="text-sm">{formatted.local || rental.customer.primary_contact}</span>
+                                            </div>
+                                        );
+                                    })()}
+                                {!rental?.primary_contact && !rental?.customer?.primary_contact && (
                                     <DottedLineInput widthClass="flex-1 min-w-[200px]" />
                                 )}
 
@@ -204,18 +217,16 @@ function FrontNewContract({ rental }: PageProps) {
 
                             <div className="flex items-center">
                                 <label className="text-sm font-semibold whitespace-nowrap">Present Address in Cambodia:</label>
-                                {rental?.address ? (
-                                    <span className="ml-1">{rental?.address}</span>
-                                ) : (
-                                    <DottedLineInput widthClass="flex-1 min-w-[200px]" />
-                                )}
+                                {rental?.address && <span className="ml-1">{rental?.address}</span>}
+                                {rental?.customer?.address && <span className="ml-1">{rental?.customer?.address}</span>}
+                                {!rental?.address && !rental?.customer?.address && <DottedLineInput widthClass="flex-1 min-w-[200px]" />}
                             </div>
 
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                                 <div className="flex items-center">
                                     <label className="text-sm font-semibold whitespace-nowrap">Rental Date:</label>
-                                    {rental?.start_date ? (
-                                        <span className="ml-1">{formatDate(rental?.start_date)}</span>
+                                    {rental?.actual_start_date ? (
+                                        <span className="ml-1">{formatDate(rental?.actual_start_date)}</span>
                                     ) : (
                                         <DottedLineInput widthClass="flex-1 min-w-[200px]" />
                                     )}
@@ -242,14 +253,16 @@ function FrontNewContract({ rental }: PageProps) {
 
                             <div className="flex items-center space-x-4">
                                 <label className="text-sm font-semibold whitespace-nowrap">Helmet Rental:</label>
-                                {rental?.helmet ? <span className="ml-1">{rental?.helmet}</span> : <DottedLineInput widthClass="w-[80px]" />}
+                                {rental?.helmet_amount === 1 && <span className="ml-1">{rental?.helmet_amount} Helmet</span>}
+                                {rental?.helmet_amount > 1 && <span className="ml-1">{rental?.helmet_amount} Helmets</span>}
+                                {!rental?.helmet_amount && <DottedLineInput widthClass="w-[80px]" />}
                             </div>
 
                             <div className="pt-2">
-                                <span className="text-sm font-semibold">How to get to know our shop?</span>
+                                <span className="text-sm font-semibold">How to get to know our shop? (survey)</span>
                                 <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-sm md:grid-cols-4">
-                                    {rental?.survey ? (
-                                        <span className="ml-1">{rental?.survey}</span>
+                                    {rental?.how_know_shop ? (
+                                        <span className="ml-1">{rental?.how_know_shop}</span>
                                     ) : (
                                         <DottedLineInput widthClass="flex-1 min-w-[200px]" />
                                     )}
@@ -261,31 +274,29 @@ function FrontNewContract({ rental }: PageProps) {
                         <div className="mb-6 space-y-3 border-t border-black pt-4">
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                                 <label className="text-sm font-semibold whitespace-nowrap">Vehicle ID:</label>
-                                {rental?.vehicle_no ? (
-                                    <span className="ml-1">{rental?.vehicle_no}</span>
-                                ) : (
-                                    <DottedLineInput widthClass="flex-1 min-w-[200px]" />
-                                )}
+                                {rental?.vehicle_no && <span className="ml-1">{rental?.vehicle_no}</span>}
+                                {rental?.vehicle?.vehicle_no && <span className="ml-1">{rental?.vehicle?.vehicle_no}</span>}
+                                {!rental?.vehicle_no && !rental?.vehicle?.vehicle_no && <DottedLineInput widthClass="flex-1 min-w-[200px]" />}
                                 <label className="text-sm font-semibold whitespace-nowrap">License Plate:</label>
-                                {rental?.license_plate ? (
-                                    <span className="ml-1">{rental?.license_plate}</span>
-                                ) : (
-                                    <DottedLineInput widthClass="flex-1 min-w-[200px]" />
-                                )}
+                                {rental?.license_plate && <span className="ml-1">{rental?.license_plate}</span>}
+                                {rental?.vehicle?.license_plate && <span className="ml-1">{rental?.vehicle?.license_plate}</span>}
+                                {!rental?.license_plate && !rental?.vehicle?.license_plate && <DottedLineInput widthClass="flex-1 min-w-[200px]" />}
                                 <label className="text-sm font-semibold whitespace-nowrap">Model:</label>
-                                {rental?.make ? (
+                                {rental?.make && (
                                     <span className="ml-1">
                                         {rental?.make} {rental?.model}
                                     </span>
-                                ) : (
-                                    <DottedLineInput widthClass="flex-1 min-w-[200px]" />
                                 )}
+                                {rental?.vehicle?.make && (
+                                    <span className="ml-1">
+                                        {rental?.vehicle?.make} {rental?.vehicle?.model}
+                                    </span>
+                                )}
+                                {!rental?.make && !rental?.vehicle?.make && <DottedLineInput widthClass="flex-1 min-w-[200px]" />}
                                 <label className="text-sm font-semibold whitespace-nowrap">Class:</label>
-                                {rental?.class ? (
-                                    <span className="ml-1">{rental?.class}</span>
-                                ) : (
-                                    <DottedLineInput widthClass="flex-1 min-w-[200px]" />
-                                )}
+                                {rental?.class && <span className="ml-1">{rental?.class}</span>}
+                                {rental?.vehicle?.vehicle_class && <span className="ml-1">{rental?.vehicle?.vehicle_class}</span>}
+                                {!rental?.class && !rental?.vehicle?.vehicle_class && <DottedLineInput widthClass="flex-1 min-w-[200px]" />}
                             </div>
 
                             <div className="grid grid-cols-2 border border-black bg-gray-100 text-sm font-semibold">
@@ -294,27 +305,37 @@ function FrontNewContract({ rental }: PageProps) {
                             </div>
                             <div className="grid grid-cols-2 border-r border-b border-l border-black text-sm">
                                 <div className="flex items-end justify-center border-r border-black p-2">
-                                    <div className="flex items-center justify-center">
+                                    <div className="flex items-center justify-center text-lg font-black">
                                         <span className="ml-1">$</span>
-                                        {rental?.total_cost ? (
-                                            <span className="ml-1">{rental?.total_cost}</span>
-                                        ) : (
-                                            <DottedLineInput widthClass="flex-1 min-w-[200px]" />
-                                        )}
+                                        {totalCost && <span className="ml-1">{totalCost}</span>}
+                                        {!rental?.total_cost || (!totalCost && <DottedLineInput widthClass="flex-1 min-w-[200px]" />)}
                                     </div>
                                 </div>
                                 <div className="space-y-1 p-2">
-                                    <div className="ml-auto flex items-center justify-center">
-                                        {rental?.primary_deposit_type ? (
+                                    <div className="ml-auto flex flex-col items-center justify-center text-lg font-bold">
+                                        {rental?.activeDeposits &&
+                                        rental.activeDeposits.filter((d) => d.deposit_type || d.deposit_value).length > 0 ? (
+                                            rental.activeDeposits
+                                                .filter((d) => d.deposit_type || d.deposit_value)
+                                                .map((deposit, index) => (
+                                                    <span key={index} className="ml-1">
+                                                        {deposit.deposit_type_name === 'Money' ? (
+                                                            <>
+                                                                {deposit.deposit_type_name}: ${deposit.deposit_value}
+                                                            </>
+                                                        ) : (
+                                                            <>{deposit.deposit_type_name}</>
+                                                        )}
+                                                    </span>
+                                                ))
+                                        ) : rental?.primary_deposit_type ? (
                                             <span className="ml-1">
-                                                {rental?.primary_deposit_type === 'Money' ? (
+                                                {rental.primary_deposit_type === 'Money' ? (
                                                     <>
-                                                        {rental?.primary_deposit_type}: ${rental?.primary_deposit}
+                                                        {rental.primary_deposit_type}: ${rental.primary_deposit}
                                                     </>
                                                 ) : (
-                                                    <>
-                                                        {rental?.primary_deposit_type}: {rental?.primary_deposit}
-                                                    </>
+                                                    <>{rental.primary_deposit_type}</>
                                                 )}
                                             </span>
                                         ) : (
@@ -332,9 +353,9 @@ function FrontNewContract({ rental }: PageProps) {
                             <h2 className="mb-2 border-b border-black text-lg font-bold">Compensation Policy</h2>
                             <p className="mb-2 text-sm">
                                 If the motorbike is stolen or seriously damaged (assessed as unavailable for rental service of EMC), you shall pay $
-                                {rental?.compensation_price ? (
-                                    <span className="ml-1 font-bold">{rental?.compensation_price}</span>
-                                ) : (
+                                {rental?.compensation_price && <span className="ml-1 font-bold">{rental?.compensation_price}</span>}
+                                {rental?.vehicle?.compensation_price && <span className="ml-1 font-bold">{rental?.vehicle?.compensation_price}</span>}
+                                {!rental?.compensation_price && !rental?.vehicle?.compensation_price && (
                                     <DottedLineInput widthClass="w-20 inline" />
                                 )}{' '}
                                 as compensation fee in total. The motorbike has no insurance for any loss or damage; you should take care of the

@@ -185,7 +185,7 @@ export interface ContactTypes {
 export interface Deposits {
     id: number;
     type: string;
-    registered_number: string;
+    visa_type: string;
     expiry_date: any;
     is_primary?: any;
     description?: string;

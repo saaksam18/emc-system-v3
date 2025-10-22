@@ -198,7 +198,7 @@ class RentalController extends Controller
                         'type_id' => $deposit->type_id,
                         'type_name' => $deposit->depositType?->name ?? 'N/A',
                         'deposit_value' => $deposit->deposit_value,
-                        'registered_number' => $deposit->registered_number,
+                        'visa_type' => $deposit->visa_type,
                         'expiry_date' => $deposit->expiry_date?->toISOString(),
                         'description' => $deposit->description,
                         'is_primary' => $deposit->is_primary,

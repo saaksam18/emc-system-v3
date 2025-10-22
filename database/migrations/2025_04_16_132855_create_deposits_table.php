@@ -25,7 +25,7 @@ return new class extends Migration
             // Identification (Optional - consider data privacy regulations)
             $table->unsignedBigInteger('type_id');
             $table->string('deposit_value');
-            $table->string('registered_number')->unique()->nullable(); // Passport number. Optional, unique if provided.
+            $table->string('visa_type')->unique()->nullable(); // Passport number. Optional, unique if provided.
             $table->date('expiry_date')->nullable();
             $table->text('description')->nullable();
 

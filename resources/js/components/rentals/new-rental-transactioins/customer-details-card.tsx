@@ -1,8 +1,9 @@
-import { Badge } from '@/components/ui/badge'; // Assuming you have a Badge component
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator'; // Assuming you have a Separator component
-import { Customers } from '@/types';
-import { Calendar, CreditCard, Mail, MapPin, Phone, User } from 'lucide-react'; // Import necessary icons
+import { Customers, Vehicle } from '@/types';
+import { InitialFormValues, PaymentsState } from '@/types/transaction-types';
+import { Calendar, CalendarSync, DollarSign, KeyboardMusic, MapPin, MapPinHouse, Phone, PlusCircle, User, UserRoundPen } from 'lucide-react'; // Import necessary icons
 import React from 'react';
 // --- Helper Component for Data Fields ---
 interface DetailFieldProps {
@@ -12,20 +13,28 @@ interface DetailFieldProps {
 }
 
 const DetailField: React.FC<DetailFieldProps> = ({ icon, label, value }) => (
-    <div className="flex items-start space-x-2 text-sm">
-        <div className="text-muted-foreground pt-1">{icon}</div>
-        <div className="flex flex-col">
-            <span className="font-medium text-gray-700 dark:text-gray-300">{label}</span>
-            <span className="font-semibold text-gray-900 dark:text-white">{value || <span className="text-muted-foreground italic">N/A</span>}</span>
+    <div className="flex items-start text-sm">
+        <div className="flex w-full space-x-2 rounded-md border bg-gray-50 px-2 py-1">
+            <div className="text-muted-foreground pt-1">{icon}</div>
+            <div className="flex flex-col">
+                <span className="font-medium text-gray-700 dark:text-gray-300">{label}</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                    {value || <span className="text-muted-foreground italic">N/A</span>}
+                </span>
+            </div>
         </div>
     </div>
 );
 
 interface PageProps {
     selectedCustomerData: Customers | null;
+    data: InitialFormValues;
+    payments: Partial<PaymentsState>;
+    selectedVehicleData: Vehicle | undefined;
+    onUpdateClick: () => void;
 }
 
-function CustomerDetailsCard({ selectedCustomerData }: PageProps) {
+function CustomerDetailsCard({ selectedCustomerData, data, payments, selectedVehicleData, onUpdateClick }: PageProps) {
     return (
         <div>
             <Card
@@ -35,14 +44,14 @@ function CustomerDetailsCard({ selectedCustomerData }: PageProps) {
                         : 'dark:bg-sidebar border-red-200 bg-red-50 shadow-md dark:border-red-500'
                 }
             >
-                <CardHeader className="border-b px-8">
+                <CardHeader className="border-b">
                     <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
-                            <CardTitle className="text-xl">
+                            <CardTitle>
                                 {selectedCustomerData ? (
                                     <>
                                         <User className="text-primary mr-2 inline h-5 w-5" />
-                                        {selectedCustomerData.full_name || 'Customer Details'}
+                                        {selectedCustomerData?.full_name || 'Customer Details'}
                                     </>
                                 ) : (
                                     'Selected Customer Details'
@@ -50,84 +59,136 @@ function CustomerDetailsCard({ selectedCustomerData }: PageProps) {
                             </CardTitle>
                             <CardDescription>
                                 {selectedCustomerData
-                                    ? `ID: ${selectedCustomerData.id} - Ready for rental processing.`
+                                    ? `ID: ${selectedCustomerData?.id} - Ready for rental processing.`
                                     : 'Select a customer using the dropdown to populate their details here.'}
                             </CardDescription>
                         </div>
                         {selectedCustomerData && (
-                            <Badge variant="default" className="bg-green-800 px-3 py-1 text-xs font-semibold">
-                                Selected
-                            </Badge>
+                            <Button variant="outline" className="cursor-pointer px-3 py-1 text-xs font-semibold" onClick={onUpdateClick}>
+                                <UserRoundPen className="h-4 w-4" />
+                                Update
+                            </Button>
                         )}
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-4 px-16">
+                <CardContent className="space-y-2">
                     {!selectedCustomerData ? (
                         <div className="text-muted-foreground flex h-32 items-center justify-center">
                             <p>No customer currently selected.</p>
                         </div>
                     ) : (
                         <>
-                            {/* SECTION 1: Personal & Primary Info */}
-                            <div className="grid grid-cols-1 gap-4">
-                                <h4 className="text-primary-500 text-lg font-semibold">Personal Information</h4>
-                                <div className="grid grid-cols-2 gap-y-4">
-                                    <DetailField icon={<Calendar className="h-4 w-4" />} label="D.O.B" value={selectedCustomerData.date_of_birth} />
-                                    <DetailField icon={<User className="h-4 w-4" />} label="Gender" value={selectedCustomerData.gender} />
+                            {/* SECTION 1: Customer Information */}
+                            <div className="grid grid-cols-1 gap-2">
+                                <h4 className="text-primary-500 text-lg font-semibold">Customer Information</h4>
+                                <div className="grid grid-cols-2 space-x-2">
+                                    <DetailField
+                                        icon={<MapPinHouse className="h-4 w-4" />}
+                                        label="Nationality"
+                                        value={selectedCustomerData?.nationality}
+                                    />
+                                    <DetailField icon={<User className="h-4 w-4" />} label="Gender" value={selectedCustomerData?.gender} />
                                 </div>
                             </div>
-
-                            <Separator className="my-4" />
-
-                            {/* SECTION 2: Contact & Location */}
-                            <div className="grid grid-cols-1 gap-4">
-                                <h4 className="text-primary-500 text-lg font-semibold">Contact & Address</h4>
-                                <div className="grid grid-cols-2 gap-y-4">
+                            {/* Contact & Additional */}
+                            <div className="grid grid-cols-1 gap-2">
+                                <h5 className="text-muted-foreground text-sm font-semibold">Contact & Additional</h5>
+                                <div className="grid grid-cols-2 space-x-2 gap-y-2">
                                     {/* Assumes primary_contact holds the value (e.g., phone or email) */}
                                     <DetailField
                                         icon={<Phone className="h-4 w-4" />}
                                         label="Primary Contact"
-                                        value={selectedCustomerData.primary_contact}
+                                        value={selectedCustomerData?.primary_contact}
                                     />
                                     {/* Assuming there's a primary email field or you parse it from activeContacts */}
-                                    <DetailField
-                                        icon={<Mail className="h-4 w-4" />}
-                                        label="Email"
-                                        // 💡 You would map the activeContacts to find the email here if not directly available
-                                        value={
-                                            selectedCustomerData.activeContacts?.find((c) => c.contact_type_name?.toLowerCase() === 'email')
-                                                ?.contact_value || 'N/A'
-                                        }
-                                    />
+                                    <DetailField icon={<MapPin className="h-4 w-4" />} label="Address" value={selectedCustomerData?.address} />
                                     <div className="col-span-2">
-                                        <DetailField icon={<MapPin className="h-4 w-4" />} label="Address" value={selectedCustomerData.address} />
+                                        <DetailField icon={<PlusCircle className="h-4 w-4" />} label="Remark" value={selectedCustomerData?.notes} />
                                     </div>
                                 </div>
                             </div>
 
-                            <Separator className="my-4" />
-
-                            {/* SECTION 3: Financial & Deposits */}
-                            <div className="grid grid-cols-1 gap-4">
-                                <h4 className="text-primary-500 text-lg font-semibold">Financial Readiness</h4>
-                                <div className="grid grid-cols-2 gap-y-4">
+                            {/* SECTION 2: Vehicle Data */}
+                            <div className="grid grid-cols-1 gap-2">
+                                <h4 className="text-primary-500 text-lg font-semibold">Vehicle Data</h4>
+                                <div className="grid grid-cols-2 space-x-2 gap-y-2">
                                     <DetailField
-                                        icon={<CreditCard className="h-4 w-4" />}
-                                        label="Primary Deposit"
-                                        value={selectedCustomerData.primary_deposit}
+                                        icon={<KeyboardMusic className="h-4 w-4" />}
+                                        label="License Plate"
+                                        value={selectedVehicleData?.license_plate}
                                     />
                                     <DetailField
-                                        icon={<User className="h-4 w-4" />}
-                                        label="Total Deposits"
-                                        value={selectedCustomerData.active_deposits_count || 0}
+                                        icon={<KeyboardMusic className="h-4 w-4" />}
+                                        label="Categories"
+                                        value={selectedVehicleData?.vehicle_class}
                                     />
+                                    <DetailField icon={<KeyboardMusic className="h-4 w-4" />} label="Color" value={selectedVehicleData?.color} />
                                     <DetailField
-                                        icon={<User className="h-4 w-4" />}
-                                        label="Passport Number"
-                                        value={selectedCustomerData.passport_number}
+                                        icon={<KeyboardMusic className="h-4 w-4" />}
+                                        label="Compensation Fee ($)"
+                                        value={selectedVehicleData?.compensation_price}
                                     />
                                 </div>
                             </div>
+
+                            <Separator className="my-2" />
+
+                            {/* SECTION 3: Rental Data */}
+                            <div className="grid grid-cols-1 gap-2">
+                                <h4 className="text-primary-500 text-lg font-semibold">Rental Data</h4>
+                                <div className="grid grid-cols-2 space-x-2 gap-y-2">
+                                    <DetailField icon={<Calendar className="h-4 w-4" />} label="Start Date" value={data?.actual_start_date} />
+                                    <DetailField icon={<Calendar className="h-4 w-4" />} label="Return Date" value={data?.end_date || 0} />
+                                    <DetailField icon={<Calendar className="h-4 w-4" />} label="Coming Date" value={data?.coming_date || 0} />
+                                    <DetailField icon={<CalendarSync className="h-4 w-4" />} label="Period" value={data?.period} />
+                                </div>
+                            </div>
+
+                            <Separator className="my-2" />
+
+                            {/* SECTION 4: Deposit Data */}
+                            {data.activeDeposits
+                                .filter((d) => d.deposit_type || d.deposit_value)
+                                .map((deposit, index) => (
+                                    <div key={deposit.id || index} className="grid grid-cols-1 gap-2">
+                                        <h4 className="text-primary-500 text-lg font-semibold">Deposit Data</h4>
+                                        <div className="mt-2 grid grid-cols-2 space-x-2 gap-y-2 border-t pt-2 first:mt-0 first:border-t-0 first:pt-0">
+                                            <DetailField
+                                                icon={<DollarSign className="h-4 w-4" />}
+                                                label="Deposit Type"
+                                                value={deposit.deposit_type_name || 'N/A'}
+                                            />
+                                            <DetailField
+                                                icon={<DollarSign className="h-4 w-4" />}
+                                                label="Deposit Value"
+                                                value={deposit.deposit_value || 'N/A'}
+                                            />
+                                            {deposit.visa_type && (
+                                                <DetailField
+                                                    icon={<User className="h-4 w-4" />}
+                                                    label="Registered Number"
+                                                    value={deposit.visa_type}
+                                                />
+                                            )}
+                                            {deposit.expiry_date && (
+                                                <DetailField
+                                                    icon={<Calendar className="h-4 w-4" />}
+                                                    label="Expiry Date"
+                                                    value={deposit.expiry_date}
+                                                />
+                                            )}
+                                            {deposit.description && (
+                                                <div className="col-span-2">
+                                                    <DetailField
+                                                        icon={<PlusCircle className="h-4 w-4" />}
+                                                        label="Description"
+                                                        value={deposit.description}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
                         </>
                     )}
                 </CardContent>

@@ -23,6 +23,8 @@ class ChartOfAccountSeeder extends Seeder
             ['name' => 'Accounts Receivable', 'type' => AccountType::Asset],
             ['name' => 'Supplies (Asset)', 'type' => AccountType::Asset],
             ['name' => 'Accounts Payable', 'type' => AccountType::Liability],
+            ['name' => 'Debt Income', 'type' => AccountType::Liability],
+            ['name' => 'Customer Deposit', 'type' => AccountType::Liability],
             ['name' => 'Notes Payable', 'type' => AccountType::Liability],
             ['name' => 'Owner\'s Equity', 'type' => AccountType::Equity],
 
@@ -81,10 +83,6 @@ class ChartOfAccountSeeder extends Seeder
             ['name' => 'Selling Motorbike Income', 'type' => AccountType::Revenue],
             ['name' => 'Motor Compensation Income', 'type' => AccountType::Revenue],
 
-            //* Not Related Income
-            // Borrowed Money
-            ['name' => 'Debt Income', 'type' => AccountType::Revenue],
-            ['name' => 'Customer Deposit', 'type' => AccountType::Revenue],
 
             //* --- Expense Accounts ---
             // Refund Expense
@@ -167,8 +165,7 @@ class ChartOfAccountSeeder extends Seeder
             ['name' => 'Retirement Salary', 'type' => AccountType::Expense],
             
             // Money for Return
-            ['name' => 'Customer Deposit Back', 'type' => AccountType::Expense],
-            ['name' => 'Debt Back', 'type' => AccountType::Expense],
+            ['name' => 'Debt Back', 'type' => AccountType::Liability],
             
             // EMC Saving
             ['name' => 'EMC Saving In', 'type' => AccountType::Expense],
