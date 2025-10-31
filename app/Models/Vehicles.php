@@ -60,6 +60,7 @@ class Vehicles extends Model
         'current_rental_id', // Foreign key for the current active Rentals
         'user_id',
         'notes',
+        'deleted_at',
     ];
 
     /**

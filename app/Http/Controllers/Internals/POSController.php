@@ -25,6 +25,7 @@ use App\Models\Contacts\Types;
 use App\Models\Rentals;
 use App\Models\Contacts;
 use App\Models\Deposits;
+use App\Models\VehicleClasses;
 
 // Auth
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -65,6 +66,7 @@ class POSController extends Controller
                     'vehicle_no' => $vehicle->vehicle_no,
                     'make' => $vehicle->vehicleMaker?->name ?? 'N/A',
                     'model' => $vehicle->vehicleModel?->name ?? 'N/A',
+                    'class_name' => $vehicle->vehicleClasses?->name ?? 'N/A',
                     'year' => $vehicle->year,
                     'color' => $vehicle->color ?? 'N/A',
                     'current_status_name' => $vehicle->vehicleStatus?->status_name ?? 'N/A',
@@ -164,6 +166,7 @@ class POSController extends Controller
                 return [
                     'id' => $rental->id,
                     'vehicle_no' => $rental->vehicle->vehicle_no ?? 'N/A',
+                    'end_date' => $rental->end_date ?? 'N/A',
                     'full_name' => $full_name,
                     
                     // Active Deposit
@@ -177,6 +180,8 @@ class POSController extends Controller
                 ];
             });
 
+            $vehicleClasses = VehicleClasses::select('id', 'name')->get();
+
             return Inertia::render('pos', [
                 'vehicles' => $formattedVehicles,
                 'availableVehicles' => Inertia::defer(fn () => $formattedAvailableVehicles),
@@ -187,6 +192,7 @@ class POSController extends Controller
                 'depositTypes' => Inertia::defer(fn () => $formattedDepositTypes),
                 'contactTypes' => Inertia::defer(fn () => $formattedContactTypes),
                 'rentals' => Inertia::defer(fn () => $formattedRentals),
+                'vehicleClasses' => $vehicleClasses,
             ]);
         } catch (AuthorizationException $e) {
             Log::warning("Authorization failed for User [ID: {$userId}] accessing Dashboard: " . $e->getMessage());

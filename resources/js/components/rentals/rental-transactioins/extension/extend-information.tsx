@@ -1,127 +1,21 @@
+import { AccountCombobox } from '@/components/form/AccountCombobox';
+import { EntityCombobox } from '@/components/form/entity-combobox';
+import { FormField } from '@/components/form/FormField';
+import { FormSection } from '@/components/form/FormSection';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { ChartOfAccountTypes, RentalsType, User, Vehicle } from '@/types';
-import { useLookupName } from '@/types/transaction-types';
-import { useForm } from '@inertiajs/react';
+import { ChartOfAccountTypes, PaymentType, RentalsType, Vehicle } from '@/types';
+import { ExtendContractFormValues, FormErrors, SaleItem, useAccountHelpers, useLookupName } from '@/types/transaction-types';
+import { InertiaFormProps } from '@inertiajs/react';
 import { addDays, differenceInDays, format, isValid, parseISO } from 'date-fns';
-import { Banknote, CalendarIcon, Check, ChevronsUpDown, CreditCard, Trash2 } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
-
-// --- Types ---
-type PaymentType = 'cash' | 'bank' | 'credit';
-
-interface SaleItem {
-    id: string;
-    description: string;
-    amount: string;
-    credit_account_id: string;
-    payment_type: PaymentType;
-    debit_target_account_id: string;
-}
-
-interface ExtendContractFormValues {
-    rental_id: number | null;
-    start_date: string;
-    end_date: string;
-    period: number | string;
-    coming_date: string;
-    notes: string;
-    incharger_id: number | null;
-    user_name: string; // For display in the form's combobox
-    payments: SaleItem[];
-    [key: string]: any; // Allow other properties for dynamic setData
-}
-
-// --- Helper Functions ---
-const useAccountHelpers = ({ chartOfAccounts }: { chartOfAccounts: ChartOfAccountTypes[] }) => {
-    const incomeAccounts = useMemo(() => chartOfAccounts?.filter((acc) => acc.type === 'Revenue'), [chartOfAccounts]);
-    const specificBankAccounts = useMemo(
-        () => chartOfAccounts?.filter((acc) => acc.type === 'Asset' && acc.name.includes('Bank')),
-        [chartOfAccounts],
-    );
-
-    const getAccountName = (accountId: string, accounts: ChartOfAccountTypes[]) => {
-        const account = accounts.find((acc) => String(acc.id) === accountId);
-        return account ? `${account.name} (${account.type})` : 'Select account';
-    };
-
-    return { incomeAccounts, specificBankAccounts, getAccountName };
-};
-
-interface AccountComboboxProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    value: string;
-    onSelect: (value: string) => void;
-    accounts: ChartOfAccountTypes[];
-    getAccountName: (accountId: string, accounts: ChartOfAccountTypes[]) => string;
-    placeholder: string;
-    searchPlaceholder: string;
-    error: boolean;
-}
-
-const AccountCombobox: React.FC<AccountComboboxProps> = ({
-    open,
-    onOpenChange,
-    value,
-    onSelect,
-    accounts,
-    getAccountName,
-    placeholder,
-    searchPlaceholder,
-    error,
-}) => (
-    <Popover open={open} onOpenChange={onOpenChange}>
-        <PopoverTrigger asChild>
-            <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={open}
-                className={cn('dark:bg-background w-full justify-between', !value && 'text-muted-foreground', error && 'border-red-500')}
-            >
-                {value ? getAccountName(value, accounts) : placeholder}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-            <Command>
-                <CommandInput placeholder={searchPlaceholder} />
-                <CommandList>
-                    <CommandEmpty>No account found.</CommandEmpty>
-                    <CommandGroup>
-                        {accounts?.map((account) => (
-                            <CommandItem key={account.id} value={`${account.name} (${account.type})`} onSelect={() => onSelect(String(account.id))}>
-                                <Check className={cn('mr-2 h-4 w-4', value === String(account.id) ? 'opacity-100' : 'opacity-0')} />
-                                {account.name} ({account.type})
-                            </CommandItem>
-                        ))}
-                    </CommandGroup>
-                </CommandList>
-            </Command>
-        </PopoverContent>
-    </Popover>
-);
-
-const formatInitialDate = (date: Date | string | null | undefined): string => {
-    if (!date) return '';
-    try {
-        const d = new Date(date);
-        return isValid(d) ? format(d, 'yyyy-MM-dd') : '';
-    } catch (error) {
-        console.error('Error formatting date:', error);
-        return '';
-    }
-};
+import { Banknote, CalendarIcon, CreditCard, Trash2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 const parseDateString = (dateString: string | null | undefined): Date | null => {
     if (!dateString) return null;
@@ -141,120 +35,53 @@ const calculatePeriod = (startDateStr: string, endDateStr: string): number => {
     return diffDays >= 0 ? diffDays : 0;
 };
 
-// --- Reusable Components ---
-interface FormSectionProps {
-    title: string;
-    description: string;
-    children: React.ReactNode;
-}
-const FormSection: React.FC<FormSectionProps> = ({ title, description, children }) => (
-    <Card>
-        <CardHeader>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">{children}</CardContent>
-    </Card>
-);
-
-interface FormFieldProps {
-    label: string;
-    htmlFor: string;
-    error?: string;
-    required?: boolean;
-    children: React.ReactNode;
-    className?: string;
-    labelClassName?: string;
-    contentClassName?: string;
-}
-const FormField: React.FC<FormFieldProps> = ({ label, htmlFor, error, required, children, className, labelClassName, contentClassName }) => (
-    <div className={cn('grid grid-cols-1 items-start gap-2 md:grid-cols-4 md:items-center', className)}>
-        <Label htmlFor={htmlFor} className={cn('text-left md:text-right', labelClassName)}>
-            {label}
-            {required && <span className="text-red-500">*</span>}
-        </Label>
-        <div className={cn('col-span-1 md:col-span-3', contentClassName)}>
-            {children}
-            {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
-        </div>
-    </div>
-);
-
 // --- Main Component ---
 interface ExtendContractProps {
+    data: ExtendContractFormValues;
+    setData: InertiaFormProps<ExtendContractFormValues>['setData'];
+    formErrors: FormErrors;
+    clearErrors: (fields?: keyof ExtendContractFormValues | (keyof ExtendContractFormValues)[]) => void;
     selectedRow: RentalsType | null;
     selectedVehicle: Vehicle | null;
     chartOfAccounts: ChartOfAccountTypes[];
-    users: User[] | undefined;
-    onSubmitSuccess: () => void;
+    users: { id: number; name: string }[];
+    processing: boolean;
+    handleComboboxChange: (field: keyof ExtendContractFormValues, value: string, id: number | null) => void;
+    handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
 }
 
-const initialFormValues: ExtendContractFormValues = {
-    rental_id: null,
-    start_date: formatInitialDate(new Date()),
-    end_date: '',
-    period: 0,
-    coming_date: '',
-    notes: '',
-    incharger_id: null,
-    user_name: '',
-    payments: [
-        {
-            id: `payment-${Date.now()}`,
-            description: 'Contract Extension Payment',
-            amount: '',
-            credit_account_id: '',
-            payment_type: 'cash',
-            debit_target_account_id: '',
-        },
-    ],
-};
-
-export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, users, onSubmitSuccess }: ExtendContractProps) {
+export function ExtendInformation({
+    data,
+    setData,
+    formErrors,
+    clearErrors,
+    processing,
+    selectedRow,
+    chartOfAccounts,
+    users,
+    handleComboboxChange,
+    handleInputChange,
+}: ExtendContractProps) {
+    const selectedInchargerName = useLookupName(users, data.incharger_id);
     const { incomeAccounts, specificBankAccounts, getAccountName } = useAccountHelpers({ chartOfAccounts });
-    const { data, setData, put, processing, errors, reset, clearErrors, setError } = useForm<ExtendContractFormValues>(initialFormValues);
 
     // State for Dialogs
-    const [userDialogOpen, setUserDialogOpen] = useState(false);
     const [startDateDialogOpen, setStartDateDialogOpen] = useState(false);
     const [endDateDialogOpen, setEndDateDialogOpen] = useState(false);
     const [comingDateDialogOpen, setComingDateDialogOpen] = useState(false);
-    const selectedInchargerName = useLookupName(users, data.incharger_id);
     const [openStates, setOpenStates] = useState([{ income: false, debit: false }]);
 
     useEffect(() => {
         if (data.payments.length !== openStates.length) {
             setOpenStates(data.payments.map(() => ({ income: false, debit: false })));
         }
-    }, [data.payments.length]);
+    }, [data.payments.length, data.payments, openStates.length]);
 
     const handleOpenChange = (index: number, name: 'income' | 'debit', value: boolean) => {
         const newOpenStates = [...openStates];
         newOpenStates[index] = { ...newOpenStates[index], [name]: value };
         setOpenStates(newOpenStates);
     };
-    console.log('selectedRow', selectedRow);
-
-    const resetForm = () => {
-        if (selectedRow) {
-            const startDate = selectedRow.end_date ? formatInitialDate(selectedRow.end_date) : formatInitialDate(new Date());
-
-            setData({
-                ...initialFormValues,
-                rental_id: selectedRow.id,
-                notes: selectedRow.notes || '',
-                start_date: startDate,
-            });
-        } else {
-            reset();
-        }
-        clearErrors();
-        setOpenStates([{ income: false, debit: false }]);
-    };
-
-    useEffect(() => {
-        resetForm();
-    }, [selectedRow]);
 
     const handlePeriodChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const periodValue = e.target.value;
@@ -271,16 +98,8 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
             return newData;
         });
 
-        if (errors.period) clearErrors('period');
-        if (errors.end_date) clearErrors('end_date');
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setData(name, value);
-        if (errors[name]) {
-            clearErrors(name);
-        }
+        if (formErrors.period) clearErrors('period');
+        if (formErrors.end_date) clearErrors('end_date');
     };
 
     const addPayment = () => {
@@ -307,7 +126,7 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
         }));
     };
 
-    const handlePaymentChange = (index: number, key: keyof SaleItem, value: any) => {
+    const handlePaymentChange = (index: number, key: keyof SaleItem, value: string | number | boolean) => {
         setData((prev) => {
             const newPayments = [...prev.payments];
             const payment = { ...newPayments[index], [key]: value };
@@ -315,7 +134,7 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
             if (key === 'payment_type') {
                 if (value === 'cash') {
                     payment.debit_target_account_id = '';
-                } else if (['bank', 'credit'].includes(value) && specificBankAccounts.length > 0) {
+                } else if (['bank', 'credit'].includes(value as string) && specificBankAccounts.length > 0) {
                     const hasValidAccount = specificBankAccounts.some((acc) => String(acc.id) === payment.debit_target_account_id);
                     if (!hasValidAccount) {
                         payment.debit_target_account_id = String(specificBankAccounts[0].id);
@@ -325,8 +144,8 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
             newPayments[index] = payment;
 
             const errorKey = `payments.${index}.${key}`;
-            if (errors[errorKey]) {
-                clearErrors(errorKey);
+            if (formErrors[errorKey]) {
+                clearErrors(errorKey as keyof FormErrors);
             }
 
             return {
@@ -371,66 +190,13 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
             return newData;
         });
 
-        if (errors[field]) {
+        if (formErrors[field]) {
             clearErrors(field);
         }
 
         if (field === 'start_date') setStartDateDialogOpen(false);
         if (field === 'end_date') setEndDateDialogOpen(false);
         if (field === 'coming_date') setComingDateDialogOpen(false);
-    };
-
-    const validUsers = useMemo(
-        () => (Array.isArray(users) ? users.filter((u): u is User => !!u && !!u.id && typeof u.name === 'string' && u.name !== '') : []),
-        [users],
-    );
-
-    const handlePreview = () => {
-        clearErrors();
-
-        const validationErrors: Partial<Record<string, string>> = {};
-        if (!data.start_date) validationErrors.start_date = 'Start date is required.';
-        if (!data.end_date) validationErrors.end_date = 'End date is required.';
-
-        data.payments.forEach((payment, index) => {
-            if (!payment || !payment.amount || isNaN(parseFloat(payment.amount)) || parseFloat(payment.amount) <= 0) {
-                validationErrors[`payments.${index}.amount`] = 'Valid rental cost is required.';
-            }
-            if (!payment || !payment.credit_account_id) {
-                validationErrors[`payments.${index}.credit_account_id`] = 'Income account is required.';
-            }
-        });
-
-        if (!data.incharger_id) validationErrors.user_name = 'Incharge user is required.';
-
-        if (Object.keys(validationErrors).length > 0) {
-            setError(validationErrors);
-            toast.error('Please correct the errors before previewing.');
-            return;
-        }
-
-        const totalCost = data.payments.reduce((acc, p) => acc + (parseFloat(p.amount) || 0), 0);
-        const incharger = users?.find((u) => u.id === data.incharger_id);
-
-        const previewData = {
-            ...selectedRow,
-            start_date: data.start_date,
-            end_date: data.end_date,
-            period: String(data.period),
-            coming_date: data.coming_date,
-            notes: data.notes,
-            incharger: incharger,
-            incharger_id: data.incharger_id,
-            total_cost: totalCost,
-            payments: data.payments,
-            customer: selectedRow?.customer,
-            vehicle: selectedVehicle,
-        };
-
-        sessionStorage.setItem('rental_preview_data', JSON.stringify(previewData));
-
-        const previewUrl = route('print.rentals.index', { rental: data.rental_id });
-        window.open(previewUrl, '_blank');
     };
 
     if (!selectedRow) {
@@ -441,7 +207,7 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
         <div className="px-4">
             <form className="space-y-4">
                 <FormSection title="Rental Details" description="Update the dates, period, cost, and responsible user.">
-                    <FormField label="Start Date" htmlFor="start_date" error={errors.start_date} required>
+                    <FormField label="Start Date" htmlFor="start_date" error={formErrors.start_date} required>
                         <Popover open={startDateDialogOpen} onOpenChange={setStartDateDialogOpen}>
                             <PopoverTrigger asChild>
                                 <Button
@@ -450,7 +216,7 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                                     className={cn(
                                         'w-full justify-start text-left font-normal',
                                         !data.start_date && 'text-muted-foreground',
-                                        errors.start_date && 'border-red-500',
+                                        formErrors.start_date && 'border-red-500',
                                     )}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -473,7 +239,7 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                         </Popover>
                     </FormField>
 
-                    <FormField label="End Date" htmlFor="end_date" error={errors.end_date} required>
+                    <FormField label="End Date" htmlFor="end_date" error={formErrors.end_date} required>
                         <Popover open={endDateDialogOpen} onOpenChange={setEndDateDialogOpen}>
                             <PopoverTrigger asChild>
                                 <Button
@@ -482,7 +248,7 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                                     className={cn(
                                         'w-full justify-start text-left font-normal',
                                         !data.end_date && 'text-muted-foreground',
-                                        errors.end_date && 'border-red-500',
+                                        formErrors.end_date && 'border-red-500',
                                     )}
                                     disabled={!data.start_date || !isValid(parseDateString(data.start_date)!)}
                                 >
@@ -510,7 +276,7 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                         </Popover>
                     </FormField>
 
-                    <FormField label="Period (days)" htmlFor="period" error={errors.period} required>
+                    <FormField label="Period (days)" htmlFor="period" error={formErrors.period} required>
                         <Input
                             id="period"
                             name="period"
@@ -519,12 +285,12 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                             value={data.period}
                             onChange={handlePeriodChange}
                             placeholder="e.g., 30"
-                            className={cn(errors.period && 'border-red-500')}
+                            className={cn(formErrors.period && 'border-red-500')}
                             disabled={!data.start_date}
                         />
                     </FormField>
 
-                    <FormField label="Coming Date (Optional)" htmlFor="coming_date" error={errors.coming_date}>
+                    <FormField label="Coming Date (Optional)" htmlFor="coming_date" error={formErrors.coming_date}>
                         <Popover open={comingDateDialogOpen} onOpenChange={setComingDateDialogOpen}>
                             <PopoverTrigger asChild>
                                 <Button
@@ -533,7 +299,7 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                                     className={cn(
                                         'w-full justify-start text-left font-normal',
                                         !data.coming_date && 'text-muted-foreground',
-                                        errors.coming_date && 'border-red-500',
+                                        formErrors.coming_date && 'border-red-500',
                                     )}
                                     disabled={!data.start_date || !isValid(parseDateString(data.start_date)!)}
                                 >
@@ -582,7 +348,7 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                             <FormField
                                 label={`Rental Cost #${index + 1}`}
                                 htmlFor={`amount-${index}`}
-                                error={errors[`payments.${index}.amount`]}
+                                error={formErrors[`payments.${index}.amount`]}
                                 required
                             >
                                 <Input
@@ -594,14 +360,14 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                                     value={payment.amount}
                                     onChange={(e) => handlePaymentChange(index, 'amount', e.target.value)}
                                     placeholder="e.g., 1200.50"
-                                    className={cn(errors[`payments.${index}.amount`] && 'border-red-500')}
+                                    className={cn(formErrors[`payments.${index}.amount`] && 'border-red-500')}
                                     required
                                 />
                             </FormField>
                             <FormField
                                 label="Income Account"
                                 htmlFor={`credit_account_id-${index}`}
-                                error={errors[`payments.${index}.credit_account_id`]}
+                                error={formErrors[`payments.${index}.credit_account_id`]}
                                 required
                             >
                                 <AccountCombobox
@@ -616,20 +382,23 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                                     getAccountName={getAccountName}
                                     placeholder="Select an Income Account"
                                     searchPlaceholder="Search income account..."
-                                    error={!!errors[`payments.${index}.credit_account_id`]}
+                                    error={!!formErrors[`payments.${index}.credit_account_id`]}
                                 />
                             </FormField>
                             <Separator />
                             <FormField
                                 label="Payment Type"
                                 htmlFor={`payment_type-${index}`}
-                                error={errors[`payments.${index}.payment_type`]}
+                                error={formErrors[`payments.${index}.payment_type`]}
                                 required
                             >
                                 <RadioGroup
                                     value={payment.payment_type}
                                     onValueChange={(v: PaymentType) => handlePaymentChange(index, 'payment_type', v)}
-                                    className="mt-1 flex h-[38px] items-center space-x-4"
+                                    className={cn(
+                                        'border-input mt-1 flex h-[38px] items-center space-x-4 rounded-md border px-2',
+                                        formErrors[`payments.${index}.payment_type`] && 'border-red-500',
+                                    )}
                                 >
                                     {(['cash', 'bank', 'credit'] as const).map((type) => (
                                         <div key={type} className="flex items-center space-x-2">
@@ -649,7 +418,7 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                                 <FormField
                                     label="Target Bank Account"
                                     htmlFor={`debit_target_account_id-${index}`}
-                                    error={errors[`payments.${index}.debit_target_account_id`]}
+                                    error={formErrors[`payments.${index}.debit_target_account_id`]}
                                     required
                                 >
                                     <AccountCombobox
@@ -664,7 +433,7 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                                         getAccountName={getAccountName}
                                         placeholder="Select Bank Account"
                                         searchPlaceholder="Search bank account..."
-                                        error={!!errors[`payments.${index}.debit_target_account_id`]}
+                                        error={!!formErrors[`payments.${index}.debit_target_account_id`]}
                                     />
                                 </FormField>
                             )}
@@ -676,7 +445,7 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                 </FormSection>
 
                 <FormSection title="Additional Notes" description="Add any relevant notes about this contract extension.">
-                    <FormField label="Notes (Optional)" htmlFor="notes" error={errors.notes} labelClassName="pt-2" className="md:items-start">
+                    <FormField label="Notes (Optional)" htmlFor="notes" error={formErrors.notes} labelClassName="pt-2" className="md:items-start">
                         <textarea
                             id="notes"
                             name="notes"
@@ -685,84 +454,25 @@ export function ExtendContract({ selectedRow, selectedVehicle, chartOfAccounts, 
                             rows={4}
                             className={cn(
                                 'border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
-                                errors.notes && 'border-red-500',
+                                formErrors.notes && 'border-red-500',
                             )}
                             placeholder="Enter any rental-specific notes here..."
                             disabled={processing}
                         />
                     </FormField>
 
-                    <FormField label="Incharge By" htmlFor="pickup-user_name" error={errors.user_name} required>
-                        <Popover open={userDialogOpen} onOpenChange={setUserDialogOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={userDialogOpen}
-                                    aria-label="Select user"
-                                    id="pickup-user_name"
-                                    className={cn(
-                                        'w-full justify-between',
-                                        !data.user_name && 'text-muted-foreground',
-                                        errors.user_name && 'border-red-500',
-                                    )}
-                                    disabled={processing || validUsers.length === 0}
-                                >
-                                    {data.user_name ? data.user_name : 'Select user...'}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="max-h-[80vh] w-[--radix-Dialog-trigger-width] overflow-y-auto p-0">
-                                <Command>
-                                    <CommandInput placeholder="Search user..." />
-                                    <CommandList>
-                                        <CommandEmpty>No user found.</CommandEmpty>
-                                        <CommandGroup>
-                                            {validUsers.map((user) => (
-                                                <CommandItem
-                                                    key={user.id}
-                                                    value={user.name}
-                                                    onSelect={(currentValue) => {
-                                                        const selectedUser = validUsers.find(
-                                                            (u) => u.name.toLowerCase() === currentValue.toLowerCase(),
-                                                        );
-                                                        setData('user_name', selectedUser?.name ?? '');
-                                                        setData('incharger_id', selectedUser?.id ?? null);
-                                                        if (errors.user_name) clearErrors('user_name');
-                                                        setUserDialogOpen(false);
-                                                    }}
-                                                >
-                                                    <Check
-                                                        className={cn('mr-2 h-4 w-4', data.incharger_id === user.id ? 'opacity-100' : 'opacity-0')}
-                                                    />
-                                                    {user.name}
-                                                    {user.email && <span className="text-muted-foreground ml-2 text-xs">({user.email})</span>}
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
-                        {validUsers.length === 0 && !processing && <p className="text-muted-foreground mt-1 text-sm">No users available.</p>}
+                    {/* Incharger Combobox */}
+                    <FormField label="Staff Incharge" htmlFor="incharger_id" error={formErrors.incharger_id} required>
+                        <EntityCombobox
+                            items={users}
+                            value={selectedInchargerName}
+                            onChange={(name, id) => handleComboboxChange('incharger_id', name, id)}
+                            processing={processing}
+                            error={formErrors.incharger_id}
+                            entityName="staff"
+                        />
                     </FormField>
                 </FormSection>
-
-                <SheetFooter>
-                    <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                        <SheetClose asChild>
-                            <Button type="button" variant="outline" disabled={processing}>
-                                Cancel
-                            </Button>
-                        </SheetClose>
-                        <Button type="button" variant="outline" onClick={resetForm} disabled={processing}>
-                            Reset Form
-                        </Button>
-                        <Button type="button" onClick={handlePreview} disabled={processing || !data.rental_id} className="w-full sm:w-auto">
-                            Preview
-                        </Button>
-                    </div>
-                </SheetFooter>
             </form>
         </div>
     );

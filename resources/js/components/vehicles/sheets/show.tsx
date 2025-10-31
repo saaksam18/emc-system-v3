@@ -106,7 +106,11 @@ export const Show: React.FC<ShowProps> = ({ selectedVehicle }) => {
     // Helper function to render the photo
     const renderPhotoItem = (imageUrl: string | null | undefined) => {
         if (!imageUrl) {
-            return null; // Don't render anything if there's no photo
+            return (
+                <div className="bg-sidebar flex aspect-video h-auto max-h-64 w-full items-center justify-center rounded-lg border">
+                    <p>No image available.</p>
+                </div>
+            );
         }
         return (
             <div>

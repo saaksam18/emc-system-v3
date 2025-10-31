@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { ChartOfAccountTypes, Vehicle } from '@/types';
 import { EnhancedPayment, FormErrors, InitialFormValues, SetDataFunction } from '@/types/transaction-types';
-import { Banknote, Check, ChevronsUpDown, CreditCard, DollarSign, PlusCircle, Trash2 } from 'lucide-react';
+import { Banknote, Check, ChevronsUpDown, CreditCard, DollarSign } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 // --- Copied from sales-entry.tsx ---
@@ -97,16 +97,22 @@ const AccountCombobox: React.FC<AccountComboboxProps> = ({
 );
 // --- End of Helper Components ---
 
-function PaymentDetails({ data, setData, selectedVehicleData, formErrors, chartOfAccounts }: PageProps) {
+function PaymentDetails({ data, setData, selectedVehicleData, chartOfAccounts }: PageProps) {
     const [open, setOpen] = useState<Record<string, boolean>>({});
-    console.log('selectedVehicleData', selectedVehicleData);
+    useEffect(() => {
+        // This effect synchronizes the `total_cost` field with the amount of the primary rental payment.
+        // The backend requires `total_cost` to be submitted, so this ensures it's always up-to-date.
+        const rentalPayment = (Array.isArray(data.payments) ? data.payments : []).find((p) => p.id === 'initial_payment_0');
+
+        if (rentalPayment && data.total_cost !== rentalPayment.amount) {
+            setData('total_cost', rentalPayment.amount || '0');
+        }
+    }, [data.payments, data.total_cost, setData]);
     useEffect(() => {
         const originalPayments = Array.isArray(data.payments) ? data.payments : [];
 
         // Start with manual payments, preserving their order.
-        let newPayments = originalPayments.filter(
-            (p) => p.description !== 'Extra helmet fee' && p.description !== 'Customer deposit',
-        );
+        const newPayments = originalPayments.filter((p) => p.description !== 'Extra helmet fee' && p.description !== 'Customer deposit');
 
         // --- Manage Rental Payment Description ---
         if (selectedVehicleData && data.period > 0) {
@@ -120,7 +126,6 @@ function PaymentDetails({ data, setData, selectedVehicleData, formErrors, chartO
 
         // --- Manage Helmet Payment (Update, Add, or Remove) ---
         const helmetAmount = Number(data.helmet_amount);
-        const helmetFee = 3 * (helmetAmount - 1);
         if (helmetAmount > 1) {
             const existingHelmetPayment = originalPayments.find((p) => p.description === 'Extra helmet fee');
             newPayments.push({
@@ -128,7 +133,7 @@ function PaymentDetails({ data, setData, selectedVehicleData, formErrors, chartO
                 ...(existingHelmetPayment || {}),
                 id: existingHelmetPayment?.id || `helmet_${new Date().getTime()}`,
                 description: 'Extra helmet fee',
-                amount: String(helmetFee),
+                amount: existingHelmetPayment?.amount || '',
                 credit_account_id: existingHelmetPayment?.credit_account_id || '',
                 payment_type: existingHelmetPayment?.payment_type || 'cash',
                 debit_target_account_id: existingHelmetPayment?.debit_target_account_id || '',
@@ -177,7 +182,7 @@ function PaymentDetails({ data, setData, selectedVehicleData, formErrors, chartO
         handlePaymentChange(index, 'amount', numericValue);
     };
 
-    const addPayment = () => {
+    /* const addPayment = () => {
         const newPayment: EnhancedPayment = {
             id: `manual_${new Date().getTime()}`,
             description: '',
@@ -193,7 +198,7 @@ function PaymentDetails({ data, setData, selectedVehicleData, formErrors, chartO
         const updatedPayments = [...(Array.isArray(data.payments) ? data.payments : [])];
         updatedPayments.splice(index, 1);
         setData('payments', updatedPayments);
-    };
+    }; */
 
     const { incomeAccounts, specificBankAccounts, liabilityAccounts, getAccountName } = useMemo(() => {
         const incomeAccounts = (chartOfAccounts || []).filter((acc) => acc.type === 'Revenue');
@@ -207,7 +212,6 @@ function PaymentDetails({ data, setData, selectedVehicleData, formErrors, chartO
 
         return { incomeAccounts, specificBankAccounts, liabilityAccounts, getAccountName };
     }, [chartOfAccounts]);
-    console.log(data);
     return (
         <div className="space-y-6 rounded-xl">
             {selectedVehicleData && (
@@ -220,10 +224,10 @@ function PaymentDetails({ data, setData, selectedVehicleData, formErrors, chartO
                             </CardTitle>
                             <CardDescription className="w-full">Manually add and manage payment records for this transaction.</CardDescription>
                         </div>
-                        <Button onClick={addPayment} size="sm">
+                        {/* <Button onClick={addPayment} size="sm">
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Add Payment
-                        </Button>
+                        </Button> */}
                     </CardHeader>
                     <Separator />
                     <CardContent className="space-y-6 p-6">
@@ -304,14 +308,14 @@ function PaymentDetails({ data, setData, selectedVehicleData, formErrors, chartO
                                         />
                                     </FormItem>
                                 )}
-                                <Button
+                                {/* <Button
                                     variant="ghost"
                                     size="icon"
                                     className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
                                     onClick={() => removePayment(index)}
                                 >
                                     <Trash2 className="h-4 w-4" />
-                                </Button>
+                                </Button> */}
                             </div>
                         ))}
                         {(Array.isArray(data.payments) ? data.payments : []).length === 0 && (

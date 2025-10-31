@@ -53,7 +53,7 @@ class LegacyRentalDataSeeder extends Seeder
         $newStatus = (string) $legacyRental->transactionType;
         
 
-        if ($newStatus === 'Sold') {
+        if ($newStatus === "3") {
             // Logic for sold rentals
             $startDate = $legacyRental->rentalDay;
             $actualStartDate = $legacyRental->rentalDay;

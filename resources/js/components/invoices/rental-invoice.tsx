@@ -1,27 +1,52 @@
-import { RentalsType } from '@/types';
+import { ChartOfAccountTypes, RentalsType, SaleTransaction } from '@/types';
 import { Ref } from 'react';
 import Logo from '../../assets/logo.png';
 
 interface PageProps {
     rental: RentalsType | undefined;
+    lastSale: SaleTransaction | undefined;
     contentRef: Ref<HTMLDivElement> | undefined;
+    chartOfAccounts: ChartOfAccountTypes[];
 }
 
-function RentalInvoice({ rental, contentRef }: PageProps) {
+function RentalInvoice({ rental, lastSale, contentRef, chartOfAccounts }: PageProps) {
     // Convert date to a more thermal-friendly format (DD/MM/YY)
-    const receiptDate = new Date(rental?.start_date)
-        .toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: '2-digit',
-        })
-        .toUpperCase()
-        .replace(/ /g, '/');
-    const sale = rental?.sale;
-    const rentalAmount = parseFloat(sale?.rental?.amount || '0');
-    const helmetAmount = parseFloat(sale?.helmet?.amount || '0');
-    const depositAmount = parseFloat(sale?.deposit?.amount || '0');
-    const totalPaid = rentalAmount + helmetAmount + depositAmount;
+    const rawStartDate = rental?.actual_start_date;
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayDateString = `${year}-${month}-${day}`;
+
+    const receiptDate = rawStartDate
+        ? new Date(rawStartDate)
+              .toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: '2-digit',
+              })
+              .toUpperCase()
+              .replace(/ /g, '/')
+        : new Date(todayDateString)
+              .toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: '2-digit',
+              })
+              .toUpperCase()
+              .replace(/ /g, '/');
+
+    const payments = rental?.payments || [];
+    const totalPaid = payments.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0);
+    const paymentMethods = [...new Set(payments.map((p) => p.payment_type))].join(', ').toUpperCase();
+
+    const nextSaleNo = lastSale?.sale_no ? `SALE-${String(parseInt(lastSale.sale_no.split('-')[1]) + 1).padStart(4, '0')}` : 'SALE-01';
+
+    const getAccountName = (accountId: string) => {
+        const account = chartOfAccounts?.find((acc) => String(acc.id) === accountId);
+        return account ? account.name : 'Unknown Account';
+    };
 
     return (
         <div>
@@ -53,7 +78,7 @@ function RentalInvoice({ rental, contentRef }: PageProps) {
                     <section className="mb-4 space-y-1">
                         <div className="flex justify-between">
                             <span className="font-semibold">Receipt No:</span>
-                            <span>{rental?.id || 'N/A'}</span>
+                            <span>{nextSaleNo}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="font-semibold">Date:</span>
@@ -72,27 +97,15 @@ function RentalInvoice({ rental, contentRef }: PageProps) {
                                 <span>DESCRIPTION</span>
                                 <span className="text-right">AMOUNT</span>
                             </div>
-                            {/* Rental Item */}
-                            <div className="flex justify-between">
-                                <span className="w-2/3">
-                                    {rental?.vehicle.model} {rental?.status_name} {rental?.period} Days
-                                </span>
-                                <span className="w-1/3 text-right">${rentalAmount.toFixed(2)}</span>
-                            </div>
-                            {/* Helmet Item */}
-                            {helmetAmount > 0 && (
-                                <div className="flex justify-between">
-                                    <span className="w-2/3">Helmet Rental</span>
-                                    <span className="w-1/3 text-right">${helmetAmount.toFixed(2)}</span>
+                            {payments.map((payment, index) => (
+                                <div className="flex justify-between" key={index}>
+                                    <span className="w-2/3">
+                                        {payment.description} ({payment.payment_type.toUpperCase()})
+                                        {payment.debit_target_account_id && ` - ${getAccountName(payment.debit_target_account_id)}`}
+                                    </span>
+                                    <span className="w-1/3 text-right">${parseFloat(payment.amount || '0').toFixed(2)}</span>
                                 </div>
-                            )}
-                            {/* Deposit Item */}
-                            {depositAmount > 0 && (
-                                <div className="flex justify-between">
-                                    <span className="w-2/3">Customer Deposit</span>
-                                    <span className="w-1/3 text-right">${depositAmount.toFixed(2)}</span>
-                                </div>
-                            )}
+                            ))}
                         </div>
                     </section>
 
@@ -103,7 +116,7 @@ function RentalInvoice({ rental, contentRef }: PageProps) {
                             <span className="text-green-700">${totalPaid.toFixed(2)}</span>
                         </div>
                         <div className="mt-2 text-xs">
-                            <span className="font-semibold">Payment Method:</span> {sale?.rental?.payment_type.toUpperCase() || 'CASH'}
+                            <span className="font-semibold">Payment Method:</span> {paymentMethods || 'N/A'}
                         </div>
                     </section>
 

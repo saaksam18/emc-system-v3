@@ -103,6 +103,7 @@ class CustomerController extends Controller
             'last_name' => $customer->last_name ?: 'N/A',
             'primary_contact' => $primaryContactValue,
             'primary_contact_type' => $primaryContactType,
+            'primary_deposit_type' => $primaryDepositType ?: 'N/A',
             'primary_deposit' => $primaryDepositValue,
             'address' => $customer->full_address ?: 'N/A',
             'gender' => $customer->gender ?? 'N/A',

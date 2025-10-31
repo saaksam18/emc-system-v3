@@ -165,6 +165,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // New Rental Transaction
     Route::get('rentals/new-transaction/{vehicle}', [TransactionController::class, 'index'])->name('rentals.new-transaction.index');
+    Route::get('rentals/extend-transaction/{vehicle}', [TransactionController::class, 'extendIndex'])->name('rentals.extend-transaction.index');
+    Route::get('rentals/change-vehicle-transaction/{vehicle}', [TransactionController::class, 'changeVehicleIndex'])->name('rentals.change-vehicle-transaction.index');
 
 });
 

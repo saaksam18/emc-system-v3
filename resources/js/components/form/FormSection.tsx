@@ -1,12 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import React from 'react';
 
+// --- Reusable Components ---
 interface FormSectionProps {
     title: string;
     description: string;
     children: React.ReactNode;
 }
-
 export const FormSection: React.FC<FormSectionProps> = ({ title, description, children }) => (
     <Card>
         <CardHeader>

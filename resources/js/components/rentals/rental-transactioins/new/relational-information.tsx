@@ -1,13 +1,13 @@
+import { EntityCombobox } from '@/components/form/entity-combobox';
 import { FormField } from '@/components/form/FormField';
 
-import { SearchableCombobox } from '@/components/form/SearchableCombobox';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { Customers, Vehicle } from '@/types';
-import { FormErrors, InitialFormValues, LookupItem } from '@/types/transaction-types';
+import { FormErrors, InitialFormValues, useLookupName } from '@/types/transaction-types';
 import { InertiaFormProps } from '@inertiajs/react';
 import { CalendarClock, CalendarIcon, CheckCircle, NotepadText, PlusCircle } from 'lucide-react';
 import React, { useMemo } from 'react';
@@ -38,50 +38,6 @@ interface RelationalInformationProps {
 }
 
 // --- Reusable Entity Combobox ---
-interface EntityComboboxProps<T extends { id: number; name: string }> {
-    items: T[] | null;
-    value: string;
-    onChange: (value: string, id: number | null) => void;
-    processing: boolean;
-    error?: string;
-    entityName: string;
-}
-function EntityCombobox<T extends { id: number; name: string }>({ items, value, onChange, processing, error, entityName }: EntityComboboxProps<T>) {
-    const options = useMemo(
-        () =>
-            Array.isArray(items)
-                ? items
-                      .filter((item): item is T => !!item && !!item.id && typeof item.name === 'string' && item.name !== '')
-                      .map((item) => ({ value: item.name, label: item.name }))
-                : [],
-        [items],
-    );
-
-    const handleSelect = (selectedName: string) => {
-        // Find the corresponding item/ID
-        const selectedItem = items?.find((item) => item.name === selectedName);
-        const selectedId = selectedItem?.id ?? null;
-
-        // Call the new onChange with both name and ID
-        onChange(selectedName, selectedId);
-    };
-
-    return (
-        <>
-            <SearchableCombobox
-                options={options}
-                value={value}
-                onChange={handleSelect}
-                placeholder={`Select ${entityName}...`}
-                searchPlaceholder={`Search ${entityName}...`}
-                emptyMessage={`No ${entityName} found.`}
-                disabled={processing || options.length === 0}
-                error={!!error}
-            />
-            {options.length === 0 && !processing && <p className="text-muted-foreground mt-1 text-sm">No {entityName}s available.</p>}
-        </>
-    );
-}
 
 function isValidDate(date: Date | undefined) {
     if (!date) {
@@ -119,25 +75,6 @@ function calculateRentalPeriod(startDateString: string, endDateString: string): 
     const days = Math.round(timeDifference / (1000 * 60 * 60 * 24));
     return days;
 }
-
-const useLookupName = <T extends LookupItem>(collection: T[] | undefined, lookupId: number | string | null | undefined): string => {
-    return useMemo(() => {
-        // 1. Validate collection and ID
-        if (!Array.isArray(collection) || lookupId === undefined || lookupId === null) {
-            return '';
-        }
-
-        // 2. Safely convert ID
-        const numericId = Number(lookupId);
-        if (isNaN(numericId)) {
-            return '';
-        }
-
-        // 3. Find the item and return the name
-        const item = collection.find((c) => c.id === numericId);
-        return item?.name ?? '';
-    }, [collection, lookupId]);
-};
 
 function RelationalInformation({
     data,

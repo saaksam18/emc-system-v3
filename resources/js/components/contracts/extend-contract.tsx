@@ -1,4 +1,5 @@
 import { RentalsType } from '@/types';
+import { EnhancedDeposit } from '@/types/transaction-types';
 import React, { Ref } from 'react';
 
 // Dummy Logo Component (Since I cannot render the original image)
@@ -18,7 +19,7 @@ interface PageProps {
     contentRef: Ref<HTMLDivElement> | undefined;
 }
 
-function FrontNewContract({ rental, contentRef }: PageProps) {
+function ExtendContract({ rental, contentRef }: PageProps) {
     const DottedLineInput: React.FC<{ flex?: boolean; widthClass?: string; value?: string }> = ({
         flex = false,
         widthClass = 'flex-1',
@@ -31,50 +32,12 @@ function FrontNewContract({ rental, contentRef }: PageProps) {
         />
     );
 
-    // NEW FUNCTION: Helper to format the phone number string
-    const formatPhoneNumber = (phoneNumber: string | undefined): { local: string | undefined; international: string | undefined } => {
-        if (!phoneNumber) return { local: undefined, international: undefined };
-
-        // 1. Clean the input: remove all non-digit characters and any international prefix like '00'
-        let cleaned = ('' + phoneNumber).replace(/\D/g, '');
-
-        // Remove leading country code if present (e.g., if +855, 855, or 0 is already at the start)
-        // This logic is crucial for standardizing the local number part.
-        if (cleaned.startsWith('0')) {
-            cleaned = cleaned.substring(1); // Remove leading '0' (e.g., 089xxxx -> 89xxxx)
-        }
-        // Assuming the Cambodian country code is 855
-        if (cleaned.startsWith('855')) {
-            cleaned = cleaned.substring(3); // Remove '855' (e.g., 85589xxxx -> 89xxxx)
-        }
-
-        // Now, 'cleaned' should be the local part of the number (usually 8-9 digits).
-
-        const localPart = cleaned;
-        let localFormatted = cleaned; // Default to cleaned if no match
-
-        // 2. Local Display Format (e.g., 089 176 942)
-        // We check for 8-9 digit patterns common in Cambodia
-        const match = localPart.match(/^(\d{2,3})(\d{3})(\d{3,4})$/); // e.g., (89)(176)(942) or (89)(176)(9426)
-
-        if (match) {
-            // Use the leading '0' for local display, then group the rest.
-            localFormatted = `0${match[1]} ${match[2]} ${match[3]}`;
-        } else {
-            // If the number is too long (like your 10-digit example: 8917694264) or short,
-            // we'll just insert spaces after 3 digits for readability, but use the original input
-            // which includes the leading '0' if it was there in the original data.
-            localFormatted = phoneNumber.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
-        }
-
-        // 3. International (E.164) Format (e.g., +85589176942)
-        const internationalFormatted = localPart.length >= 8 ? `+855${localPart}` : undefined;
-
-        return {
-            local: localFormatted,
-            international: internationalFormatted,
-        };
-    };
+    // NEW CODE: Get today's date as a YYYY-MM-DD string
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayDateString = `${year}-${month}-${day}`;
 
     // NEW FUNCTION: Helper to format the date string
     const formatDate = (dateString: string | undefined): string | undefined => {
@@ -170,59 +133,16 @@ function FrontNewContract({ rental, contentRef }: PageProps) {
 
                                 <div className="ml-4 flex items-center space-x-2 whitespace-nowrap">
                                     <label className="text-sm">
-                                        <span className="w-24 font-semibold">Sex:</span> {rental?.sex || rental?.customer?.gender || 'N/A'}
+                                        <span className="w-24 font-semibold">Today's Date:</span> {formatDate(todayDateString)}
                                     </label>
                                 </div>
-                                <label className="text-sm whitespace-nowrap">
-                                    <span className="w-24 font-semibold">Nationality:</span>{' '}
-                                    {rental?.nationality || rental?.customer?.nationality || 'N/A'}
-                                </label>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                <label className="text-sm font-semibold whitespace-nowrap">
-                                    {rental?.primary_contact_type && <>{rental?.primary_contact_type}</>}
-                                    {rental?.customer?.primary_contact_type && <>{rental?.customer?.primary_contact_type}</>}
-                                    {!rental?.primary_contact_type && !rental?.customer?.primary_contact_type && <>Contact</>}
-                                </label>
-                                {rental?.primary_contact &&
-                                    (() => {
-                                        const formatted = formatPhoneNumber(rental.primary_contact);
-                                        return (
-                                            <div className="flex flex-col space-y-1">
-                                                <span className="text-sm">{formatted.local || rental.primary_contact}</span>
-                                            </div>
-                                        );
-                                    })()}
-                                {rental?.customer?.primary_contact &&
-                                    (() => {
-                                        const formatted = formatPhoneNumber(rental.customer.primary_contact);
-                                        return (
-                                            <div className="flex flex-col space-y-1">
-                                                <span className="text-sm">{formatted.local || rental.customer.primary_contact}</span>
-                                            </div>
-                                        );
-                                    })()}
-                                {!rental?.primary_contact && !rental?.customer?.primary_contact && (
-                                    <DottedLineInput widthClass="flex-1 min-w-[200px]" />
-                                )}
-
-                                <label className="text-sm font-semibold whitespace-nowrap">Occupation in Cambodia:</label>
-                                {rental?.occupations ? <>{rental?.occupations}</> : <DottedLineInput widthClass="flex-1 min-w-[200px]" />}
-                            </div>
-
-                            <div className="flex items-center">
-                                <label className="text-sm font-semibold whitespace-nowrap">Present Address in Cambodia:</label>
-                                {rental?.address && <span className="ml-1">{rental?.address}</span>}
-                                {rental?.customer?.address && <span className="ml-1">{rental?.customer?.address}</span>}
-                                {!rental?.address && !rental?.customer?.address && <DottedLineInput widthClass="flex-1 min-w-[200px]" />}
                             </div>
 
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                                 <div className="flex items-center">
-                                    <label className="text-sm font-semibold whitespace-nowrap">Rental Date:</label>
-                                    {rental?.actual_start_date ? (
-                                        <span className="ml-1">{formatDate(rental?.actual_start_date)}</span>
+                                    <label className="text-sm font-semibold whitespace-nowrap">Previous Return Date:</label>
+                                    {rental?.start_date ? (
+                                        <span className="ml-1">{formatDate(rental?.start_date)}</span>
                                     ) : (
                                         <DottedLineInput widthClass="flex-1 min-w-[200px]" />
                                     )}
@@ -247,22 +167,9 @@ function FrontNewContract({ rental, contentRef }: PageProps) {
                                 <span className="text-sm whitespace-nowrap">PM5:00 (The rental date is counted as the 1st rental day)</span>
                             </div>
 
-                            <div className="flex items-center space-x-4">
-                                <label className="text-sm font-semibold whitespace-nowrap">Helmet Rental:</label>
-                                {rental?.helmet_amount === 1 && <span className="ml-1">{rental?.helmet_amount} Helmet</span>}
-                                {rental?.helmet_amount > 1 && <span className="ml-1">{rental?.helmet_amount} Helmets</span>}
-                                {!rental?.helmet_amount && <DottedLineInput widthClass="w-[80px]" />}
-                            </div>
-
-                            <div className="pt-2">
-                                <span className="text-sm font-semibold">How to get to know our shop? (survey)</span>
-                                <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-sm md:grid-cols-4">
-                                    {rental?.how_know_shop ? (
-                                        <span className="ml-1">{rental?.how_know_shop}</span>
-                                    ) : (
-                                        <DottedLineInput widthClass="flex-1 min-w-[200px]" />
-                                    )}
-                                </div>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                <label className="text-sm font-semibold whitespace-nowrap">Rental Status:</label>
+                                <p>Extension</p>
                             </div>
                         </div>
 
@@ -310,10 +217,10 @@ function FrontNewContract({ rental, contentRef }: PageProps) {
                                 <div className="space-y-1 p-2">
                                     <div className="ml-auto flex flex-col items-center justify-center text-lg font-bold">
                                         {rental?.activeDeposits &&
-                                        rental.activeDeposits.filter((d) => d.deposit_type || d.deposit_value).length > 0 ? (
+                                        rental.activeDeposits.filter((d: EnhancedDeposit) => d.deposit_type || d.deposit_value).length > 0 ? (
                                             rental.activeDeposits
-                                                .filter((d) => d.deposit_type || d.deposit_value)
-                                                .map((deposit, index) => (
+                                                .filter((d: EnhancedDeposit) => d.deposit_type || d.deposit_value)
+                                                .map((deposit: EnhancedDeposit, index: number) => (
                                                     <span key={index} className="ml-1">
                                                         {deposit.deposit_type_name === 'Money' ? (
                                                             <>
@@ -334,6 +241,16 @@ function FrontNewContract({ rental, contentRef }: PageProps) {
                                                     <>{rental.primary_deposit_type}</>
                                                 )}
                                             </span>
+                                        ) : rental?.customer.primary_deposit_type ? (
+                                            <span className="ml-1">
+                                                {rental.customer.primary_deposit_type === 'Money' ? (
+                                                    <>
+                                                        {rental.customer.primary_deposit_type}: ${rental.customer.primary_deposit}
+                                                    </>
+                                                ) : (
+                                                    <>{rental.customer.primary_deposit_type}</>
+                                                )}
+                                            </span>
                                         ) : (
                                             <>
                                                 <span className="ml-1">$</span>
@@ -343,6 +260,14 @@ function FrontNewContract({ rental, contentRef }: PageProps) {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                        {/* --- Return/Exchange Policy --- */}
+                        <div className="mb-6">
+                            <h2 className="mb-2 border-b border-black text-lg font-bold">The effect of this contract and previous contracts</h2>
+                            <p className="text-sm">
+                                Previous contract articles and policies are effective in this contract. And this contract is effective until you
+                                return the rental motorbike to EMC.
+                            </p>
                         </div>
                         {/* --- Compensation Policy --- */}
                         <div className="mb-6">
@@ -362,21 +287,6 @@ function FrontNewContract({ rental, contentRef }: PageProps) {
                                 You shall pay all the amount of compensation fee at one time basically (payment condition is negotiable).
                             </p>
                         </div>
-                        {/* --- Return/Exchange Policy --- */}
-                        <div className="mb-6">
-                            <h2 className="mb-2 border-b border-black text-lg font-bold">Return/Exchange Policy</h2>
-                            <ol className="list-decimal space-y-1 pl-5 text-sm">
-                                <li>
-                                    When you return/exchange the rental motorbike, you should fill the gasoline up before return/exchange. You shall
-                                    fill gasoline up or pay some money as gasoline fee.
-                                </li>
-                                <li>You can exchange rental motorbikes at the same price if the rental motorbike has any trouble.</li>
-                                <li>
-                                    When you want to exchange more expensive type of motorbike and you keep on using this one, you need to pay the
-                                    amount of price difference between the 2 motorbikes.
-                                </li>
-                            </ol>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -384,4 +294,4 @@ function FrontNewContract({ rental, contentRef }: PageProps) {
     );
 }
 
-export default FrontNewContract;
+export default ExtendContract;

@@ -94,12 +94,14 @@ class PrintController extends Controller
         // --- Return the formatted array ---
         return [
             'id' => $rental->id,
+
             'vehicle_no' => $rental->vehicle?->vehicle_no ?? 'N/A',
             'license_plate' => $rental->vehicle?->license_plate ?? 'N/A',
             'make' => $rental->vehicle?->vehicleMaker?->name ?? 'N/A',
             'model' => $rental->vehicle?->vehicleModel?->name ?? 'N/A',
             'class' => $rental->vehicle?->vehicleClasses?->name ?? 'N/A',
             'compensation_price' => $rental->vehicle->compensation_price ?? 'N/A',
+
             'full_name' => $full_name,
             'sex' => $rental->customer->gender,
             'nationality' => $rental->customer->nationality,
@@ -112,6 +114,7 @@ class PrintController extends Controller
             'primary_deposit' => $primaryDepositValue,
             'active_deposits_count' => $activeDepositsCount,
             'activeDeposits' => $formattedActiveDeposits,
+            
             'status_name' => $rental->status,
             'total_cost' => $rental->total_cost,
             'start_date' => $rental->start_date?->format('Y-m-d') ?? 'N/A',
@@ -137,7 +140,7 @@ class PrintController extends Controller
 
         // 2. Return an Inertia response
         // Assumes your React component is located at Pages/Print/RentalContractPreview.jsx
-        return Inertia::render('templates/contracts/preview-new-contract', [
+        return Inertia::render('templates/contracts/preview-contract', [
             'rental' => $formattedRental,
             // Pass the route for the download button, using the original print route
             'downloadUrl' => route('print.rental', $rental->id), 

@@ -2,7 +2,7 @@ import { Create as CreateCustomerSheet } from '@/components/customers/sheets/cre
 import { Edit as EditCustomerSheet } from '@/components/customers/sheets/edit'; // New import
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
-import { ContactTypes, Customers, SaleTransaction } from '@/types'; // Import necessary types
+import { ContactTypes, Customers, RentalsType, SaleTransaction } from '@/types'; // Import necessary types
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, BikeIcon, Check, Printer, Save } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -11,12 +11,12 @@ import { toast } from 'sonner';
 // IMPORTING TYPES AND DATA
 import {
     DetailedCustomerResponse,
+    ExtendContractFormValues,
     FormErrors,
-    InitialFormValues,
     TransactionProcessingPageProps as PageProps,
-    breadcrumbs,
-    initialFormValues,
-    steps,
+    extendSteps,
+    initialExtendFormValues,
+    updateRentalBreadcrumbs,
 } from '@/types/transaction-types';
 
 // Reusable UI Component
@@ -35,10 +35,11 @@ interface ExtendedPageProps extends PageProps {
     };
     contactTypes: ContactTypes[];
     lastSale: SaleTransaction[] | undefined;
+    rental: RentalsType | undefined;
 }
 // --- End of Type Definitions ---
 
-function TransactionProcessing({
+function ExtendTransaction({
     vehicle,
     customers,
     vehicleStatuses,
@@ -47,6 +48,7 @@ function TransactionProcessing({
     chartOfAccounts,
     contactTypes,
     lastSale,
+    rental,
 }: ExtendedPageProps) {
     const { props: pageProps } = usePage<ExtendedPageProps>();
     // Effect for flash messages
@@ -69,10 +71,39 @@ function TransactionProcessing({
         }
     }, [pageProps.flash]);
 
+    /* --- Step/Progress Logic --- */
+    const [step, setStep] = useState(1);
+    const progressWidth = useMemo(() => {
+        const totalSegments = extendSteps.length - 1;
+        const completedSegments = Math.max(0, step - 1);
+        if (totalSegments === 0) return '0%';
+        return `${(completedSegments / totalSegments) * 100}%`;
+    }, [step]);
+
+    const nextStep = () => {
+        if (validateCurrentStep()) {
+            setStep((prev) => Math.min(extendSteps.length, prev + 1));
+        }
+    };
+    const prevStep = () => {
+        if (step === extendSteps.length) {
+            // If on the confirm step, reset the tabs
+            setIsActiveTab('front');
+            setCurrentTab(1);
+        }
+        setStep((prev) => Math.max(1, prev - 1));
+    };
+
+    // Conform step tabs
+    const [isActiveTab, setIsActiveTab] = useState('front');
+    const [currentTab, setCurrentTab] = useState(1);
+    /* --- End Step/Progress Logic --- */
+
     // --- 1. State Management and Form Setup ---
-    const { data, setData, post, processing, errors, clearErrors, setError } = useForm<InitialFormValues>({
-        ...initialFormValues,
-        vehicle_id: vehicle?.id || '',
+    const { data, setData, put, processing, errors, clearErrors, setError } = useForm<ExtendContractFormValues>({
+        ...initialExtendFormValues,
+        rental_id: rental?.id || null,
+        start_date: rental?.start_date || null,
     });
 
     const formErrors = errors as FormErrors;
@@ -80,11 +111,6 @@ function TransactionProcessing({
     const [selectedCustomerData, setSelectedCustomerData] = useState<Customers | null>(null);
     const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
     const [isEditCustomerSheetOpen, setIsEditCustomerSheetOpen] = useState(false);
-
-    const [step, setStep] = useState(1);
-    // Conform step tabs
-    const [isActiveTab, setIsActiveTab] = useState('front');
-    const [currentTab, setCurrentTab] = useState(1);
 
     // isSubmissionComplete for activate print button
     const [isSubmissionComplete, setIsSubmissionComplete] = useState(false);
@@ -121,44 +147,15 @@ function TransactionProcessing({
     };
     /* End Update Customer */
 
-    // --- Dynamic Payments Logic Integration ---
-    // Removed useDynamicPayments hook and its synchronization useEffect.
-    // Payments are now managed manually within PaymentDetails component.
-
-    const incomeAccounts = useMemo(() => (chartOfAccounts || []).filter((account) => account.parent_account_id === 4), [chartOfAccounts]);
-    const cashInHandAccounts = useMemo(() => (chartOfAccounts || []).filter((account) => account.parent_account_id === 1), [chartOfAccounts]);
-
-    useEffect(() => {
-        if (vehicle && data.vehicle_id !== vehicle.id) {
-            setData('vehicle_id', vehicle.id);
-        }
-    }, [vehicle, data.vehicle_id, setData]);
-
-    /* --- 3. Step/Progress Logic --- */
-    const progressWidth = useMemo(() => {
-        const totalSegments = steps.length - 1;
-        const completedSegments = Math.max(0, step - 1);
-        if (totalSegments === 0) return '0%';
-        return `${(completedSegments / totalSegments) * 100}%`;
-    }, [step]);
-
-    const nextStep = () => {
-        if (validateCurrentStep()) {
-            setStep((prev) => Math.min(steps.length, prev + 1));
-        }
-    };
-    const prevStep = () => {
-        if (step === steps.length) {
-            // If on the confirm step, reset the tabs
-            setIsActiveTab('front');
-            setCurrentTab(1);
-        }
-        setStep((prev) => Math.max(1, prev - 1));
-    };
-    /* --- End Step/Progress Logic --- */
-
     /* --- Side Effects & Handlers --- */
     // Function to fetch customer data
+    useEffect(() => {
+        // Chec if the rental object and customer ID exist
+        if (rental && rental.customer_id) {
+            // Call the asynchronous function to fetch the full customer object
+            fetchCustomerData(rental.customer_id);
+        }
+    }, [rental]);
     const fetchCustomerData = async (customerId: number) => {
         if (!customerId) {
             setSelectedCustomerData(null);
@@ -192,7 +189,8 @@ function TransactionProcessing({
             setSelectedCustomerData(null);
         }
     };
-    const handleComboboxChange = (field: keyof InitialFormValues, value: string, id: number | null = null) => {
+    // End Function to fetch customer data
+    const handleComboboxChange = (field: keyof ExtendContractFormValues, value: string, id: number | null = null) => {
         const fieldString = field as string;
         const finalValue = fieldString.includes('_id') ? id : value;
 
@@ -215,61 +213,70 @@ function TransactionProcessing({
             finalValue = e.target.checked;
         }
 
-        const fieldName = name as keyof InitialFormValues;
-        setData(fieldName, finalValue as any);
+        const fieldName = name as keyof ExtendContractFormValues;
+        setData(fieldName, finalValue);
         clearErrors(fieldName as keyof FormErrors);
     };
     /* --- End Side Effects & Handlers --- */
 
     // Get the component for the current step
-    const CurrentStepComponent = steps.find((s) => s.id === step)?.component;
-    const currentStepData = steps.find((s) => s.id === step);
+    const CurrentStepComponent = extendSteps.find((s) => s.id === step)?.component;
+    const currentStepData = extendSteps.find((s) => s.id === step);
 
     // --- Validation ---
     const validateCurrentStep = (): boolean => {
-        const currentStepData = steps.find((s) => s.id === step);
+        const currentStepData = extendSteps.find((s) => s.id === step);
         if (!currentStepData) return true;
 
         const newErrors: Partial<FormErrors> = {};
 
-        // --- General Field Validation ---
         currentStepData.fields.forEach((field) => {
-            if (field.startsWith('activeDeposits')) {
-                const primaryDeposit = data.activeDeposits.find((d) => d.is_primary);
-                if (!primaryDeposit) {
-                    newErrors.activeDeposits = 'A primary deposit is required.';
-                } else {
-                    if (!primaryDeposit.deposit_type && !primaryDeposit.deposit_value) {
-                        newErrors.activeDeposits = 'Primary deposit type and value are required.';
-                    } else if (!primaryDeposit.deposit_type) {
-                        newErrors.activeDeposits = 'Primary deposit type is required.';
-                    } else if (!primaryDeposit.deposit_value) {
-                        newErrors.activeDeposits = 'Primary deposit value is required.';
-                    }
-                }
-            } else if (field === 'payments') {
-                // Exclude auto-generated payments from validation
+            if (field === 'payments') {
+                // 1. Filter out auto-generated/system payments (like helmet fee or deposit)
                 const paymentsToValidate = data.payments.filter(
                     (p) => p.id !== 'auto_helmet_fee' && !p.id.toString().startsWith('temp_payment_deposit_'),
                 );
 
                 if (paymentsToValidate.length > 0) {
-                    const invalidPayments = paymentsToValidate.filter((p) => {
-                        if (p.payment_type === 'cash') {
-                            return !p.amount || !p.credit_account_id;
+                    // 2. Iterate through ALL payments to find their original index and validate them
+                    data.payments.forEach((payment, index) => {
+                        // Skip system-generated payments, which are not user-editable
+                        if (payment.id === 'auto_helmet_fee' || payment.id?.toString().startsWith('temp_payment_deposit_')) {
+                            return;
                         }
-                        return !p.amount || !p.credit_account_id || !p.debit_target_account_id;
+
+                        // Check Amount
+                        if (!payment.amount || parseFloat(payment.amount as string) <= 0) {
+                            newErrors[`payments.${index}.amount`] = 'Amount must be a positive number.';
+                        }
+
+                        // Check Income Account (credit_account_id) - always required
+                        if (!payment.credit_account_id) {
+                            newErrors[`payments.${index}.credit_account_id`] = 'Income account is required.';
+                        }
+
+                        // Check Target Bank Account (debit_target_account_id) - required for 'bank' or 'credit'
+                        if (['bank', 'credit'].includes(payment.payment_type) && !payment.debit_target_account_id) {
+                            newErrors[`payments.${index}.debit_target_account_id`] = 'Target bank/credit account is required.';
+                        }
                     });
-                    if (invalidPayments.length > 0) {
-                        const invalidIds = invalidPayments.map((p) => p.id).join(', ');
-                        newErrors.payments = `Please fill in Amount and Accounts for manual payments. Invalid item IDs: ${invalidIds}`;
+
+                    // After checking all payments, if newErrors contains specific payment errors,
+                    // we don't need a generic array error. If no manual payments were validated,
+                    // we should skip the generic check below.
+                    const hasPaymentErrors = Object.keys(newErrors).some((key) => key.startsWith('payments.'));
+
+                    if (paymentsToValidate.length > 0 && !hasPaymentErrors) {
+                        // Success: All validated payments passed.
+                    } else if (paymentsToValidate.length > 0 && hasPaymentErrors) {
+                        // Failure: Specific errors have been set, so we don't set a generic error.
                     }
                 } else if (data.payments.length === 0) {
-                    // Only error if there are no payments at all.
+                    // Check if ANY payment is required for the step (if the array is completely empty)
                     newErrors.payments = 'At least one payment is required.';
                 }
             } else {
-                const fieldValue = data[field as keyof InitialFormValues];
+                const fieldValue = data[field as keyof ExtendContractFormValues];
                 if (fieldValue === null || fieldValue === undefined || fieldValue === '') {
                     newErrors[field as keyof FormErrors] = 'This field is required.';
                 }
@@ -279,7 +286,7 @@ function TransactionProcessing({
         const isValid = Object.keys(newErrors).length === 0;
 
         if (!isValid) {
-            setError(newErrors as any); // Update form errors to display them
+            setError(newErrors as FormErrors); // Update form errors to display them
             const description = Object.values(newErrors).filter(Boolean).join('; ');
             toast.error(`Please fill in all required fields for the "${currentStepData.name}" step.`, {
                 description: description || 'Cannot proceed until all mandatory information is provided.',
@@ -291,31 +298,28 @@ function TransactionProcessing({
         return isValid;
     };
 
-    const contentRef = useRef<HTMLDivElement>(null);
-
     // Function to handle the three-step transition
     const handleSequentialMove = () => {
         if (currentTab === 1) {
-            toast.info('Print dialog closed. Switching to back of the contract...');
-            setIsActiveTab('back');
-            setCurrentTab(2);
-        } else if (currentTab === 2) {
             toast.info('Print dialog closed. Switching to rental receipt...');
             setIsActiveTab('invoice');
-            setCurrentTab(3);
+            setCurrentTab(2);
         }
     };
+    console.log(currentTab);
+
     // Setup react-to-print
+    const contentRef = useRef<HTMLDivElement>(null);
     const reactToPrintFn = useReactToPrint({
         contentRef,
         onAfterPrint: handleSequentialMove,
     });
 
     // handlePOSRentalSubmit
-    const handlePOSRentalSubmit = (e: { preventDefault: () => void }) => {
+    const handleSubmit = (e: { preventDefault: () => void }) => {
         e.preventDefault();
         console.log(data);
-        post(route('rentals.register.store'), {
+        put(route('rentals.status.extend-contract.update', rental?.id), {
             onSuccess: () => {
                 setIsSubmissionComplete(true);
             },
@@ -329,8 +333,8 @@ function TransactionProcessing({
     };
     // --- 5. Component Render ---
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Processing" />
+        <AppLayout breadcrumbs={updateRentalBreadcrumbs}>
+            <Head title="Extension Processing" />
             <Sheet open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
                 <SheetContent className="overflow-y-auto sm:max-w-lg">
                     <SheetHeader>
@@ -372,7 +376,7 @@ function TransactionProcessing({
                                     style={{ height: progressWidth }}
                                 />
                                 <div className="relative z-10 flex flex-col space-y-8">
-                                    {steps.map((s) => (
+                                    {extendSteps.map((s) => (
                                         <div key={s.id} className="flex items-center">
                                             <div
                                                 className={`flex h-10 w-10 items-center justify-center rounded-full font-bold shadow-md transition-all duration-500 ease-in-out ${
@@ -405,7 +409,7 @@ function TransactionProcessing({
                                     style={{ width: progressWidth }}
                                 />
                                 <div className="relative z-10 flex justify-between">
-                                    {steps.map((s) => (
+                                    {extendSteps.map((s) => (
                                         <div key={s.id} className="flex flex-col items-center text-center">
                                             <div
                                                 className={`flex h-10 w-10 items-center justify-center rounded-full font-bold shadow-md transition-all duration-500 ease-in-out ${
@@ -431,12 +435,12 @@ function TransactionProcessing({
                     </div>
                 </div>
 
-                <div className={`${step === steps.length ? 'w-full' : 'grid grid-cols-1 gap-4 md:grid-cols-2'}`}>
+                <div className={`${step === extendSteps.length ? 'w-full' : 'grid grid-cols-1 gap-4 md:grid-cols-2'}`}>
                     {/* DYNAMIC FORM SECTION RENDERING */}
                     {CurrentStepComponent && currentStepData && (
                         <FormSection title={currentStepData.name} description={`Please complete the details for the ${currentStepData.name} step.`}>
                             {/* 1. Vehicle Identification Header */}
-                            {step === steps.length ? (
+                            {step === extendSteps.length ? (
                                 ''
                             ) : (
                                 <div>
@@ -464,14 +468,16 @@ function TransactionProcessing({
                             )}
                             <CurrentStepComponent
                                 // Required for all steps
+                                rental={rental}
                                 data={data}
                                 setData={setData}
                                 formErrors={formErrors}
                                 handleInputChange={handleInputChange}
                                 // Step 1 specific props
-                                selectedCustomerData={selectedCustomerData}
+                                selectedRow={rental}
                                 selectedVehicleData={vehicle}
                                 customers={customers}
+                                selectedCustomerData={selectedCustomerData}
                                 vehicleStatuses={vehicleStatuses}
                                 depositTypes={depositTypes}
                                 users={users}
@@ -479,7 +485,6 @@ function TransactionProcessing({
                                 handleComboboxChange={handleComboboxChange}
                                 // Step 3: Sales
                                 chartOfAccounts={chartOfAccounts}
-                                // payments={data.payments} // Removed redundant prop
                                 // Step 4: Confirm
                                 lastSale={lastSale}
                                 isActiveTab={isActiveTab}
@@ -490,15 +495,12 @@ function TransactionProcessing({
                                 customerDialogOpen={customerDialogOpen}
                                 setCustomerDialogOpen={setCustomerDialogOpen}
                                 onCreateClick={onCreateClick}
-                                // form submitting
-                                handleSubmit={handlePOSRentalSubmit}
                                 clearErrors={clearErrors}
-                                errors={formErrors}
                             />
                         </FormSection>
                     )}
 
-                    {step === steps.length ? (
+                    {step === extendSteps.length ? (
                         ''
                     ) : (
                         <CustomerDetailsCard
@@ -524,12 +526,12 @@ function TransactionProcessing({
                         Previous
                     </Button>
 
-                    {step === steps.length ? (
+                    {step === extendSteps.length ? (
                         <div className="flex w-1/2 flex-col gap-1 md:flex-row">
                             <Button
                                 type="button"
                                 variant="default"
-                                onClick={handlePOSRentalSubmit}
+                                onClick={handleSubmit}
                                 disabled={isSubmissionComplete || processing}
                                 className="cursor-pointer rounded-full bg-yellow-600 font-semibold transition duration-150 hover:bg-yellow-500 disabled:cursor-not-allowed disabled:opacity-50"
                             >
@@ -544,7 +546,7 @@ function TransactionProcessing({
                             >
                                 <Printer />
                             </Button>
-                            {isActiveTab === 'invoice' && currentTab === 3 && (
+                            {isActiveTab === 'invoice' && currentTab === 2 && (
                                 <Button
                                     variant="default"
                                     type="button"
@@ -560,7 +562,7 @@ function TransactionProcessing({
                         <Button
                             variant="default"
                             onClick={nextStep}
-                            disabled={step === steps.length}
+                            disabled={step === extendSteps.length}
                             className="w-1/2 cursor-pointer rounded-full bg-yellow-600 font-semibold transition duration-150 hover:bg-yellow-500 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             Next
@@ -573,4 +575,4 @@ function TransactionProcessing({
     );
 }
 
-export default TransactionProcessing;
+export default ExtendTransaction;

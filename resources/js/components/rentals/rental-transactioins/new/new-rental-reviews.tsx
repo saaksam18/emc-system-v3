@@ -5,55 +5,17 @@ import BackNewContract from '@/components/contracts/new-contracts/back';
 import FrontNewContract from '@/components/contracts/new-contracts/front';
 import RentalInvoice from '@/components/invoices/rental-invoice';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Customers, SaleTransaction, Vehicle } from '@/types';
-import { FormErrors, InitialFormValues, PaymentsState, SaleFormData } from '@/types/transaction-types';
-import { InertiaFormProps } from '@inertiajs/react';
-import { Ref } from 'react';
-
-// Define a new type that combines all the necessary data
-interface FullRentalType extends InitialFormValues {
-    customer: Customers | null;
-    vehicle: Vehicle | undefined;
-    sale: SaleTransaction | undefined;
-}
-
-// Define the shape of the props
-interface RentalReveiwProps {
-    // State/Data
-    rental: FullRentalType;
-    data: InitialFormValues;
-    saleData: SaleFormData;
-    payments: Partial<PaymentsState>;
-    formErrors: FormErrors;
-    selectedCustomerData: Customers | null;
-    selectedVehicleData: Vehicle | undefined;
-    customers: { id: number; name: string }[];
-    vehicleStatuses: { id: number; name: string }[];
-    users: { id: number; name: string }[];
-    processing: boolean;
-    contentRef: Ref<HTMLDivElement> | undefined;
-    isActiveTab: string | undefined;
-    setIsActiveTab: ((value: string) => void) | undefined;
-
-    // Handlers
-    setData: InertiaFormProps<InitialFormValues>['setData'];
-    handleComboboxChange: (field: keyof InitialFormValues, value: string, id: number | null) => void;
-
-    // UI State & Handlers
-    customerDialogOpen: boolean;
-    setCustomerDialogOpen: (open: boolean) => void;
-    setOpen: (open: boolean) => void; // Dummy/external dialog control
-    onCreateClick: () => void; // Handler for creating new customer
-}
+import { RentalReveiwProps } from '@/types/transaction-types';
 
 export default function NewRentalReviews({
     selectedCustomerData,
     selectedVehicleData,
     data,
-    payments,
+    lastSale,
     contentRef,
     isActiveTab,
     setIsActiveTab,
+    chartOfAccounts,
 }: RentalReveiwProps) {
     // FIX: Add early return check if rental object is missing or null
     if (!data || !selectedCustomerData || !selectedVehicleData) {
@@ -68,9 +30,7 @@ export default function NewRentalReviews({
         ...data,
         customer: selectedCustomerData,
         vehicle: selectedVehicleData,
-        sale: payments,
     };
-    console.log(payments);
 
     return (
         <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
@@ -87,7 +47,12 @@ export default function NewRentalReviews({
                     <BackNewContract contentRef={isActiveTab === 'back' ? contentRef : undefined} />
                 </TabsContent>
                 <TabsContent value="invoice">
-                    <RentalInvoice contentRef={isActiveTab === 'invoice' ? contentRef : undefined} rental={rental || undefined} />
+                    <RentalInvoice
+                        contentRef={isActiveTab === 'invoice' ? contentRef : undefined}
+                        rental={rental || undefined}
+                        lastSale={lastSale || undefined}
+                        chartOfAccounts={chartOfAccounts}
+                    />
                 </TabsContent>
             </Tabs>
         </div>

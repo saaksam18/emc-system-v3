@@ -1,9 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator'; // Assuming you have a Separator component
+import { Skeleton } from '@/components/ui/skeleton';
 import { Customers, Vehicle } from '@/types';
 import { InitialFormValues, PaymentsState } from '@/types/transaction-types';
-import { Calendar, CalendarSync, DollarSign, KeyboardMusic, MapPin, MapPinHouse, Phone, PlusCircle, User, UserRoundPen } from 'lucide-react'; // Import necessary icons
+import { Calendar, CalendarSync, DollarSign, KeyboardMusic, Loader2, MapPin, MapPinHouse, Phone, PlusCircle, User, UserRoundPen } from 'lucide-react'; // Import necessary icons
 import React from 'react';
 // --- Helper Component for Data Fields ---
 interface DetailFieldProps {
@@ -34,7 +35,7 @@ interface PageProps {
     onUpdateClick: () => void;
 }
 
-function CustomerDetailsCard({ selectedCustomerData, data, payments, selectedVehicleData, onUpdateClick }: PageProps) {
+function CustomerDetailsCard({ selectedCustomerData, data, selectedVehicleData, onUpdateClick }: PageProps) {
     return (
         <div>
             <Card
@@ -54,13 +55,13 @@ function CustomerDetailsCard({ selectedCustomerData, data, payments, selectedVeh
                                         {selectedCustomerData?.full_name || 'Customer Details'}
                                     </>
                                 ) : (
-                                    'Selected Customer Details'
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 )}
                             </CardTitle>
                             <CardDescription>
                                 {selectedCustomerData
                                     ? `ID: ${selectedCustomerData?.id} - Ready for rental processing.`
-                                    : 'Select a customer using the dropdown to populate their details here.'}
+                                    : 'Loading customer details...'}
                             </CardDescription>
                         </div>
                         {selectedCustomerData && (
@@ -73,8 +74,23 @@ function CustomerDetailsCard({ selectedCustomerData, data, payments, selectedVeh
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {!selectedCustomerData ? (
-                        <div className="text-muted-foreground flex h-32 items-center justify-center">
-                            <p>No customer currently selected.</p>
+                        <div className="space-y-4 p-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <Skeleton className="h-12 w-full" />
+                                <Skeleton className="h-12 w-full" />
+                                <Skeleton className="h-12 w-full" />
+                                <Skeleton className="h-12 w-full" />
+                            </div>
+                            <div className="bordertext-sm flex h-10 w-full items-center justify-center rounded-md">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Loading customer details
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <Skeleton className="h-12 w-full" />
+                                <Skeleton className="h-12 w-full" />
+                                <Skeleton className="h-12 w-full" />
+                                <Skeleton className="h-12 w-full" />
+                            </div>
                         </div>
                     ) : (
                         <>
@@ -137,7 +153,11 @@ function CustomerDetailsCard({ selectedCustomerData, data, payments, selectedVeh
                             <div className="grid grid-cols-1 gap-2">
                                 <h4 className="text-primary-500 text-lg font-semibold">Rental Data</h4>
                                 <div className="grid grid-cols-2 space-x-2 gap-y-2">
-                                    <DetailField icon={<Calendar className="h-4 w-4" />} label="Start Date" value={data?.actual_start_date} />
+                                    <DetailField
+                                        icon={<Calendar className="h-4 w-4" />}
+                                        label="Start Date"
+                                        value={data?.actual_start_date || data?.start_date}
+                                    />
                                     <DetailField icon={<Calendar className="h-4 w-4" />} label="Return Date" value={data?.end_date || 0} />
                                     <DetailField icon={<Calendar className="h-4 w-4" />} label="Coming Date" value={data?.coming_date || 0} />
                                     <DetailField icon={<CalendarSync className="h-4 w-4" />} label="Period" value={data?.period} />
@@ -147,7 +167,7 @@ function CustomerDetailsCard({ selectedCustomerData, data, payments, selectedVeh
                             <Separator className="my-2" />
 
                             {/* SECTION 4: Deposit Data */}
-                            {data.activeDeposits
+                            {(data.activeDeposits || [])
                                 .filter((d) => d.deposit_type || d.deposit_value)
                                 .map((deposit, index) => (
                                     <div key={deposit.id || index} className="grid grid-cols-1 gap-2">

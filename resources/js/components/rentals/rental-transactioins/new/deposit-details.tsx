@@ -11,7 +11,7 @@ import { EnhancedDeposit, FormErrors, InitialFormValues } from '@/types/transact
 import { InertiaFormProps } from '@inertiajs/react';
 import { AlertCircle, CheckCircle, Plus, Trash2 } from 'lucide-react';
 import React, { useMemo } from 'react';
-import { DepositDatePicker } from './helpers/DepositDatePicker';
+import { DepositDatePicker } from '../helpers/DepositDatePicker';
 
 const lookupName = (items: { id: number; name: string }[], id: number | string | null | undefined): string => {
     if (!id || typeof id !== 'number') {

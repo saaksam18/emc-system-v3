@@ -80,61 +80,17 @@ class StoreRentalRequest extends FormRequest
             'total_cost' => 'required|numeric|min:0',
             'notes' => 'nullable|string',
 
-            // 1. Rental Payment (Required)
-            'payments.rental.amount' => ['required', 'numeric', 'min:0', 'same:total_cost'],
-            'payments.rental.payment_type' => ['required', 'string', Rule::in(['cash', 'bank', 'credit'])],
-            'payments.rental.credit_account_id' => ['required', 'integer', Rule::exists('chart_of_accounts', 'id')],
-            'payments.rental.debit_target_account_id' => ['required', 'integer', Rule::exists('chart_of_accounts', 'id')],
-            'payments.rental.description' => ['nullable', 'string', 'max:255'],
-
-            // 2. Helmet Payment (Now Conditional)
-            // If the 'helmet_amount' in the request is 0 or less, none of these rules apply.
-            'payments.helmet.amount' => [
-                'nullable', 
-                'numeric', 
-                'min:0', 
-                'same:helmet_amount',
-                Rule::requiredIf($this->input('helmet_amount') > 0)
-            ],
-            'payments.helmet.payment_type' => [
-                'nullable', // Allow to be null if requiredIf is false
-                'string', 
-                Rule::in(['cash', 'bank', 'credit']),
-                Rule::requiredIf($this->input('helmet_amount') > 0)
-            ],
-            'payments.helmet.credit_account_id' => [
-                'nullable', 
-                'integer', 
+            'payments' => ['required', 'array', 'min:1'],
+            'payments.*.description' => ['required', 'string', 'max:255'],
+            'payments.*.amount' => ['required', 'numeric', 'min:0'],
+            'payments.*.payment_type' => ['required', 'string', Rule::in(['cash', 'bank', 'credit'])],
+            'payments.*.credit_account_id' => ['required', 'integer', Rule::exists('chart_of_accounts', 'id')],
+            'payments.*.debit_target_account_id' => [
+                'required_unless:payments.*.payment_type,cash',
+                'nullable',
+                'integer',
                 Rule::exists('chart_of_accounts', 'id'),
-                Rule::requiredIf($this->input('helmet_amount') > 0)
             ],
-            'payments.helmet.debit_target_account_id' => [
-                'nullable', 
-                'integer', 
-                Rule::exists('chart_of_accounts', 'id'),
-                Rule::requiredIf($this->input('helmet_amount') > 0)
-            ],
-            'payments.helmet.description' => ['nullable', 'string', 'max:255'],
-
-            // 3. Deposit Payment (Optional - Only exists if deposits are active)
-            'payments.deposit' => ['nullable', 'array'], // Allows 'payments.deposit' to be missing or null
-            'payments.deposit.amount' => ['nullable', 'numeric', 'min:0'], // Allows amount to be missing or null
-            'payments.deposit.payment_type' => ['nullable', 'string', Rule::in(['cash', 'bank', 'credit'])], 
-            'payments.deposit.credit_account_id' => [
-                'nullable', 
-                'integer', 
-                Rule::exists('chart_of_accounts', 'id'),
-                // This correctly only requires the credit account if an amount is present and non-empty
-                Rule::requiredIf($this->input('payments.deposit.amount') !== null && $this->input('payments.deposit.amount') !== '')
-            ],
-            'payments.deposit.debit_target_account_id' => [
-                'nullable', 
-                'integer', 
-                Rule::exists('chart_of_accounts', 'id'),
-                // Require if amount is present
-                Rule::requiredIf($this->input('payments.deposit.amount') !== null && $this->input('payments.deposit.amount') !== '')
-            ],
-            'payments.deposit.description' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -169,20 +125,15 @@ class StoreRentalRequest extends FormRequest
             'total_cost.min' => 'Rental cost cannot be negative.',
 
             // --- PAYMENT MESSAGES ---
-            'payments.rental.amount.required' => 'The rental payment amount is required.',
-            'payments.rental.amount.same' => 'The rental payment amount must match the total cost (:value).',
-            'payments.rental.payment_type.required' => 'The rental payment type is required.',
-            'payments.rental.credit_account_id.required' => 'The rental credit account is required.',
-            'payments.rental.debit_target_account_id.required' => 'The rental debit account is required.',
-
-            'payments.helmet.amount.required' => 'The helmet payment amount is required.',
-            'payments.helmet.amount.same' => 'The helmet payment amount must match the helmet charge (:value).',
-            'payments.helmet.payment_type.required' => 'The helmet payment type is required.',
-            'payments.helmet.credit_account_id.required' => 'The helmet credit account is required.',
-            'payments.helmet.debit_target_account_id.required' => 'The helmet debit account is required.',
-
-            'payments.deposit.credit_account_id.required' => 'The deposit credit account is required when a deposit amount is entered.',
-            'payments.deposit.debit_target_account_id.required' => 'The deposit debit account is required when a deposit amount is entered.',
+            'payments.required' => 'At least one payment is required.',
+            'payments.array' => 'Payments must be a list of payments.',
+            'payments.min' => 'At least one payment is required.',
+            'payments.*.description.required' => 'The description for payment #:position is required.',
+            'payments.*.amount.required' => 'The amount for payment #:position is required.',
+            'payments.*.amount.numeric' => 'The amount for payment #:position must be a number.',
+            'payments.*.payment_type.required' => 'The payment type for payment #:position is required.',
+            'payments.*.credit_account_id.required' => 'The credit account for payment #:position is required.',
+            'payments.*.debit_target_account_id.required_unless' => 'The target bank account for payment #:position is required for bank or credit payments.',
         ];
     }
 
@@ -201,23 +152,6 @@ class StoreRentalRequest extends FormRequest
             'actual_start_date' => 'start date',
             'end_date' => 'end date',
             'total_cost' => 'total cost',
-
-            // --- PAYMENT ATTRIBUTES ---
-            'payments.rental.amount' => 'rental payment amount',
-            'payments.rental.payment_type' => 'rental payment type',
-            'payments.rental.credit_account_id' => 'rental credit account',
-            'payments.rental.debit_target_account_id' => 'rental debit account',
-
-            'payments.helmet.amount.required_if' => 'The helmet payment amount is required when a helmet charge is present.', // Custom message for required_if
-            'payments.helmet.amount.same' => 'The helmet payment amount must match the helmet charge.', // Removed (:value) because it's added automatically
-            'payments.helmet.payment_type.required_if' => 'The helmet payment type is required when a helmet charge is present.',
-            'payments.helmet.credit_account_id.required_if' => 'The helmet credit account is required when a helmet charge is present.',
-            'payments.helmet.debit_target_account_id.required_if' => 'The helmet debit account is required when a helmet charge is present.',
-
-            'payments.deposit.amount' => 'deposit payment amount',
-            'payments.deposit.payment_type' => 'deposit payment type',
-            'payments.deposit.credit_account_id' => 'deposit credit account',
-            'payments.deposit.debit_target_account_id' => 'deposit debit account',
         ];
 
         if (is_array($this->input('activeDeposits'))) {
@@ -227,6 +161,17 @@ class StoreRentalRequest extends FormRequest
                 $attributes["activeDeposits.{$index}.deposit_value"] = "deposit #{$depositNumber} value";
                 $attributes["activeDeposits.{$index}.description"] = "deposit #{$depositNumber} description";
                 $attributes["activeDeposits.{$index}.is_primary"] = "deposit #{$depositNumber} is primary flag";
+            }
+        }
+
+        if (is_array($this->input('payments'))) {
+            foreach ($this->input('payments') as $index => $payment) {
+                $paymentNumber = $index + 1;
+                $attributes["payments.{$index}.description"] = "payment #{$paymentNumber} description";
+                $attributes["payments.{$index}.amount"] = "payment #{$paymentNumber} amount";
+                $attributes["payments.{$index}.payment_type"] = "payment #{$paymentNumber} payment type";
+                $attributes["payments.{$index}.credit_account_id"] = "payment #{$paymentNumber} credit account";
+                $attributes["payments.{$index}.debit_target_account_id"] = "payment #{$paymentNumber} target bank account";
             }
         }
 
