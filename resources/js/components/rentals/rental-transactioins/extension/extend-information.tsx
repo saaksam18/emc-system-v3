@@ -2,6 +2,7 @@ import { AccountCombobox } from '@/components/form/AccountCombobox';
 import { EntityCombobox } from '@/components/form/entity-combobox';
 import { FormField } from '@/components/form/FormField';
 import { FormSection } from '@/components/form/FormSection';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,17 @@ const calculatePeriod = (startDateStr: string, endDateStr: string): number => {
     return diffDays >= 0 ? diffDays : 0;
 };
 
+function formatDate(date: Date | undefined) {
+    if (!date) {
+        return '';
+    }
+    return date.toLocaleDateString('en-US', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+    });
+}
+
 // --- Main Component ---
 interface ExtendContractProps {
     data: ExtendContractFormValues;
@@ -66,8 +78,6 @@ export function ExtendInformation({
     const { incomeAccounts, specificBankAccounts, getAccountName } = useAccountHelpers({ chartOfAccounts });
 
     // State for Dialogs
-    const [startDateDialogOpen, setStartDateDialogOpen] = useState(false);
-    const [endDateDialogOpen, setEndDateDialogOpen] = useState(false);
     const [comingDateDialogOpen, setComingDateDialogOpen] = useState(false);
     const [openStates, setOpenStates] = useState([{ income: false, debit: false }]);
 
@@ -193,10 +203,6 @@ export function ExtendInformation({
         if (formErrors[field]) {
             clearErrors(field);
         }
-
-        if (field === 'start_date') setStartDateDialogOpen(false);
-        if (field === 'end_date') setEndDateDialogOpen(false);
-        if (field === 'coming_date') setComingDateDialogOpen(false);
     };
 
     if (!selectedRow) {
@@ -207,73 +213,56 @@ export function ExtendInformation({
         <div className="px-4">
             <form className="space-y-4">
                 <FormSection title="Rental Details" description="Update the dates, period, cost, and responsible user.">
-                    <FormField label="Start Date" htmlFor="start_date" error={formErrors.start_date} required>
-                        <Popover open={startDateDialogOpen} onOpenChange={setStartDateDialogOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant={'outline'}
-                                    id="start_date"
-                                    className={cn(
-                                        'w-full justify-start text-left font-normal',
-                                        !data.start_date && 'text-muted-foreground',
-                                        formErrors.start_date && 'border-red-500',
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {data.start_date && isValid(parseDateString(data.start_date)!) ? (
-                                        format(parseDateString(data.start_date)!, 'PPP')
-                                    ) : (
-                                        <span>Pick a date</span>
-                                    )}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                    mode="single"
-                                    selected={parseDateString(data.start_date)}
-                                    onSelect={(date) => handleDateChange('start_date', date)}
-                                    initialFocus
-                                    captionLayout="dropdown"
-                                />
-                            </PopoverContent>
-                        </Popover>
-                    </FormField>
-
-                    <FormField label="End Date" htmlFor="end_date" error={formErrors.end_date} required>
-                        <Popover open={endDateDialogOpen} onOpenChange={setEndDateDialogOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant={'outline'}
-                                    id="end_date"
-                                    className={cn(
-                                        'w-full justify-start text-left font-normal',
-                                        !data.end_date && 'text-muted-foreground',
-                                        formErrors.end_date && 'border-red-500',
-                                    )}
-                                    disabled={!data.start_date || !isValid(parseDateString(data.start_date)!)}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {data.end_date && isValid(parseDateString(data.end_date)!) ? (
-                                        format(parseDateString(data.end_date)!, 'PPP')
-                                    ) : (
-                                        <span>Pick a date</span>
-                                    )}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                    mode="single"
-                                    selected={parseDateString(data.end_date)}
-                                    onSelect={(date) => handleDateChange('end_date', date)}
-                                    disabled={(date) => {
-                                        const startDate = parseDateString(data.start_date);
-                                        return startDate ? date < startDate : false;
-                                    }}
-                                    initialFocus
-                                    captionLayout="dropdown"
-                                />
-                            </PopoverContent>
-                        </Popover>
+                    <FormField label="Select Rental Dates" htmlFor="date_range" error={formErrors.start_date || formErrors.end_date} required>
+                        <div className="relative flex flex-col items-center gap-4">
+                            <div className="flex w-full justify-around rounded-full bg-gray-100 p-2">
+                                <div className="text-start">
+                                    <Badge variant="default" className="rounded-full bg-green-200 text-green-500">
+                                        Start Date
+                                    </Badge>
+                                    <p className="text-center text-lg font-semibold text-gray-800">
+                                        {data.start_date ? formatDate(parseDateString(data.start_date)) : 'Not set'}
+                                    </p>
+                                </div>
+                                <div className="text-start">
+                                    <Badge
+                                        variant="default"
+                                        className={`rounded-full ${data.end_date ? 'bg-green-200 text-green-500' : 'bg-red-200 text-red-500'} `}
+                                    >
+                                        Return Date
+                                    </Badge>
+                                    <p className="text-lg font-semibold text-gray-800">
+                                        {data.end_date ? formatDate(parseDateString(data.end_date)) : 'Not set'}
+                                    </p>
+                                </div>
+                                <div className="text-center">
+                                    <Badge
+                                        variant="default"
+                                        className={`rounded-full ${data.end_date ? 'bg-green-200 text-green-500' : 'bg-red-200 text-red-500'} `}
+                                    >
+                                        Period
+                                    </Badge>
+                                    <p className="text-lg font-semibold text-gray-800">
+                                        {data.period ? data.period : '0'} {data.period > 1 ? 'Days' : 'Day'}
+                                    </p>
+                                </div>
+                            </div>
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={parseDateString(data.start_date) || new Date()}
+                                selected={{
+                                    from: parseDateString(data.start_date) || undefined,
+                                    to: parseDateString(data.end_date) || undefined,
+                                }}
+                                onSelect={(range) => {
+                                    handleDateChange('start_date', range?.from);
+                                    handleDateChange('end_date', range?.to);
+                                }}
+                                numberOfMonths={2}
+                                disabled={[{ dayOfWeek: [0, 6] }]}
+                            />
+                        </div>
                     </FormField>
 
                     <FormField label="Period (days)" htmlFor="period" error={formErrors.period} required>
@@ -305,7 +294,7 @@ export function ExtendInformation({
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {data.coming_date && isValid(parseDateString(data.coming_date)!) ? (
-                                        format(parseDateString(data.coming_date)!, 'PPP')
+                                        formatDate(parseDateString(data.coming_date)!)
                                     ) : (
                                         <span>Pick a date</span>
                                     )}

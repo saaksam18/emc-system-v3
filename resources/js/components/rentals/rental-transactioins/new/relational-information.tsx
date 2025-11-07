@@ -1,5 +1,6 @@
 import { EntityCombobox } from '@/components/form/entity-combobox';
 import { FormField } from '@/components/form/FormField';
+import { Badge } from '@/components/ui/badge';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -11,6 +12,7 @@ import { FormErrors, InitialFormValues, useLookupName } from '@/types/transactio
 import { InertiaFormProps } from '@inertiajs/react';
 import { CalendarClock, CalendarIcon, CheckCircle, NotepadText, PlusCircle } from 'lucide-react';
 import React, { useMemo } from 'react';
+import { DateRange } from 'react-day-picker';
 
 // Define the shape of the props
 interface RelationalInformationProps {
@@ -89,15 +91,13 @@ function RelationalInformation({
     handleInputChange,
     onCreateClick,
 }: RelationalInformationProps) {
-    const [openStartDate, setOpenStartDate] = React.useState(false);
-    const [openEndDate, setOpenEndDate] = React.useState(false);
     const [openComingDate, setOpenComingDate] = React.useState(false);
-    const [startDate, setStartDate] = React.useState<Date | undefined>(new Date());
-    const [startMonth, setStartMonth] = React.useState<Date | undefined>(startDate);
-    const [endDate, setEndDate] = React.useState<Date | undefined>(new Date());
-    const [endMonth, setEndMonth] = React.useState<Date | undefined>(endDate);
+    const [date, setDate] = React.useState<DateRange | undefined>({
+        from: new Date(),
+        to: new Date(),
+    });
     const [comingDate, setComingDate] = React.useState<Date | undefined>(new Date());
-    const [comingMonth, setComingMonth] = React.useState<Date | undefined>(endDate);
+    const [comingMonth, setComingMonth] = React.useState<Date | undefined>(new Date());
 
     // Calculate the customer name string for the combobox to display
     const selectedCustomerName = useLookupName(customers, data.customer_id);
@@ -132,8 +132,7 @@ function RelationalInformation({
                 const formattedEndDate = formatDate(newEndDate);
 
                 if (data.end_date !== formattedEndDate) {
-                    setEndDate(newEndDate);
-                    setEndMonth(newEndDate);
+                    setDate({ from: startDate, to: newEndDate });
                     setData('end_date', formattedEndDate);
                     clearErrors('end_date');
                 }
@@ -185,116 +184,70 @@ function RelationalInformation({
             </div>
 
             {/* 3. Transaction Timeline (Dates & Period) */}
-            <div className="grid grid-cols-1 gap-4 rounded-xl border border-gray-200 bg-white p-6 shadow-md lg:grid-cols-2">
-                <div className="mb-2 border-b pb-4 lg:col-span-2">
+            <div className="grid grid-cols-1 gap-4 rounded-xl border border-gray-200 bg-white p-6 shadow-md">
+                <div className="col-span-full mb-2 border-b pb-4">
                     <h4 className="flex items-center text-lg font-semibold text-gray-800">
                         <CalendarClock className="mr-2 h-5 w-5 text-amber-500" />
                         Timeline & Duration
                     </h4>
                     <p className="text-sm text-gray-500">Set the period for the transaction (e.g., rental, service duration).</p>
                 </div>
-                {/* Start Date */}
-                <div className="mb-4 space-y-4 md:col-span-1">
-                    <FormField label="Start Date" htmlFor="actual_start_date" error={formErrors.actual_start_date} required>
-                        <div className="relative flex gap-2">
-                            <Input
-                                id="date"
-                                value={data.actual_start_date}
-                                placeholder={data.actual_start_date || 'Select a date'}
-                                className="bg-background pr-10"
-                                onChange={(e) => {
-                                    const date = new Date(e.target.value);
-                                    setData('actual_start_date', e.target.value);
-                                    clearErrors('actual_start_date');
-                                    if (isValidDate(date)) {
-                                        setStartDate(date);
-                                        setStartMonth(date);
+                {/* Date Range Picker */}
+                <div className="mb-4 space-y-4">
+                    <FormField label="Select Rental Dates" htmlFor="date_range" error={formErrors.actual_start_date || formErrors.end_date} required>
+                        <div className="relative flex flex-col items-center gap-4">
+                            <div className="flex w-full justify-around rounded-full bg-gray-100 p-2">
+                                <div className="text-start">
+                                    <Badge variant="default" className="rounded-full bg-green-200 text-green-500">
+                                        Start Date
+                                    </Badge>
+                                    <p className="text-center text-lg font-semibold text-gray-800">{data.actual_start_date || 'Not set'}</p>
+                                </div>
+                                <div className="text-start">
+                                    <Badge
+                                        variant="default"
+                                        className={`rounded-full ${data.end_date ? 'bg-green-200 text-green-500' : 'bg-red-200 text-red-500'} `}
+                                    >
+                                        Return Date
+                                    </Badge>
+                                    <p className="text-lg font-semibold text-gray-800">{data.end_date || 'Not set'}</p>
+                                </div>
+                                <div className="text-center">
+                                    <Badge
+                                        variant="default"
+                                        className={`rounded-full ${data.end_date ? 'bg-green-200 text-green-500' : 'bg-red-200 text-red-500'} `}
+                                    >
+                                        Period
+                                    </Badge>
+                                    <p className="text-lg font-semibold text-gray-800">
+                                        {data.period ? data.period : '0'} {data.period > 1 ? 'Days' : 'Day'}
+                                    </p>
+                                </div>
+                            </div>
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={date?.from}
+                                selected={date}
+                                onSelect={(range) => {
+                                    setDate(range);
+                                    if (range?.from) {
+                                        setData('actual_start_date', formatDate(range.from));
+                                        clearErrors('actual_start_date');
+                                    }
+                                    if (range?.to) {
+                                        setData('end_date', formatDate(range.to));
+                                        clearErrors('end_date');
                                     }
                                 }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'ArrowDown') {
-                                        e.preventDefault();
-                                        setOpenStartDate(true);
-                                    }
-                                }}
+                                numberOfMonths={2}
+                                disabled={[{ dayOfWeek: [0, 6] }]}
                             />
-                            <Popover open={openStartDate} onOpenChange={setOpenStartDate}>
-                                <PopoverTrigger asChild>
-                                    <Button id="date-picker" variant="ghost" className="absolute top-1/2 right-2 size-6 -translate-y-1/2">
-                                        <CalendarIcon className="size-3.5" />
-                                        <span className="sr-only">Select date</span>
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto overflow-hidden p-0" align="end" alignOffset={-8} sideOffset={10}>
-                                    <Calendar
-                                        mode="single"
-                                        selected={startDate}
-                                        captionLayout="dropdown"
-                                        month={startMonth}
-                                        onMonthChange={setStartMonth}
-                                        onSelect={(date) => {
-                                            setStartDate(date);
-                                            setData('actual_start_date', formatDate(date));
-                                            clearErrors('actual_start_date');
-                                            setOpenStartDate(false);
-                                        }}
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                    </FormField>
-                    {/* Return Date */}
-                    <FormField label="Return Date" htmlFor="end_date" error={formErrors.end_date} required>
-                        <div className="relative flex gap-2">
-                            <Input
-                                id="date"
-                                value={data.end_date}
-                                placeholder={data.end_date || 'Select a date'}
-                                className="bg-background pr-10"
-                                onChange={(e) => {
-                                    const date = new Date(e.target.value);
-                                    setData('end_date', e.target.value);
-                                    clearErrors('end_date');
-                                    if (isValidDate(date)) {
-                                        setEndDate(date);
-                                        setEndMonth(date);
-                                    }
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'ArrowDown') {
-                                        e.preventDefault();
-                                        setOpenEndDate(true);
-                                    }
-                                }}
-                            />
-                            <Popover open={openEndDate} onOpenChange={setOpenEndDate}>
-                                <PopoverTrigger asChild>
-                                    <Button id="date-picker" variant="ghost" className="absolute top-1/2 right-2 size-6 -translate-y-1/2">
-                                        <CalendarIcon className="size-3.5" />
-                                        <span className="sr-only">Select date</span>
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto overflow-hidden p-0" align="end" alignOffset={-8} sideOffset={10}>
-                                    <Calendar
-                                        mode="single"
-                                        selected={endDate}
-                                        captionLayout="dropdown"
-                                        month={endMonth}
-                                        onMonthChange={setEndMonth}
-                                        onSelect={(date) => {
-                                            setEndDate(date);
-                                            setData('end_date', formatDate(date));
-                                            clearErrors('end_date');
-                                            setOpenEndDate(false);
-                                        }}
-                                    />
-                                </PopoverContent>
-                            </Popover>
                         </div>
                     </FormField>
                 </div>
                 {/* Period */}
-                <div className="space-y-4 md:col-span-1">
+                <div className="space-y-4">
                     <FormField label="Period (days)" htmlFor="period" error={formErrors.period} required>
                         <Input
                             type="number"

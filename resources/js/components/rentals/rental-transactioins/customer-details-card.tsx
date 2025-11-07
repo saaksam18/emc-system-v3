@@ -33,9 +33,10 @@ interface PageProps {
     payments: Partial<PaymentsState>;
     selectedVehicleData: Vehicle | undefined;
     onUpdateClick: () => void;
+    isLoadingCustomerDetails: boolean;
 }
 
-function CustomerDetailsCard({ selectedCustomerData, data, selectedVehicleData, onUpdateClick }: PageProps) {
+function CustomerDetailsCard({ selectedCustomerData, data, selectedVehicleData, onUpdateClick, isLoadingCustomerDetails }: PageProps) {
     return (
         <div>
             <Card
@@ -49,19 +50,23 @@ function CustomerDetailsCard({ selectedCustomerData, data, selectedVehicleData, 
                     <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                             <CardTitle>
-                                {selectedCustomerData ? (
+                                {isLoadingCustomerDetails ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : selectedCustomerData ? (
                                     <>
                                         <User className="text-primary mr-2 inline h-5 w-5" />
                                         {selectedCustomerData?.full_name || 'Customer Details'}
                                     </>
                                 ) : (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    'No Customer Selected'
                                 )}
                             </CardTitle>
                             <CardDescription>
-                                {selectedCustomerData
-                                    ? `ID: ${selectedCustomerData?.id} - Ready for rental processing.`
-                                    : 'Loading customer details...'}
+                                {isLoadingCustomerDetails
+                                    ? 'Loading customer details...'
+                                    : selectedCustomerData
+                                      ? `ID: ${selectedCustomerData?.id} - Ready for rental processing.`
+                                      : 'Please select a customer to view details.'}
                             </CardDescription>
                         </div>
                         {selectedCustomerData && (
@@ -73,7 +78,7 @@ function CustomerDetailsCard({ selectedCustomerData, data, selectedVehicleData, 
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                    {!selectedCustomerData ? (
+                    {isLoadingCustomerDetails ? (
                         <div className="space-y-4 p-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <Skeleton className="h-12 w-full" />
@@ -92,7 +97,7 @@ function CustomerDetailsCard({ selectedCustomerData, data, selectedVehicleData, 
                                 <Skeleton className="h-12 w-full" />
                             </div>
                         </div>
-                    ) : (
+                    ) : selectedCustomerData ? (
                         <>
                             {/* SECTION 1: Customer Information */}
                             <div className="grid grid-cols-1 gap-2">
@@ -210,6 +215,10 @@ function CustomerDetailsCard({ selectedCustomerData, data, selectedVehicleData, 
                                     </div>
                                 ))}
                         </>
+                    ) : (
+                        <div className="flex h-full items-center justify-center p-4 text-muted-foreground">
+                            <p>No customer selected. Please search and select a customer.</p>
+                        </div>
                     )}
                 </CardContent>
             </Card>
